@@ -9,6 +9,7 @@ publicator.tar.gz
 *.dump
 /rel/publicator
 /config
+/devutils/sync
 .DS_Store
 .eunit
 deps
