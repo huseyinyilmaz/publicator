@@ -43,7 +43,11 @@ stop() ->
 %%--------------------------------------------------------------------
 -spec get_messages(binary(), binary(),binary()) -> undefined.
 get_messages(User_code, Category_name, Resource_name) ->
-    {ok, <<"session_id_value">>, [User_code, Category_name, Resource_name]}.
+    User_pid = get_or_create_user(User_code),
+    {ok, <<"session_id_value">>, [User_code,
+				  Category_name,
+				  Resource_name,
+				  s_user:get_code(User_pid)]}.
 
 
 publish(_User_code, _Category_name, _Resource_name, _Messages)->
@@ -51,3 +55,13 @@ publish(_User_code, _Category_name, _Resource_name, _Messages)->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+get_or_create_user(Code)->
+    User_code = case Code of
+		    undefined ->
+			s_utils:generate_code();
+		    _  ->
+			Code
+		end,
+    s_user:get_user(User_code).
+
+				      

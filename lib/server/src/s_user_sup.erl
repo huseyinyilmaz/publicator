@@ -1,17 +1,17 @@
 %%%-------------------------------------------------------------------
-%%% @author Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
+%%% @author Huseyin Yilmaz <huseyin@huseyin-work>
 %%% @copyright (C) 2013, Huseyin Yilmaz
 %%% @doc
 %%%
 %%% @end
-%%% Created :  6 Jul 2013 by Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
+%%% Created : 22 Jan 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
--module(server_sup).
+-module(s_user_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -21,6 +21,19 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts a new user
+%%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+%% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
+start_child(Code) ->
+    error_logger:info_report({start_new_user, Code}),
+    Args_to_append = [Code],
+    supervisor:start_child(?SERVER, Args_to_append).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -50,26 +63,20 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    RestartStrategy = one_for_one,
+    RestartStrategy = simple_one_for_one,
     MaxRestarts = 1000,
     MaxSecondsBetweenRestarts = 3600,
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-    Restart = permanent,
+    Restart = transient,
     Shutdown = 2000,
     Type = worker,
 
-    %% Room_sup = {c_room_sup, {c_room_sup, start_link, []},
-    %% 		Restart, Shutdown, Type, [c_room_sup]},
+    User = {s_user, {s_user, start_link, []},
+	    Restart, Shutdown, Type, [s_user]},
 
-    User_sup = {s_user_sup, {s_user_sup, start_link, []},
-		Restart, Shutdown, Type, [s_user_sup]},
-    
-    %% AChild = {'AName', {'AModule', start_link, []},
-    %% 	      Restart, Shutdown, Type, ['AModule']},
-
-    {ok, {SupFlags, [User_sup]}}.
+    {ok, {SupFlags, [User]}}.
 
 %%%===================================================================
 %%% Internal functions

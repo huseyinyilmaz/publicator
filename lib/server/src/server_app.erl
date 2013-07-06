@@ -35,6 +35,11 @@
 %% @end
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
+    %% Create a global named tables
+    ets:new(chanels,[set, public, named_table]),
+    ets:new(users,[set, public, named_table]),
+
+    %% Start main supervisor
     case server_sup:start_link() of
 	{ok, Pid} ->
 	    {ok, Pid};
