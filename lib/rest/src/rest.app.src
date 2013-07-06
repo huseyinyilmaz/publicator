@@ -1,5 +1,5 @@
 {application, rest, [
-	{description, "Rest interface implementation for huloog"},
+	{description, "Rest interface implementation for publicator"},
 	{vsn, "1"},
 	{modules, []},
 	{registered, []},

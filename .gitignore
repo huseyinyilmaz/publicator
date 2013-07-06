@@ -5,9 +5,9 @@
 logs/
 ebin/
 doc/
-huloo.tar.gz
+publicator.tar.gz
 *.dump
-/rel/huloo
+/rel/publicator
 /config
 .DS_Store
 .eunit

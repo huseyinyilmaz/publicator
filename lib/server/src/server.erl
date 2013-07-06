@@ -41,7 +41,7 @@ stop() ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
--spec get_messages(integer(), integer(),integer()) -> undefined.
+-spec get_messages(binary(), binary(),binary()) -> undefined.
 get_messages(User_code, Category_name, Resource_name) ->
     {ok, <<"session_id_value">>, [User_code, Category_name, Resource_name]}.
 

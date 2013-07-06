@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% @author Huseyin Yilmaz <huseyin@huseyin-work>
 %%% @copyright (C) 2013, Huseyin Yilmaz
-%%% @doc Rest interface application interface for huloo
+%%% @doc Rest interface application interface for publicator
 %%%
 %%% @end
 %%% Created : 06 Jul 2013 by Huseyin Yilmaz <huseyin@huseyin-work>

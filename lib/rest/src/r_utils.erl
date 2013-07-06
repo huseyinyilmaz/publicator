@@ -11,7 +11,7 @@
 %% API
 -export([get_session/1, set_session/2, drop_session/1]).
 
--define(COOKIE_NAME, <<"HULOO_SESSON_ID">>).
+-define(COOKIE_NAME, <<"PUBLICATOR_SESSON_ID">>).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -45,7 +45,7 @@ set_session(Req, Session_id) ->
 -spec drop_session(cowboy_req:req()) -> cowboy_req:req().
 drop_session(Req) ->
     %% XXX hulloo_session id must not be hardcoded here
-    Req2 = cowboy_req:set_resp_header(<<"Set-Cookie">>,<<"HULOO_SESSION_ID=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/">>, Req),
+    Req2 = cowboy_req:set_resp_header(<<"Set-Cookie">>,<<"PUBLICATOR_SESSION_ID=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/">>, Req),
     Req2.
 
 

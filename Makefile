@@ -1,7 +1,7 @@
 DIALYZER = dialyzer
 REBAR = ./rebar
 MNESIA_DIR = /tmp/mnesia
-NODE_NAME = huloo
+NODE_NAME = publicator
 
 # compile
 all: compile
@@ -31,11 +31,11 @@ eunit:
 	@$(REBAR) eunit skip_deps=true
 
 build-plt:
-	@$(DIALYZER) --build_plt --output_plt .huloo_dialyzer.plt \
+	@$(DIALYZER) --build_plt --output_plt .publicator_dialyzer.plt \
 		--apps kernel stdlib deps/*
 
 dialyze:
-	@$(DIALYZER) --src lib/*/src --plt .huloo_dialyzer.plt -Werror_handling \
+	@$(DIALYZER) --src lib/*/src --plt .publicator_dialyzer.plt -Werror_handling \
 		-Wrace_conditions -Wunmatched_returns # -Wunderspecs
 
 docs:
