@@ -1,3 +1,15 @@
+*~
+\#*\#
+\.\#*
+*.pyc
+logs/
+ebin/
+doc/
+huloo.tar.gz
+*.dump
+/rel/huloo
+/config
+.DS_Store
 .eunit
 deps
 *.o

@@ -1,0 +1,13 @@
+{application, rest, [
+	{description, "Rest interface implementation for huloog"},
+	{vsn, "1"},
+	{modules, []},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib,
+		cowboy
+	]},
+	{mod, {rest_app, []}},
+	{env, []}
+]}.
