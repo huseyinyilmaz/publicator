@@ -38,7 +38,7 @@ init() ->
 -spec start() -> ok.
 start() ->
     io:format("Starting apps", []),
-    %% ok = server:start(),
+    ok = server:start(),
     ok = rest:start(),
     ok.
 

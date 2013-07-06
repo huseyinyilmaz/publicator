@@ -18,26 +18,26 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts rest server
-%% @spec start() -> ok
 %% @end
 %%--------------------------------------------------------------------
+-spec start() -> ok.
 start() ->
-	application:start(crypto),
-	application:start(ranch),
-	application:start(cowboy),
-        application:start(rest).
+	ok = application:start(crypto),
+	ok = application:start(ranch),
+	ok = application:start(cowboy),
+        ok = application:start(rest).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Stops rest server
-%% @spec stop() -> ok
 %% @end
 %%--------------------------------------------------------------------
+-spec stop() -> ok.
 stop() ->
-    application:stop(rest),
-    application:stop(cowboy),
-    application:stop(ranch),
-    application:stop(crypto).
+    ok = application:stop(rest),
+    ok = application:stop(cowboy),
+    ok = application:stop(ranch),
+    ok = application:stop(crypto).
 
 
 %%%===================================================================

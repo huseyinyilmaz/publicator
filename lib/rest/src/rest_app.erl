@@ -18,7 +18,7 @@ start(_Type, _Args) ->
 		 [
 		  {s_utils:get_env(rest, host, '_'), % host match
 		    [
-		     {"/", r_toppage_handler, []}
+		     {"/:category/:resource/", r_toppage_handler, []}
 		    ]}
 		  ]),
     {ok, _} = cowboy:start_http(http, s_utils:get_env(rest, pool_count, 100),
