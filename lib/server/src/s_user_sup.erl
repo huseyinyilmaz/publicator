@@ -4,7 +4,7 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 22 Jan 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
+%%% Created : 06 Jun 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
 -module(s_user_sup).
 

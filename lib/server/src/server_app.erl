@@ -36,7 +36,7 @@
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
     %% Create a global named tables
-    ets:new(chanels,[set, public, named_table]),
+    ets:new(resources,[set, public, named_table]),
     ets:new(users,[set, public, named_table]),
 
     %% Start main supervisor

@@ -1,20 +1,18 @@
 %%%-------------------------------------------------------------------
-%%% @author Huseyin Yilmaz <huseyin@huseyin-work>
+%%% @author Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%% @copyright (C) 2013, Huseyin Yilmaz
 %%% @doc
-%%%
+%%% Resource implementation
 %%% @end
-%%% Created : 22 Jan 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
+%%% Created :  7 Jul 2013 by Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%%-------------------------------------------------------------------
--module(s_user).
+-module(s_resource).
 
 -behaviour(gen_server).
--include_lib("eunit/include/eunit.hrl").
 
+-export([get_resource/1]).
 %% API
--export([start_link/1, get_user/1, get_code/1,
-	 get_count/0, stop/1, add_message/3,
-	 get_messages/2]).
+-export([start_link/1, add_user/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -22,64 +20,41 @@
 
 -define(SERVER, ?MODULE). 
 
--record(state, {code :: binary(),
-		messages :: dict()}).
-
-%% -include("c_room_event.hrl").
+-record(state, {name :: binary(),
+		users :: set()}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%% Starts a new user server
-%% @end
-%%--------------------------------------------------------------------
--spec start_link(binary()) -> {ok, pid()} | ignore | {error, any()}.
-start_link(Code) ->
-    error_logger:info_report({user_start_link, Code}),
-    gen_server:start_link(?SERVER, [Code], []).
-
--spec get_user(binary()) -> {ok,undefined}.
-get_user(Code) ->
+-spec get_resource(binary()) -> {ok,undefined}.
+get_resource(Name) ->
     %% check if ets table has given Pid
     %% if it doesn't or value is a dead process
     %% set value to undefined.
-    case ets:lookup(users, Code) of
-	[{Code, Pid}] ->
-	    %% if process is dead remove it and
-	    %% return not found
-	    case is_process_alive(Pid) of
-		true -> {ok, Pid};
-		false -> ets:delete(users, Code),
-			 {error, not_found}
-	    end;
-	    [] -> {error, not_found}
-	end.
+    case ets:lookup(resource, Name) of
+	[{Name, Pid}] -> {ok, Pid};
+	[] -> {error, not_found}
+    end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the server
+%%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @end
+%%--------------------------------------------------------------------
+start_link(Name) ->
+    gen_server:start_link(?MODULE, [Name], []).
 
--spec get_code(pid()) -> {ok,integer()}.
-get_code(Pid) ->
-    gen_server:call(Pid,get_code).
+%%--------------------------------------------------------------------
+%% @doc
+%% Adds a user to resource.
+%% @end
+%%--------------------------------------------------------------------
+-spec add_user(pid(), pid()) -> ok.
+add_user(Pid, User_pid) ->
+    gen_server:cast(Pid, {add_user, User_pid}).
 
--spec get_messages(integer(), integer()) -> {undefined}.
-get_messages(Pid, Resource_name) ->
-    gen_server:call(Pid, {get_messages, Resource_name}).
-
--spec add_message(pid(), binary(), binary())-> ok.
-add_message(Pid, Resource, Msg) ->
-    gen_server:cast(Pid, {add_message, Resource, Msg}).
-
--spec stop(pid()) -> ok.
-stop(Pid) ->
-    gen_server:cast(Pid, stop).
-
--spec get_count() -> {ok, integer()}.
-get_count() ->
-    {ok, ets:info(user, size)}.
-
-
-				  
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -95,15 +70,19 @@ get_count() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Code]) ->
-    case get_user(Code) of
+-spec init([binary()]) -> {ok, State} |
+			  {ok, State, integer()} |
+			  ignore |
+			  {stop, term()}.
+init([Name]) ->
+    case get_resource(Name) of
 	{ok , _} -> {stop, already_exists};
 	{error, not_found} ->
-	    ets:insert(users, {Code, self()}),
-	    {ok, #state{code=Code,
-			messages=dict:new()}}
+	    ets:insert(resources, {Name, self()}),
+	    {ok, #state{name=Name,
+			users=sets:new()}}
     end.
-
+    
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -118,16 +97,9 @@ init([Code]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(get_code, _From, #state{code=Code}=State) ->
-    Reply = {ok, Code},
-    {reply, Reply, State};
-
-handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}=State) ->
-    Messages = dict:fetch(Resource_name, Messages_dict),
-    Messages_dict2 = dict:erease(Resource_name, Messages_dict),
-    Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=Messages_dict2}}.
-
+handle_call(_Request, _From, State) ->
+    Reply = ok,
+    {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -140,25 +112,11 @@ handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}
 %% @end
 %%--------------------------------------------------------------------
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Adds message to current user
-%%
-%% @end
-%%--------------------------------------------------------------------
-%% user_handshake
-%% user_removed
-%%
+handle_cast({add_user,User_pid}, #state{users=Users_set}=State) ->
+    {noreply, State#state{users=sets:add_element(User_pid, Users_set)}};
 
-handle_cast({receive_message, Resource, Message},
-	    #state{messages=Messages_dict}=State) ->
-    error_logger:info_report({message_received, Message}),
-    {noreply, State#state{messages=dict:append(Resource, Message, Messages_dict)}};
-	     
-handle_cast(stop, State) ->
-    {stop, normal, State}.
-
+handle_cast({remove_user,User_pid}, #state{users=Users_set}=State) ->
+    {noreply, State#state{users=sets:del_element(User_pid, Users_set)}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -201,13 +159,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Sends user data to handler
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% @end
-%%--------------------------------------------------------------------
-send_msg_notification(Handler)->
-    Handler ! {have_message, self()}.
