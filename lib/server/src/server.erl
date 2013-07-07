@@ -53,7 +53,9 @@ publish(Resource_name, Messages)->
     ok = s_resource:publish(Resource_pid, Messages),
     {ok, <<"session_id_value">>}.
 
-subscribe() %%% XXX
+subscribe(User_code, Resource_name) ->
+    {ok, User_pid} = get_or_create_user(User_code),
+    s_user:subscribe('User')
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
