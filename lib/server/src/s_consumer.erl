@@ -12,8 +12,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/2, get_user/1, get_code/1,
-	 get_count/0, stop/1, add_message/3,
+-export([start_link/1, get/1, get_code/1,
+	 get_count/0, stop/1, push_message/3,
 	 get_messages/2]).
 
 %% gen_server callbacks
@@ -23,8 +23,7 @@
 -define(SERVER, ?MODULE). 
 
 -record(state, {code :: binary(),
-		messages :: dict(),
-		channels :: list()}).
+		messages :: dict()}).
 
 %% -include("c_room_event.hrl").
 
@@ -33,26 +32,27 @@
 %%%===================================================================
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts a new user server
+%% Starts a new consumer server
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(binary(),list()) -> {ok, pid()} | ignore | {error, any()}.
-start_link(Code, Channel_list) ->
-    error_logger:info_report({user_start_link, Code, Channel_list}),
-    gen_server:start_link(?SERVER, [Code], [Channel_list]).
+-spec start_link(binary()) -> {ok, pid()} | ignore | {error, any()}.
+start_link(Code) ->
+    error_logger:info_report({consumer_start_link, Code}),
+    gen_server:start_link(?SERVER, [Code], []).
 
--spec get_user(binary()) -> {ok,undefined}.
-get_user(Code) ->
+-spec get(binary()) -> {ok,undefined}.
+get(Code) ->
+    error_logger:info_report({s_consumer__get, {code, Code}}),
     %% check if ets table has given Pid
     %% if it doesn't or value is a dead process
     %% set value to undefined.
-    case ets:lookup(users, Code) of
+    case ets:lookup(consumers, Code) of
 	[{Code, Pid}] ->
 	    %% if process is dead remove it and
 	    %% return not found
 	    case is_process_alive(Pid) of
 		true -> {ok, Pid};
-		false -> ets:delete(users, Code),
+		false -> ets:delete(consumers, Code),
 			 {error, not_found}
 	    end;
 	    [] -> {error, not_found}
@@ -67,9 +67,9 @@ get_code(Pid) ->
 get_messages(Pid, Resource_name) ->
     gen_server:call(Pid, {get_messages, Resource_name}).
 
--spec add_message(pid(), binary(), binary())-> ok.
-add_message(Pid, Resource, Msg) ->
-    gen_server:cast(Pid, {add_message, Resource, Msg}).
+-spec push_message(pid(), binary(), binary())-> ok.
+push_message(Pid, Resource, Msg) ->
+    gen_server:cast(Pid, {push_message, Resource, Msg}).
 
 -spec stop(pid()) -> ok.
 stop(Pid) ->
@@ -77,7 +77,7 @@ stop(Pid) ->
 
 -spec get_count() -> {ok, integer()}.
 get_count() ->
-    {ok, ets:info(user, size)}.
+    {ok, ets:info(consumer, size)}.
 
 
 				  
@@ -96,14 +96,13 @@ get_count() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Code, Channel_list]) ->
-    case get_user(Code) of
+init([Code]) ->
+    case s_consumer:get(Code) of
 	{ok , _} -> {stop, already_exists};
 	{error, not_found} ->
-	    ets:insert(users, {Code, self()}),
+	    ets:insert(consumers, {Code, self()}),
 	    {ok, #state{code=Code,
-			messages=dict:new(),
-			channels=Channel_list}}
+			messages=dict:new()}}
     end.
 
 %%--------------------------------------------------------------------
@@ -125,8 +124,11 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     {reply, Reply, State};
 
 handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}=State) ->
-    Messages = dict:fetch(Resource_name, Messages_dict),
-    Messages_dict2 = dict:erease(Resource_name, Messages_dict),
+    Messages = case dict:find(Resource_name, Messages_dict) of
+		   error -> [];
+		   {ok, Result} -> Result
+	       end,
+    Messages_dict2 = dict:erase(Resource_name, Messages_dict),
     Reply = {ok, Messages},
     {reply, Reply, State#state{messages=Messages_dict2}}.
 
@@ -145,18 +147,27 @@ handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Adds message to current user
+%% Adds message to current consumer
 %%
 %% @end
 %%--------------------------------------------------------------------
-%% user_handshake
-%% user_removed
+%% consumer_handshake
+%% consumer_removed
 %%
 
-handle_cast({receive_message, Resource, Message},
+handle_cast({subscribe, Channel},
+	    #state{code=Consumer}=State) ->
+    Channel_pid = s_channel:get(Channel),
+    s_channel:add_handler(Channel_pid, Channel, self()),
+    ets:insert(channel_to_consumer, {Channel, Consumer}),
+    ets:insert(consumer_to_channel, {Consumer, Channel}),
+    {noreply,State};
+
+
+handle_cast({push_message, Channel, Message},
 	    #state{messages=Messages_dict}=State) ->
-    error_logger:info_report({message_received, Message}),
-    {noreply, State#state{messages=dict:append(Resource, Message, Messages_dict)}};
+    error_logger:info_report({message_received, Channel, Message}),
+    {noreply, State#state{messages=dict:append(Channel, Message, Messages_dict)}};
 	     
 handle_cast(stop, State) ->
     {stop, normal, State}.
@@ -206,7 +217,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Sends user data to handler
+%% Sends consumer data to handler
 %%
 %% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
 %% @end

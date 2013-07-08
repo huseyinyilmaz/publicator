@@ -63,12 +63,12 @@ subscribe(Channel, Consumer_code) ->
 %%%===================================================================
 get_or_create_consumer(Code)->
     case Code of
-	undefined -> User_code = s_utils:generate_code();
-	Code -> User_code = Code
+	undefined -> Consumer_code = s_utils:generate_code();
+	Code -> Consumer_code = Code
     end,
-    case s_user:get_user(User_code) of
-	{error, not_found} -> {ok, User} = s_user_sup:start_child(),
-			      {ok, User};
+    case s_consumer:get(Consumer_code) of
+	{error, not_found} -> {ok, Consumer} = s_consumer_sup:start_child(Consumer_code),
+			      {ok, Consumer};
 	{ok, Pid} -> {ok, Pid}
     end.
 

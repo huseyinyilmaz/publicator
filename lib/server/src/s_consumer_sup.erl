@@ -24,14 +24,14 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts a new user
+%% Starts a new consumer
 %%
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 %% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
 start_child(Code) ->
-    error_logger:info_report({start_new_user, Code}),
+    error_logger:info_report({start_new_consumer, Code}),
     Args_to_append = [Code],
     supervisor:start_child(?SERVER, Args_to_append).
 
@@ -73,10 +73,10 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    User = {s_user, {s_user, start_link, []},
-	    Restart, Shutdown, Type, [s_user]},
+    Consumer = {consumer, {s_consumer, start_link, []},
+	    Restart, Shutdown, Type, [s_consumer]},
 
-    {ok, {SupFlags, [User]}}.
+    {ok, {SupFlags, [Consumer]}}.
 
 %%%===================================================================
 %%% Internal functions

@@ -60,13 +60,13 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    Resource_sup = {s_resource_sup, {s_resource_sup, start_link, []},
-		    Restart, Shutdown, Type, [c_resource_sup]},
+    Channel_sup = {s_channel_sup, {s_channel_sup, start_link, []},
+		    Restart, Shutdown, Type, [c_channel_sup]},
 
-    User_sup = {s_user_sup, {s_user_sup, start_link, []},
-		Restart, Shutdown, Type, [s_user_sup]},
+    Consumer_sup = {s_consumer_sup, {s_consumer_sup, start_link, []},
+		Restart, Shutdown, Type, [s_consumer_sup]},
     
-    {ok, {SupFlags, [User_sup, Resource_sup]}}.
+    {ok, {SupFlags, [Consumer_sup, Channel_sup]}}.
 
 %%%===================================================================
 %%% Internal functions
