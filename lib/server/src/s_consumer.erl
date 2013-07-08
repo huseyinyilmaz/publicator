@@ -6,13 +6,13 @@
 %%% @end
 %%% Created : 22 Jan 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
--module(s_user).
+-module(s_consumer).
 
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/1, get_user/1, get_code/1,
+-export([start_link/2, get_user/1, get_code/1,
 	 get_count/0, stop/1, add_message/3,
 	 get_messages/2]).
 
@@ -23,7 +23,8 @@
 -define(SERVER, ?MODULE). 
 
 -record(state, {code :: binary(),
-		messages :: dict()}).
+		messages :: dict(),
+		channels :: list()}).
 
 %% -include("c_room_event.hrl").
 
@@ -35,10 +36,10 @@
 %% Starts a new user server
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(binary()) -> {ok, pid()} | ignore | {error, any()}.
-start_link(Code) ->
-    error_logger:info_report({user_start_link, Code}),
-    gen_server:start_link(?SERVER, [Code], []).
+-spec start_link(binary(),list()) -> {ok, pid()} | ignore | {error, any()}.
+start_link(Code, Channel_list) ->
+    error_logger:info_report({user_start_link, Code, Channel_list}),
+    gen_server:start_link(?SERVER, [Code], [Channel_list]).
 
 -spec get_user(binary()) -> {ok,undefined}.
 get_user(Code) ->
@@ -95,13 +96,14 @@ get_count() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Code]) ->
+init([Code, Channel_list]) ->
     case get_user(Code) of
 	{ok , _} -> {stop, already_exists};
 	{error, not_found} ->
 	    ets:insert(users, {Code, self()}),
 	    {ok, #state{code=Code,
-			messages=dict:new()}}
+			messages=dict:new(),
+			channels=Channel_list}}
     end.
 
 %%--------------------------------------------------------------------

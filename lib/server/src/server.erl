@@ -10,7 +10,7 @@
 
 %% API
 -export([start/0, stop/0]).
--export([get_messages/2, publish/3]).
+-export([get_messages/2, publish/2, subscribe/2]).
 
 %%%===================================================================
 %%% API
@@ -42,24 +42,26 @@ stop() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_messages(binary(), binary()) -> undefined.
-get_messages(User_code, Resource_name) ->
-    {ok, User_pid} = get_or_create_user(User_code),
-    s_user:get_messages(User_pid, Resource_name).
+get_messages(Channel, Consumer_code) ->
+    {ok, Consumer_pid} = get_or_create_consumer(Consumer_code),
+    s_consumer:get_messages(Consumer_pid, Channel).
 
 
-publish(Resource_name, Messages)->
+publish(Channel, Messages)->
     %% {ok, User_pid} = get_or_create_user(User_code),
-    {ok, Resource_pid} = get_or_create_resource(Resource_name),
-    ok = s_resource:publish(Resource_pid, Messages),
+    {ok, Channel_pid} = s_channel:get(Channel),
+    ok = s_channel:publish(Channel_pid, Messages),
     {ok, <<"session_id_value">>}.
 
-subscribe(User_code, Resource_name) ->
-    {ok, User_pid} = get_or_create_user(User_code),
-    s_user:subscribe('User')
+subscribe(Channel, Consumer_code) ->
+    {ok, Consumer_pid} = get_or_create_consumer(Consumer_code),
+    {ok, Channel_pid} = s_channel:get(Channel),
+    s_consumer:subscribe(Consumer_pid, Channel_pid).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-get_or_create_user(Code)->
+get_or_create_consumer(Code)->
     case Code of
 	undefined -> User_code = s_utils:generate_code();
 	Code -> User_code = Code
@@ -71,11 +73,5 @@ get_or_create_user(Code)->
     end.
 
 
-get_or_create_resource(Name)->
-    case s_resource:get_resource(Name) of
-	{error, not_found} -> {ok, Resource} = s_resource_sup:start_child(Name),
-			      {ok, Resource};
-	{ok, Pid} -> {ok, Pid}
-    end.
 
 				      

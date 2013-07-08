@@ -4,9 +4,9 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 07 Jun 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
+%%% Created : 06 Jun 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
--module(s_resource_sup).
+-module(s_consumer_sup).
 
 -behaviour(supervisor).
 
@@ -30,9 +30,9 @@
 %% @end
 %%--------------------------------------------------------------------
 %% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
-start_child(Name) ->
-    error_logger:info_report({start_new_user, Name}),
-    Args_to_append = [Name],
+start_child(Code) ->
+    error_logger:info_report({start_new_user, Code}),
+    Args_to_append = [Code],
     supervisor:start_child(?SERVER, Args_to_append).
 
 %%--------------------------------------------------------------------
@@ -73,8 +73,8 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    User = {s_resource, {s_resource, start_link, []},
-	    Restart, Shutdown, Type, [s_resource]},
+    User = {s_user, {s_user, start_link, []},
+	    Restart, Shutdown, Type, [s_user]},
 
     {ok, {SupFlags, [User]}}.
 
