@@ -22,6 +22,8 @@
 %%--------------------------------------------------------------------
 -spec handle_request(cowboy_req:req()) -> {[{<<_:64>>, undefined | binary()},...]}.
 handle_request(Req) ->
+    error_logger:info_report({r_server_adapter__handle_request, Req}),
+    
     {Channel, Req2} = cowboy_req:binding(channel, Req),
     {Existed_session_id, Req3} = r_utils:get_session(Req2),
     {Method, Req4} = cowboy_req:method(Req3),
@@ -32,9 +34,9 @@ handle_request(Req) ->
 	    {ok, Session_id, Messages} = server:get_messages(Existed_session_id,
 							     Channel);
 	<<"POST">> ->
+	    Session_id = Existed_session_id,
 	    Messages = [post],
-	    {ok, Session_id} = server:publish(Existed_session_id,
-					      Channel, Message);
+	    ok = server:publish(Channel, Message);
 	
 	<<"PUT">> ->
 	    Messages = [put],

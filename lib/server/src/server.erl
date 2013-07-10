@@ -41,22 +41,26 @@ stop() ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
--spec get_messages(binary(), binary()) -> undefined.
+-spec get_messages(binary(), binary()) -> {ok, undefined}.
 get_messages(Channel, Consumer_code) ->
-    {ok, Consumer_pid} = get_or_create_consumer(Consumer_code),
-    s_consumer:get_messages(Consumer_pid, Channel).
+    {ok, Consumer_code1, Consumer_pid} = get_or_create_consumer(Consumer_code),
+    {ok, Messages} = s_consumer:get_messages(Consumer_pid, Channel),
+    {ok, Consumer_code1, Messages}.
 
 
 publish(Channel, Messages)->
     %% {ok, User_pid} = get_or_create_user(User_code),
     {ok, Channel_pid} = s_channel:get(Channel),
     ok = s_channel:publish(Channel_pid, Messages),
-    {ok, <<"session_id_value">>}.
+    ok.
 
 subscribe(Channel, Consumer_code) ->
-    {ok, Consumer_pid} = get_or_create_consumer(Consumer_code),
+    error_logger:info_report({subscribe, Channel, Consumer_code}),
+
+    {ok, Consumer_code1, Consumer_pid} = get_or_create_consumer(Consumer_code),
     {ok, Channel_pid} = s_channel:get(Channel),
-    s_consumer:subscribe(Consumer_pid, Channel_pid).
+    ok = s_consumer:subscribe(Consumer_pid, Channel_pid),
+    {ok, Consumer_code1}.
 
 %%%===================================================================
 %%% Internal functions
@@ -68,8 +72,8 @@ get_or_create_consumer(Code)->
     end,
     case s_consumer:get(Consumer_code) of
 	{error, not_found} -> {ok, Consumer} = s_consumer_sup:start_child(Consumer_code),
-			      {ok, Consumer};
-	{ok, Pid} -> {ok, Pid}
+			      {ok,Consumer_code,  Consumer};
+	{ok, Pid} -> {ok, Consumer_code, Pid}
     end.
 
 
