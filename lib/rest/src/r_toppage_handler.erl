@@ -7,36 +7,55 @@
 -export([content_types_provided/2, allowed_methods/2, known_methods/2
 	 ,content_types_accepted/2
 	]).
--export([handle_json/2, from_text/2]).
+-export([handle_json/2, process_json/2]).
 
 init(_Transport, _Req, []) ->
 	{upgrade, protocol, cowboy_rest}.
 
-content_types_provided(Req, State) ->
-        error_logger:info_report(content_types_provided),
-    {[
-      %% {{<<"application">>, <<"json">>, []}, handle_json}
-      {{<<"*">>, <<"*">>,[]}, handle_json}
-     ], Req, State}.
+known_methods(Req, State) ->
+    {
+      [<<"GET">>, <<"POST">>, <<"PUT">>, <<"DELETE">>]
+     %% ['GET', 'POST', 'PUT', 'DELETE']
 
+      , Req, State}.
+
+allowed_methods(Req, State) ->
+    {
+      [<<"GET">>, <<"POST">>, <<"PUT">>, <<"DELETE">>]
+     %% ['GET', 'POST', 'PUT', 'DELETE']
+      , Req, State}.
+
+
+%% processes given request.
 content_types_accepted(Req, State)->
     error_logger:info_report(content_types_accepted),
     {[
-      %% {{<<"application">>,<<"json">>, []}, from_text}
-      {'*', from_text}
-     ], Req, State}.
+      {{<<"application">>, <<"json">>, []}, process_json},
+      {{<<"application">>, <<"x-www-form-urlencoded">>, []}, process_json}],
+     Req, State}.
 
-known_methods(Req, State) ->
-    {['GET', 'POST', 'PUT', 'DELETE'], Req, State}.
 
-allowed_methods(Req, State) ->
-    {['GET', 'POST', 'PUT', 'DELETE'], Req, State}.
+%% creates response. gets Req and State from c_t_accepted method
+content_types_provided(Req, State) ->
+    error_logger:info_report(content_types_provided),
+	{[
+	  {{<<"text">>, <<"plain">>, []}, handle_json},
+	  {{<<"text">>, <<"html">>, []}, handle_json},
+	  {{<<"application">>, <<"json">>, []}, handle_json}
+	], Req, State}.
 
-handle_json(Req, State) ->
-    error_logger:info_report(handle_json),
+process_json(Req, State) ->
+    error_logger:info_report(process_json),
     {Response, Req1} = r_server_adapter:handle_request(Req),
     Body = jiffy:encode(Response),
     {Body, Req1, State}.
+    
+
+handle_json(Req, State) ->
+    error_logger:info_report(handle_json),
+    %% {Response, Req1} = r_server_adapter:handle_request(Req),
+    Body = jiffy:encode([1234]),
+    {Body, Req, State}.
 
 
 %%%===================================================================

@@ -25,7 +25,7 @@
 init() ->
     io:format("Initializing environment", []),
     application:start(sasl),    
-    appmon:start(),
+    %% appmon:start(),
     code:add_patha("deps/ranch/ebin"),
     code:add_patha("deps/cowboy/ebin"),
     code:add_patha("deps/jiffy/ebin"),
