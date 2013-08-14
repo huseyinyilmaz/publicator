@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_child/1]).
+-export([start_link/0, start_child/0]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -30,9 +30,9 @@
 %% @end
 %%--------------------------------------------------------------------
 %% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
-start_child(Name) ->
-    error_logger:info_report({start_new_user, Name}),
-    Args_to_append = [Name],
+start_child() ->
+    error_logger:info_report({start_new_user}),
+    Args_to_append = [],
     supervisor:start_child(?SERVER, Args_to_append).
 
 %%--------------------------------------------------------------------
@@ -73,8 +73,8 @@ init([]) ->
     Shutdown = 2000,
     Type = worker,
 
-    User = {s_resource, {s_resource, start_link, []},
-	    Restart, Shutdown, Type, [s_resource]},
+    User = {s_channel, {s_channel, start_link, []},
+	    Restart, Shutdown, Type, [s_channel]},
 
     {ok, {SupFlags, [User]}}.
 

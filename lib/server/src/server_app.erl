@@ -36,11 +36,7 @@
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
     %% Create a global named tables
-    ets:new(channel_to_consumer,[set, public, named_table]),
-    ets:new(consumer_to_channel,[set, public, named_table]),
-    ets:new(channels,[set, public, named_table]),
-    ets:new(consumers,[set, public, named_table]),
-
+    s_manager:init(),
     %% Start main supervisor
     case server_sup:start_link() of
 	{ok, Pid} ->

@@ -14,7 +14,7 @@
 %% API
 -export([start_link/1, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
-	 get_messages/2]).
+	 get_messages/2, get_messages/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -63,9 +63,13 @@ get(Code) ->
 get_code(Pid) ->
     gen_server:call(Pid,get_code).
 
+get_messages(Pid) ->
+    gen_server:call(Pid, get_messages).
+
 -spec get_messages(integer(), integer()) -> {undefined}.
-get_messages(Pid, Resource_name) ->
-    gen_server:call(Pid, {get_messages, Resource_name}).
+get_messages(Pid, Channel_code) ->
+    gen_server:call(Pid, {get_messages, Channel_code}).
+
 
 -spec push_message(pid(), binary(), binary())-> ok.
 push_message(Pid, Resource, Msg) ->
@@ -123,6 +127,7 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     Reply = {ok, Code},
     {reply, Reply, State};
 
+%% Gets all messages for this user
 handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}=State) ->
     Messages = case dict:find(Resource_name, Messages_dict) of
 		   error -> [];
@@ -130,7 +135,15 @@ handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}
 	       end,
     Messages_dict2 = dict:erase(Resource_name, Messages_dict),
     Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=Messages_dict2}}.
+    {reply, Reply, State#state{messages=Messages_dict2}};
+
+%% Gets all messages for this user and returns them
+handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
+    Messages = lists:map(fun({_Key, Value}) -> Value end,
+			 dict:to_list(Messages_dict)),
+    error_logger:info_report({get_messages_callback_all_channels, Messages}),
+    Reply = {ok, Messages},
+    {reply, Reply, State#state{messages=dict:new()}}.
 
 
 %%--------------------------------------------------------------------

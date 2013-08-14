@@ -9,9 +9,9 @@
 -module(r_utils).
 
 %% API
--export([get_session/1, set_session/2, drop_session/1]).
+-export([get_or_create_session/1, drop_session/1]).
 
--define(COOKIE_NAME, <<"PUBLICATOR_SESSON_ID">>).
+-define(COOKIE_NAME, <<"publicator-session-id">>).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -44,11 +44,23 @@ set_session(Req, Session_id) ->
 
 -spec drop_session(cowboy_req:req()) -> cowboy_req:req().
 drop_session(Req) ->
-    %% XXX publicator_session id must not be hardcoded here
-    Req2 = cowboy_req:set_resp_header(<<"Set-Cookie">>,<<"PUBLICATOR_SESSION_ID=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/">>, Req),
+    Req2 = cowboy_req:set_resp_header(
+	     <<"Set-Cookie">>,
+	     <<?COOKIE_NAME/bitstring,
+	       <<"=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/">>/bitstring>>, Req),
     Req2.
 
 
+get_or_create_session(Req) ->
+    {Existed_session_id, Req1} = get_session(Req),
+    case Existed_session_id of
+	undefined -> Session_id = s_utils:generate_code(),
+		     {Session_id, Req2} = set_session(Req1, Session_id);
+	_ -> Session_id = Existed_session_id,
+	     Req2 = Req1
+    end,
+    {Session_id, Req2}.
+    
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

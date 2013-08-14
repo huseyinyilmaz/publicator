@@ -27,7 +27,7 @@
 %%% gen_event callbacks
 %%%===================================================================
 get(Name)->
-    case s_channel:get_resource(Name) of
+    case s_manager:get(Name) of
 	{error, not_found} -> {ok, Resource} = s_resource_sup:start_child(Name),
 			      {ok, Resource};
 	{ok, Pid} -> {ok, Pid}

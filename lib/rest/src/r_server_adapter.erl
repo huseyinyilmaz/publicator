@@ -9,49 +9,20 @@
 -module(r_server_adapter).
 
 %% API
--export([handle_request/1]).
-
+-export([subscribe/2, unsubscribe/2, get_channels/0, get_subscribtions/1,
+	 get_messages/1]).
 %%%===================================================================
 %%% API
 %%%===================================================================
     
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
--spec handle_request(cowboy_req:req()) -> {[{<<_:64>>, undefined | binary()},...]}.
-handle_request(Req) ->
-    error_logger:info_report({r_server_adapter__handle_request, Req}),
+subscribe(Channel_code, Session_id)-> server:subscribe(Channel_code, Session_id).
+unsubscribe(Channel_code, Session_id)-> server:unsubscribe(Channel_code, Session_id).
+get_channels()-> server:get_channels().
+get_subscribtions(Session_id) -> server:get_subscribtions(Session_id).
+get_messages(Session_id) -> server:get_messages(Session_id).
+
     
-    {Channel, Req2} = cowboy_req:binding(channel, Req),
-    {Existed_session_id, Req3} = r_utils:get_session(Req2),
-    {Method, Req4} = cowboy_req:method(Req3),
-    Message = [1,2,3],
-    
-    case Method of
-	<<"GET">> ->
-	    {ok, Session_id, Messages} = server:get_messages(Existed_session_id,
-							     Channel);
-	<<"POST">> ->
-	    Session_id = Existed_session_id,
-	    Messages = [post],
-	    ok = server:publish(Channel, Message);
-	
-	<<"PUT">> ->
-	    Messages = [put],
-	    {ok, Session_id} = server:subscribe(Existed_session_id,Channel)
-		
-
-    end,
-    
-    Response = {[{<<"channel">>, channel},
-		 {<<"session_id">>, Session_id},
-		 {<<"messages">>, Messages}]},
-
-    {Response, Req4}.
-
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+%% extracts common data from request
