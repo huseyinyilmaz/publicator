@@ -10,7 +10,7 @@
 
 -behaviour(gen_event).
 
--export([get/1]).
+-export([get/1, publish/2]).
 %% API
 -export([start_link/0, add_handler/3, delete_handler/2]).
 
@@ -33,6 +33,9 @@ get(Name)->
 	{ok, Pid} -> {ok, Pid}
     end.
 
+publish(Channel_pid, Message) ->
+    error_logger:info_report({s_channel__publish, Channel_pid, Message}),
+    gen_event:notify(Channel_pid, Message).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -53,9 +56,26 @@ start_link() ->
 %%--------------------------------------------------------------------
 -spec add_handler(pid(), binary(), pid()) -> ok | {'EXIT', term()} | term().
 add_handler(Pid, Channel, Consumer_pid) ->
-    gen_event:add_handler(Pid,
-			  {?MODULE, Channel, Consumer_pid},
-			  [Channel, Consumer_pid]).
+%% =INFO REPORT==== 14-Aug-2013::23:17:19 ===
+%% {s_channel__add_channel,<<"val">>,<0.933.0>,
+%%     {'EXIT',
+%%         {undef,
+%%             [{s_channel,init,
+%%                  [[<<"val">>,<0.933.0>],{s_channel,<<"val">>,<0.933.0>}],
+%%                  []},
+%%              {gen_event,server_add_handler,4,
+%%                  [{file,"gen_event.erl"},{line,418}]},
+%%              {gen_event,handle_msg,5,[{file,"gen_event.erl"},{line,280}]},
+%%              {proc_lib,init_p_do_apply,3,
+%%                  [{file,"proc_lib.erl"},{line,239}]}]}}}
+			      
+    Res = gen_event:add_handler(Pid,
+				{?MODULE, Channel, Consumer_pid},
+				[Channel, Consumer_pid]),
+    error_logger:info_report({s_channel__add_channel, Channel, Consumer_pid, Res}),
+    Res.
+    
+    
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -103,6 +123,7 @@ init([Channel, Pid]) ->
 
 handle_event(Message, #state{channel=Channel,
 			     consumer=Consumer_pid}=State) ->
+    error_logger:info_report(aaaaaaaaaaaaaaaaaaaaaaaaaa_handle_event,Message,Consumer_pid),
     %% if user is dead remove handler
     s_user:add_message(Consumer_pid, Channel, Message),
     {ok, State}.

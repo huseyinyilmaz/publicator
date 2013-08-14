@@ -7,41 +7,44 @@
 
 -module(r_message_handler).
 
--export([init/3]).
--export([allowed_methods/2, known_methods/2
-	 ,content_types_accepted/2
-	]).
--export([process_text/2]).
+-export([init/3, allowed_methods/2, content_types_accepted/2, delete_resource/2]).
+-export([post_json/2]).
 
 init(_Transport, _Req, []) ->
 	{upgrade, protocol, cowboy_rest}.
 
-known_methods(Req, State) ->
-    {[<<"POST">>, <<"GET">>], Req, State}.
-
 allowed_methods(Req, State) ->
-    {[<<"POST">>, <<"GET">>], Req, State}.
+    {[<<"POST">>], Req, State}.
 
-
-%% processes given request.
+%% POST
 content_types_accepted(Req, State)->
     error_logger:info_report(content_types_accepted),
-    {[{{<<"text">>, <<"plain">>, []}, process_text}], Req, State}.
+    {[{{<<"text">>, <<"plain">>, []}, post_json},
+      {{<<"text">>, <<"html">>, []}, post_json},
+      {{<<"application">>, <<"json">>, []}, post_json}
+     ], Req, State}.
 
+post_json(Req, State) ->
+    error_logger:info_report(post_json),
+    {Session_id, Req1} = r_utils:get_or_create_session(Req),
+    {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
+    {ok, [{<<"message">>, Message}], Req3} = cowboy_req:body_qs(Req2),
+    error_logger:info_report({post_json, Session_id, Message}),
+    ok = r_server_adapter:publish(Session_id, Channel_code, Message),
+    {true, Req3, State}.
 
-%% creates response. gets Req and State from c_t_accepted method
-%% content_types_provided(Req, State) ->
-%%     error_logger:info_report(content_types_provided),
-%% 	{[
-%% 	  {{<<"text">>, <<"plain">>, []}, handle_json},
-%% 	  {{<<"text">>, <<"html">>, []}, handle_json},
-%% 	  {{<<"application">>, <<"json">>, []}, handle_json}
-%% 	], Req, State}.
-
-process_text(Req, State) ->
-    error_logger:info_report(process_json),
-    {ok, Req1} = r_server_adapter:subscribe(Req),
-    {true, Req1, State}.
+delete_resource(Req, State) ->
+    error_logger:info_report(delete_resource),
+    {Session_id, Req1} = r_utils:get_or_create_session(Req),
+    {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
+    case Channel_code of
+	undefined -> Result_status = false;
+	Channel_code ->
+	    ok = r_server_adapter:unsubscribe(Channel_code, Session_id),
+	    Result_status = true
+    end,
+    
+    {Result_status, Req2, State}.
     
 %%%===================================================================
 %%% Internal functions

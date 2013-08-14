@@ -157,26 +157,6 @@ handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
 %% @end
 %%--------------------------------------------------------------------
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Adds message to current consumer
-%%
-%% @end
-%%--------------------------------------------------------------------
-%% consumer_handshake
-%% consumer_removed
-%%
-
-handle_cast({subscribe, Channel},
-	    #state{code=Consumer}=State) ->
-    Channel_pid = s_channel:get(Channel),
-    s_channel:add_handler(Channel_pid, Channel, self()),
-    ets:insert(channel_to_consumer, {Channel, Consumer}),
-    ets:insert(consumer_to_channel, {Consumer, Channel}),
-    {noreply,State};
-
-
 handle_cast({push_message, Channel, Message},
 	    #state{messages=Messages_dict}=State) ->
     error_logger:info_report({message_received, Channel, Message}),
