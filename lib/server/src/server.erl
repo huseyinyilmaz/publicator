@@ -55,9 +55,9 @@ get_messages(Consumer_code) ->
     Consumer_pid = get_consumer(Consumer_code),
     s_consumer:get_messages(Consumer_pid).
 
-publish(Channel, Message)->
+publish(Channel_code, Message)->
     %% {ok, User_pid} = get_or_create_user(User_code),
-    Channel_pid = get_channel(Channel),
+    Channel_pid = get_channel(Channel_code),
     ok = s_channel:publish(Channel_pid, Message),
     ok.
 

@@ -35,7 +35,7 @@ get(Name)->
 
 publish(Channel_pid, Message) ->
     error_logger:info_report({s_channel__publish, Channel_pid, Message}),
-    gen_event:notify(Channel_pid, Message).
+    ok = gen_event:notify(Channel_pid, Message).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -70,7 +70,7 @@ add_handler(Pid, Channel, Consumer_pid) ->
 %%                  [{file,"proc_lib.erl"},{line,239}]}]}}}
 			      
     Res = gen_event:add_handler(Pid,
-				{?MODULE, Channel, Consumer_pid},
+				{?MODULE, {Channel, Consumer_pid}},
 				[Channel, Consumer_pid]),
     error_logger:info_report({s_channel__add_channel, Channel, Consumer_pid, Res}),
     Res.
