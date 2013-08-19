@@ -19,7 +19,8 @@ init()->
     ets:new(channel_to_consumer,[bag, public, named_table]),
     ets:new(consumer_to_channel,[bag, public, named_table]),
     ets:new(channels,[set, public, named_table]),
-    ets:new(consumers,[set, public, named_table]).
+    ets:new(consumers,[set, public, named_table]),
+    error_logger:info_report(eeeeeeeeeeeeeeeeeeeeee).
 
 get_channels()->
     ets:foldl(fun({Key,_Value},Acc) -> [Key| Acc] end, [], channels).
@@ -30,6 +31,9 @@ get_subscribtions(Consumer_code) ->
 
 get_channel(Channel_code) ->
     %% XXX if PID is dead, remove it and return not_found
+    error_logger:info_report({bbbbbbbbbbbbbb, Channel_code}),    
+    Val = ets:lookup(channels, Channel_code),
+    error_logger:info_report({ccccccccccccccc, Channel_code, Val}),    
     case ets:lookup(channels, Channel_code) of
 	[] -> {error, not_found};
 	%% {ok, Channel_pid} = s_channel_sup:start_child(Channel_code);
