@@ -25,7 +25,10 @@
 %%--------------------------------------------------------------------
 -spec start() -> ok.
 start() ->
-    application:start(server).
+    error_logger:info_report("server__start is being invoked"),
+    application:start(server),
+    error_logger:info_report("After application start").
+
 
 %%--------------------------------------------------------------------
 %% @doc
