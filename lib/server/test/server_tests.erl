@@ -4,9 +4,16 @@
 
 setup_server()->
     error_logger:info_report("Setup server"),
-    server:start().
+    timer:sleep(3000),
+    
+    server:start(),
+    timer:sleep(3000),
+
+    error_logger:info_report(application:which_applications()),
+    ok.
 
 cleanup_server(_)->
+    error_logger:info_report("Cleanup server"),
     server:stop().
 
 server_test_() ->
@@ -16,12 +23,19 @@ server_test_() ->
      {"Test main server functionality.",
       ?_test(
 	 begin
-	     application:ensure_started(server),
+	     server:start(),
+	     error_logger:info_report(application:which_applications()),
+	     timer:sleep(2000),
+	     %% error_logger:info_report("1"),
+	     %% server:start(),
+	     %% error_logger:info_report("2"),
+	     %% application:ensure_started(server),
+
+	     error_logger:info_report("3"),
 	     Consumer_code = <<"consumercode">>,
 	     Channel_code = <<"channelcode">>,
 	     error_logger:info_report("server_test start"),
-	     timer:sleep(5000),
-	     Ress = server:subscribe(Channel_code, Consumer_code),
+	     Ress = application:which_applications(),%server:subscribe(Channel_code, Consumer_code),
 	     error_logger:info_report({subscribe, "AAAAAAAAAAAAAAAAAAAAAAAAAA", Ress}),
 	     ?assertEqual(ok, ok)
 

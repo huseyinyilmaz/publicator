@@ -9,7 +9,7 @@
 -module(s_manager).
 
 %% API
--export([init/0]).
+-export([init/0, destroy/0]).
 -export([get_channel/1, get_consumer/1, get_channels/0,
 	 get_subscribtions/1, add_channel/2, add_consumer/2, bind/2, unbind/2]).
 %%%===================================================================
@@ -22,6 +22,13 @@ init()->
     ets:new(consumers,[set, public, named_table]),
     error_logger:info_report({s_manager__init, "Ets table initialization complete"}).
 
+destroy()->
+    ets:delete(channel_to_consumer),
+    ets:delete(consumer_to_channel),
+    ets:delete(channels),
+    ets:delete(consumers),
+    error_logger:info_report({s_manager__destroy, "Ets table removal complete"}).
+    
 get_channels()->
     ets:foldl(fun({Key,_Value},Acc) -> [Key| Acc] end, [], channels).
 

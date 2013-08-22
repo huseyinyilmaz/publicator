@@ -36,7 +36,6 @@
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
     error_logger:info_report("Server Application is being started"),
-
     %% Create a global named tables
     s_manager:init(),
     %% Start main supervisor
