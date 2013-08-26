@@ -14,7 +14,8 @@
 %% API
 -export([start_link/1, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
-	 get_messages/2, get_messages/1]).
+	 get_messages/2, get_messages/1, subscribe/2,
+	 publish/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -23,6 +24,7 @@
 -define(SERVER, ?MODULE). 
 
 -record(state, {code :: binary(),
+		channels :: dict(),
 		messages :: dict()}).
 
 %% -include("c_room_event.hrl").
@@ -83,8 +85,11 @@ stop(Pid) ->
 get_count() ->
     {ok, ets:info(consumer, size)}.
 
+subscribe(Pid, Channel_code)->
+    gen_server:cast(Pid, {subscribe, Channel_code}).
 
-				  
+publish(Pid, Channel_code, Message)->
+    gen_server:cast(Pid, {publish, Channel_code, Message}).
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -161,7 +166,22 @@ handle_cast({push_message, Channel, Message},
 	    #state{messages=Messages_dict}=State) ->
     error_logger:info_report({message_received, Channel, Message}),
     {noreply, State#state{messages=dict:append(Channel, Message, Messages_dict)}};
-	     
+
+handle_cast({subscribe, Channel_code},
+	    #state{channels=Channels_dict}=State) ->
+    Channel_pid = s_manager:get_channel(Channel_code),
+    %% if value is already exist in the dictionary log a warning
+    case dict:is_key(Channel_pid, Channels_dict) of
+	true ->
+	    error_logger:warning_report("Value Already_exist ~p~n",[Channel_code]);
+	false ->
+	    ok
+    end,
+    logger:info({s_consumer__handle_cast__subscribe, Channel_code}),
+    {noreply, State#state{channels=dict:store(Channel_code,
+					      Channel_pid,
+					      Channels_dict)}};
+
 handle_cast(stop, State) ->
     {stop, normal, State}.
 
