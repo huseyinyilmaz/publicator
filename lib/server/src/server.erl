@@ -54,58 +54,36 @@ get_messages(Consumer_code, Channel) ->
 
 -spec get_messages(binary()) -> {ok, undefined}.
 get_messages(Consumer_code) ->
-    Consumer_pid = get_consumer(Consumer_code),
-    s_consumer:get_messages(Consumer_pid).
+    %% Consumer_pid = get_consumer(Consumer_code),
+    %% s_consumer:get_messages(Consumer_pid).
+    ok.
 
 publish(Channel_code, Message)->
     %% {ok, User_pid} = get_or_create_user(User_code),
-    Channel_pid = get_channel(Channel_code),
-    ok = s_channel:publish(Channel_pid, Message),
+    %% Channel_pid = get_channel(Channel_code),
+    %% ok = s_channel:publish(Channel_pid, Message),
     ok.
 
 subscribe(Channel_code, Consumer_code) ->
     error_logger:info_report({subscribe, Channel_code, Consumer_code}),
-    Channel_pid = get_channel(Channel_code),
-    Consumer_pid = get_consumer(Consumer_code),
-    ok = s_manager:bind(Channel_code, Consumer_code),
-    s_channel:add_handler(Channel_pid, Channel_code, Consumer_pid),
+    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
+    ok = s_consumer:subscribe(Consumer_pid, Channel_code),
     ok.
 
 unsubscribe(Channel_code, Consumer_code) ->
     error_logger:info_report({unsubscribe, Channel_code, Consumer_code}),
-    Channel_pid = get_channel(Channel_code),
-    Consumer_pid = get_consumer(Consumer_code),
-    ok = s_manager:unbind(Channel_code, Consumer_code),
-    s_channel:delete_handler(Channel_pid, Consumer_pid),
+    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
+    ok = s_consumer:unsubscribe(Consumer_pid, Channel_code),
     ok.
 
 get_channels() ->
     {ok, s_manager:get_channels()}.
 
 get_subscribtions(Consumer_code) ->
-    {ok, s_manager:get_subscribtions(Consumer_code)}.
+    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
+    s_consumer:get_subscribsions(Consumer_pid).
+    
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-				      
-get_channel(Channel_code)->
-    case s_manager:get_channel(Channel_code) of
-	{error, not_found} -> {ok, Channel_pid} = s_channel_sup:start_child(),
-			      s_manager:add_channel(Channel_code, Channel_pid);
-	{ok, Pid} -> Channel_pid = Pid
-    end,
-    Channel_pid.
-
-get_consumer(Consumer_code)->
-    case s_manager:get_consumer(Consumer_code) of
-	{error, not_found} -> {ok, Consumer_pid} = s_consumer_sup:start_child(Consumer_code),
-			      s_manager:add_consumer(Consumer_code, Consumer_pid);
-	{ok, Pid} -> Consumer_pid = Pid
-    end,
-    Consumer_pid.
-
-
-		     
-						     
-

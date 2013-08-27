@@ -15,7 +15,7 @@
 -export([start_link/1, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
 	 get_messages/2, get_messages/1, subscribe/2,
-	 publish/3]).
+	 publish/3, get_subscribtions/1, unsubscribe/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -63,7 +63,7 @@ get(Code) ->
 
 -spec get_code(pid()) -> {ok,integer()}.
 get_code(Pid) ->
-    gen_server:call(Pid,get_code).
+    gen_server:call(Pid, get_code).
 
 get_messages(Pid) ->
     gen_server:call(Pid, get_messages).
@@ -88,8 +88,15 @@ get_count() ->
 subscribe(Pid, Channel_code)->
     gen_server:cast(Pid, {subscribe, Channel_code}).
 
+unsubscribe(Pid, Channel_code)->
+    gen_server:cast(Pid, {unsubscribe, Channel_code}).
+
+
 publish(Pid, Channel_code, Message)->
     gen_server:cast(Pid, {publish, Channel_code, Message}).
+
+get_subscribtions(Pid) ->
+    gen_server:call(Pid, get_subscribtions).
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -111,6 +118,7 @@ init([Code]) ->
 	{error, not_found} ->
 	    ets:insert(consumers, {Code, self()}),
 	    {ok, #state{code=Code,
+			channels=dict:new(),
 			messages=dict:new()}}
     end.
 
@@ -148,8 +156,11 @@ handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
 			 dict:to_list(Messages_dict)),
     error_logger:info_report({get_messages_callback_all_channels, Messages}),
     Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=dict:new()}}.
+    {reply, Reply, State#state{messages=dict:new()}};
 
+handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
+    Reply = {ok, dict:fetch_keys(Channels_dict)},
+    {reply,Reply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -169,7 +180,8 @@ handle_cast({push_message, Channel, Message},
 
 handle_cast({subscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
-    Channel_pid = s_manager:get_channel(Channel_code),
+    
+    {ok, Channel_pid} = s_manager:get_or_create_channel(Channel_code),
     %% if value is already exist in the dictionary log a warning
     case dict:is_key(Channel_pid, Channels_dict) of
 	true ->
@@ -177,10 +189,26 @@ handle_cast({subscribe, Channel_code},
 	false ->
 	    ok
     end,
-    logger:info({s_consumer__handle_cast__subscribe, Channel_code}),
+    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
     {noreply, State#state{channels=dict:store(Channel_code,
 					      Channel_pid,
 					      Channels_dict)}};
+
+handle_cast({unsubscribe, Channel_code},
+	    #state{channels=Channels_dict}=State) ->
+    
+    %% if value is already exist in the dictionary log a warning
+    case dict:find(Channel_code, Channels_dict) of
+	{ok, Channel_pid} ->
+	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
+	    error_logger:info_report({aaaaaaaaaaaaaaaaaaaaaaaaa,Channel_pid, self()}),
+	    ok = s_channel:delete_handler(Channel_pid, self());
+	error ->
+	    Channels_dict2 = Channels_dict,
+	    error_logger:warning_report("Value Already_exist ~p~n",[Channel_code])
+    end,
+    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
+    {noreply, State#state{channels=Channels_dict2}};
 
 handle_cast(stop, State) ->
     {stop, normal, State}.

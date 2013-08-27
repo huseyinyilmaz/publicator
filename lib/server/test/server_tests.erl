@@ -4,40 +4,39 @@
 
 setup_server()->
     error_logger:info_report("Setup server"),
-    timer:sleep(3000),
-    
-    server:start(),
-    timer:sleep(3000),
-
-    error_logger:info_report(application:which_applications()),
-    ok.
+    ok = application:start(sasl),
+    ok = server:start().
 
 cleanup_server(_)->
     error_logger:info_report("Cleanup server"),
-    server:stop().
+    ok = server:stop(),
+    ok = application:stop(sasl).
 
 server_test_() ->
     {setup,
      fun setup_server/0,
      fun cleanup_server/1,
-     {"Test main server functionality.",
+     {"Test subscribe unsubscribe functionality",
       ?_test(
 	 begin
-	     server:start(),
-	     error_logger:info_report(application:which_applications()),
-	     timer:sleep(2000),
-	     %% error_logger:info_report("1"),
-	     %% server:start(),
-	     %% error_logger:info_report("2"),
-	     %% application:ensure_started(server),
-
-	     error_logger:info_report("3"),
-	     Consumer_code = <<"consumercode">>,
+	     Consumer_code1 = <<"consumercode1">>,
+	     Consumer_code2 = <<"consumercode2">>,
 	     Channel_code = <<"channelcode">>,
-	     error_logger:info_report("server_test start"),
-	     Ress = application:which_applications(),%server:subscribe(Channel_code, Consumer_code),
-	     error_logger:info_report({subscribe, "AAAAAAAAAAAAAAAAAAAAAAAAAA", Ress}),
-	     ?assertEqual(ok, ok)
-
+             %% tests subscribe
+             ?assertEqual(ok, server:subscribe(Channel_code, Consumer_code1)),
+             ?assertEqual(ok, server:subscribe(Channel_code, Consumer_code2)),
+             %% {ok,[Channel_code]} = server:get_channels(),
+             %% {ok,[Channel_code]} = server:get_subscribtions(Consumer_code1),
+             %% {ok,[Channel_code]} = server:get_subscribtions(Consumer_code2),
+         
+             %% tests unsubscribe
+             ?assertEqual(ok, server:unsubscribe(Channel_code, Consumer_code1)),
+             ?assertEqual(ok, server:unsubscribe(Channel_code, Consumer_code2)),
+             %% error_logger:info_report({"debug", server:get_channels()}),
+             %% {ok,[Channel_code]} = server:get_channels(),
+             %% {ok,[]} = server:get_subscribtions(Consumer_code1),
+             %% {ok,[]} = server:get_subscribtions(Consumer_code2),
+             ok
+	     
 	 end)
      }}.

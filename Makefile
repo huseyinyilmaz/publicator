@@ -25,7 +25,7 @@ clean:
 	rm -f test/*.beam
 	rm -f erl_crash.dump
 
-test: clean eunit
+test: clean compile eunit
 
 eunit:
 	@$(REBAR) eunit skip_deps=true
