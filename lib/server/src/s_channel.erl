@@ -12,7 +12,7 @@
 
 -export([get/1, publish/2]).
 %% API
--export([start_link/0, add_handler/3, delete_handler/2]).
+-export([start_link/0, add_handler/2, delete_handler/2]).
 
 %% gen_event callbacks
 -export([init/1, handle_event/2, handle_call/2, 
@@ -54,8 +54,8 @@ start_link() ->
 %% @spec add_handler() -> ok | {'EXIT', Reason} | term()
 %% @end
 %%--------------------------------------------------------------------
--spec add_handler(pid(), binary(), pid()) -> ok | {'EXIT', term()} | term().
-add_handler(Pid, Channel, Consumer_pid) ->
+-spec add_handler(pid(), pid()) -> ok | {'EXIT', term()} | term().
+add_handler(Pid, Consumer_pid) ->
 %% =INFO REPORT==== 14-Aug-2013::23:17:19 ===
 %% {s_channel__add_channel,<<"val">>,<0.933.0>,
 %%     {'EXIT',
@@ -70,9 +70,9 @@ add_handler(Pid, Channel, Consumer_pid) ->
 %%                  [{file,"proc_lib.erl"},{line,239}]}]}}}
 			      
     Res = gen_event:add_handler(Pid,
-				{?MODULE, {Channel, Consumer_pid}},
-				[Channel, Consumer_pid]),
-    error_logger:info_report({s_channel__add_channel, Channel, Consumer_pid, Res}),
+				{?MODULE, Consumer_pid},
+				[Consumer_pid]),
+    error_logger:info_report({s_channel__add_channel, Consumer_pid, Res}),
     Res.
     
     
@@ -100,9 +100,8 @@ delete_handler(Pid, Upid) ->
 %% @spec init(Args) -> {ok, State}
 %% @end
 %%--------------------------------------------------------------------
-init([Channel, Pid]) ->
-    {ok, #state{consumer=Pid,
-		channel=Channel}}.
+init([Pid]) ->
+    {ok, #state{consumer=Pid}}.
 
 %%--------------------------------------------------------------------
 %% @private

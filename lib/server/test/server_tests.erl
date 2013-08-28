@@ -4,13 +4,13 @@
 
 setup_server()->
     error_logger:info_report("Setup server"),
-    ok = application:start(sasl),
+    %% ok = application:start(sasl),
     ok = server:start().
 
 cleanup_server(_)->
     error_logger:info_report("Cleanup server"),
-    ok = server:stop(),
-    ok = application:stop(sasl).
+    ok = server:stop().
+    %% ok = application:stop(sasl).
 
 server_test_() ->
     {setup,
