@@ -25,6 +25,7 @@
 
 -record(state, {code :: binary(),
 		channels :: dict(),
+		channels_cache ::dict(),
 		messages :: dict()}).
 
 %% -include("c_room_event.hrl").
@@ -74,8 +75,8 @@ get_messages(Pid, Channel_code) ->
 
 
 -spec push_message(pid(), binary(), binary())-> ok.
-push_message(Pid, Resource, Msg) ->
-    gen_server:cast(Pid, {push_message, Resource, Msg}).
+push_message(Pid, Channel_code, Message) ->
+    gen_server:cast(Pid, {push_message, Channel_code, Message}).
 
 -spec stop(pid()) -> ok.
 stop(Pid) ->
@@ -119,6 +120,7 @@ init([Code]) ->
 	    ets:insert(consumers, {Code, self()}),
 	    {ok, #state{code=Code,
 			channels=dict:new(),
+			channels_cache=dict:new(),
 			messages=dict:new()}}
     end.
 
@@ -173,15 +175,16 @@ handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
 %% @end
 %%--------------------------------------------------------------------
 
-handle_cast({push_message, Channel, Message},
+handle_cast({push_message, Channel_code, Message},
 	    #state{messages=Messages_dict}=State) ->
-    error_logger:info_report({message_received, Channel, Message}),
-    {noreply, State#state{messages=dict:append(Channel, Message, Messages_dict)}};
+    error_logger:info_report({message_received, Channel_code, Message}),
+    error_logger:info_report(State#state{messages=dict:append(Channel_code, Message, Messages_dict)}),
+    {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)}};
 
 handle_cast({subscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
     
-    {ok, Channel_pid} = s_manager:get_or_create_channel(Channel_code),
+    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
     %% if value is already exist in the dictionary log a warning
     case dict:is_key(Channel_pid, Channels_dict) of
 	true ->
@@ -189,10 +192,16 @@ handle_cast({subscribe, Channel_code},
 	false ->
 	    ok
     end,
+    ok = s_channel:add_handler(Channel_pid, Channel_code, self()),
     error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
-    {noreply, State#state{channels=dict:store(Channel_code,
-					      Channel_pid,
-					      Channels_dict)}};
+    {noreply, State2#state{channels=dict:store(Channel_code,
+					       Channel_pid,
+					       Channels_dict)}};
+
+handle_cast({publish, Channel_code, Message}, State) ->
+    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
+    s_channel:publish(Channel_pid, self(), Message),
+    {noreply, State2};
 
 handle_cast({unsubscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
@@ -201,7 +210,6 @@ handle_cast({unsubscribe, Channel_code},
     case dict:find(Channel_code, Channels_dict) of
 	{ok, Channel_pid} ->
 	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
-	    error_logger:info_report({aaaaaaaaaaaaaaaaaaaaaaaaa,Channel_pid, self()}),
 	    ok = s_channel:delete_handler(Channel_pid, self());
 	error ->
 	    Channels_dict2 = Channels_dict,
@@ -255,13 +263,28 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Sends consumer data to handler
-%%
-%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% @end
-%%--------------------------------------------------------------------
-send_msg_notification(Handler)->
-    Handler ! {have_message, self()}.
+
+%%% Gets Channel from subscribtions list or channels cache,
+%%% If it cannot find it, function fill query the global channel list
+get_cached_channel(Channel_code, #state{channels=Channels_dict,
+					channels_cache=Channels_cache_dict}=State) ->
+    case dict:find(Channel_code, Channels_dict) of
+	{ok, Channel_pid} -> Result = Channel_pid,
+			     {ok, Result, State};
+	error ->
+	    case dict:find(Channel_code, Channels_cache_dict) of
+		{ok, Cached_channel_pid} -> Result = Cached_channel_pid,
+					    {ok, Result, State};
+		error ->
+		    %% result is not in Channel_dict nor Channel_cache_dict
+		    {ok, New_channel_pid}
+			= s_manager:get_or_create_channel(Channel_code),
+		    State2 = State#state{channels_cache=
+					     dict:store(Channel_code,
+							New_channel_pid,
+							Channels_cache_dict)},
+		    {ok, New_channel_pid, State2}
+	    end
+    end.
+
+    

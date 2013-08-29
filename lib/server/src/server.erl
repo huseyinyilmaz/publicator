@@ -10,7 +10,7 @@
 
 %% API
 -export([start/0, stop/0]).
--export([get_messages/2, get_messages/1, publish/2,
+-export([get_messages/2, get_messages/1, publish/3,
 	 subscribe/2, unsubscribe/2,
 	 get_channels/0, get_subscribtions/1]).
 
@@ -58,19 +58,18 @@ get_messages(Consumer_code) ->
     %% s_consumer:get_messages(Consumer_pid).
     ok.
 
-publish(Channel_code, Message)->
-    %% {ok, User_pid} = get_or_create_user(User_code),
-    %% Channel_pid = get_channel(Channel_code),
-    %% ok = s_channel:publish(Channel_pid, Message),
-    ok.
+publish(Consumer_code, Channel_code, Message)->
+    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
+    ok = s_consumer:publish(Consumer_pid, Channel_code, Message).
 
-subscribe(Channel_code, Consumer_code) ->
+
+subscribe(Consumer_code, Channel_code) ->
     error_logger:info_report({subscribe, Channel_code, Consumer_code}),
     {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
     ok = s_consumer:subscribe(Consumer_pid, Channel_code),
     ok.
 
-unsubscribe(Channel_code, Consumer_code) ->
+unsubscribe(Consumer_code, Channel_code) ->
     error_logger:info_report({unsubscribe, Channel_code, Consumer_code}),
     {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
     ok = s_consumer:unsubscribe(Consumer_pid, Channel_code),
@@ -81,7 +80,7 @@ get_channels() ->
 
 get_subscribtions(Consumer_code) ->
     {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    s_consumer:get_subscribsions(Consumer_pid).
+    s_consumer:get_subscribtions(Consumer_pid).
     
 
 %%%===================================================================

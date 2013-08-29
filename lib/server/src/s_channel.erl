@@ -10,9 +10,9 @@
 
 -behaviour(gen_event).
 
--export([get/1, publish/2]).
+-export([get/1, publish/3]).
 %% API
--export([start_link/0, add_handler/2, delete_handler/2]).
+-export([start_link/0, add_handler/3, delete_handler/2]).
 
 %% gen_event callbacks
 -export([init/1, handle_event/2, handle_call/2, 
@@ -33,9 +33,10 @@ get(Name)->
 	{ok, Pid} -> {ok, Pid}
     end.
 
-publish(Channel_pid, Message) ->
-    error_logger:info_report({s_channel__publish, Channel_pid, Message}),
-    ok = gen_event:notify(Channel_pid, Message).
+
+publish(Channel_pid, Consumer_pid, Message) ->
+    error_logger:info_report({s_channel__publish, Channel_pid, Consumer_pid, Message}),
+    ok = gen_event:notify(Channel_pid, {Consumer_pid, Message}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -54,24 +55,11 @@ start_link() ->
 %% @spec add_handler() -> ok | {'EXIT', Reason} | term()
 %% @end
 %%--------------------------------------------------------------------
--spec add_handler(pid(), pid()) -> ok | {'EXIT', term()} | term().
-add_handler(Pid, Consumer_pid) ->
-%% =INFO REPORT==== 14-Aug-2013::23:17:19 ===
-%% {s_channel__add_channel,<<"val">>,<0.933.0>,
-%%     {'EXIT',
-%%         {undef,
-%%             [{s_channel,init,
-%%                  [[<<"val">>,<0.933.0>],{s_channel,<<"val">>,<0.933.0>}],
-%%                  []},
-%%              {gen_event,server_add_handler,4,
-%%                  [{file,"gen_event.erl"},{line,418}]},
-%%              {gen_event,handle_msg,5,[{file,"gen_event.erl"},{line,280}]},
-%%              {proc_lib,init_p_do_apply,3,
-%%                  [{file,"proc_lib.erl"},{line,239}]}]}}}
-			      
+-spec add_handler(pid(),binary() ,pid()) -> ok | {'EXIT', term()} | term().
+add_handler(Pid, Channel_code, Consumer_pid) ->
     Res = gen_event:add_handler(Pid,
 				{?MODULE, Consumer_pid},
-				[Consumer_pid]),
+				[Consumer_pid, Channel_code]),
     error_logger:info_report({s_channel__add_channel, Consumer_pid, Res}),
     Res.
     
@@ -100,8 +88,9 @@ delete_handler(Pid, Upid) ->
 %% @spec init(Args) -> {ok, State}
 %% @end
 %%--------------------------------------------------------------------
-init([Pid]) ->
-    {ok, #state{consumer=Pid}}.
+init([Pid, Channel_code]) ->
+    {ok, #state{consumer=Pid,
+		channel=Channel_code}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -120,11 +109,15 @@ init([Pid]) ->
 					{swap_handler, term(), term(), term(), term()} |
 					remove_handler.
 
-handle_event(Message, #state{channel=Channel,
-			     consumer=Consumer_pid}=State) ->
-    error_logger:info_report(aaaaaaaaaaaaaaaaaaaaaaaaaa_handle_event,Message,Consumer_pid),
+%%% if owner of message is this consumer do not send message
+handle_event({_Consumer_pid, _Message}, #state{consumer=_Consumer_pid}=State) ->
+    {ok, State};
+
+handle_event({_Owner_Consumer_pid, Message}, #state{channel=Channel_code,
+					     consumer=Consumer_pid}=State) ->
+    error_logger:info_report({aaaaaaaaaaaaaaaaaaaaaaaaaa_handle_event,Message,Consumer_pid}),
     %% if user is dead remove handler
-    s_user:add_message(Consumer_pid, Channel, Message),
+    s_consumer:push_message(Consumer_pid, Channel_code, Message),
     {ok, State}.
 
 %%--------------------------------------------------------------------
