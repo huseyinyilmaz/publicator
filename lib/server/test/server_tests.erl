@@ -38,6 +38,8 @@ server_test_() ->
              %% tests subscribe
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
+	     % make sure to wait until consumers register themselves
+	     timer:sleep(20),
 	     %% test get channels
              {ok,[Channel_code]} = server:get_channels(),
 	     %% test get subscribtions
@@ -48,12 +50,13 @@ server_test_() ->
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE2),
 
 
-
 	     %% ok = server:publish(Consumer_code2, Channel_code, ?MESSAGE2),
 	     
              %% tests unsubscribe
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code)),
+	     % make sure to wait until consumers unregister themselves
+	     timer:sleep(20),
              %% error_logger:info_report({"debug", server:get_channels()}),
              {ok,[Channel_code]} = server:get_channels(),
              {ok,[]} = server:get_subscribtions(Consumer_code1),
