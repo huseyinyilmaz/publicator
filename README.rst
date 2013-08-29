@@ -10,6 +10,10 @@
 
 
 ----
+|build|_
 
 
 in-memory pub-sub server that works on http-rest interface.
+
+.. |build| image:: https://travis-ci.org/huseyinyilmaz/talkybee.png
+.. _build: https://travis-ci.org/huseyinyilmaz/talkybee
