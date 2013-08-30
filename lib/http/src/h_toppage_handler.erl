@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
 %% @doc Hello world handler.
--module(r_toppage_handler).
+-module(h_toppage_handler).
 
 -export([init/3]).
 -export([content_types_provided/2, allowed_methods/2, known_methods/2

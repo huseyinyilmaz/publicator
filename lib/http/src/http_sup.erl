@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
 %% @private
--module(rest_sup).
+-module(http_sup).
 -behaviour(supervisor).
 
 %% API.

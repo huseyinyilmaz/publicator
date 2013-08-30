@@ -2,11 +2,11 @@
 %%% @author Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%% @copyright (C) 2013, Huseyin Yilmaz
 %%% @doc
-%%% utility functions for rest application
+%%% utility functions for http application
 %%% @end
 %%% Created :  6 Jul 2013 by Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%%-------------------------------------------------------------------
--module(r_utils).
+-module(h_utils).
 
 %% API
 -export([get_or_create_session/1, drop_session/1]).

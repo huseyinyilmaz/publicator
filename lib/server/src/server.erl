@@ -62,7 +62,7 @@ publish(Consumer_code, Channel_code, Message)->
 
 
 subscribe(Consumer_code, Channel_code) ->
-    error_logger:info_report({subscribe, Channel_code, Consumer_code}),
+    error_logger:info_report({subscribe, Consumer_code, Channel_code}),
     {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
     ok = s_consumer:subscribe(Consumer_pid, Channel_code),
     ok.

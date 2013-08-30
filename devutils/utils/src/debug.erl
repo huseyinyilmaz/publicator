@@ -30,7 +30,7 @@ init() ->
     code:add_patha("deps/cowboy/ebin"),
     code:add_patha("deps/jiffy/ebin"),
     code:add_patha("deps/mimetypes/ebin"),
-    code:add_patha("lib/rest/ebin"),
+    code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
     sync:go(),
     ok.
@@ -39,12 +39,12 @@ init() ->
 start() ->
     io:format("Starting apps", []),
     ok = server:start(),
-    ok = rest:start(),
+    ok = http:start(),
     ok.
 
 -spec stop() -> ok.
 stop() ->
-    rest:stop(),
+    http:stop(),
     server:stop(),
     ok.
 

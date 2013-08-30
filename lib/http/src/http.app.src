@@ -1,5 +1,5 @@
-{application, rest, [
-	{description, "Rest interface implementation for publicator"},
+{application, http, [
+	{description, "Http interface implementation for publicator"},
 	{vsn, "1"},
 	{modules, []},
 	{registered, []},
@@ -8,6 +8,6 @@
 		stdlib,
 		cowboy
 	]},
-	{mod, {rest_app, []}},
+	{mod, {http_app, []}},
 	{env, []}
 ]}.

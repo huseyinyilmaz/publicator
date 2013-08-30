@@ -22,7 +22,7 @@ compile:
 
 clean:
 	@$(REBAR) clean
-	rm -f test/*.beam
+	if [ -d "test" ]; then rm -f test/*.beam; fi
 	rm -f erl_crash.dump
 
 test: clean compile eunit

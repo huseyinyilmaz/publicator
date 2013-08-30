@@ -5,7 +5,7 @@
 %%% @end
 %%% Created : 12 Jul 2013 by Huseyin Yilmaz <huseyin@saturn.local>
 
--module(r_message_handler).
+-module(h_subscribtion_handler).
 
 -export([init/3, allowed_methods/2, content_types_accepted/2, delete_resource/2]).
 -export([post_json/2]).
@@ -14,7 +14,7 @@ init(_Transport, _Req, []) ->
 	{upgrade, protocol, cowboy_rest}.
 
 allowed_methods(Req, State) ->
-    {[<<"POST">>], Req, State}.
+    {[<<"POST">>, <<"DELETE">>], Req, State}.
 
 %% POST
 content_types_accepted(Req, State)->
@@ -26,21 +26,26 @@ content_types_accepted(Req, State)->
 
 post_json(Req, State) ->
     error_logger:info_report(post_json),
-    {Session_id, Req1} = r_utils:get_or_create_session(Req),
-    {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
-    {ok, [{<<"message">>, Message}], Req3} = cowboy_req:body_qs(Req2),
-    error_logger:info_report({post_json, Session_id, Message}),
-    ok = r_server_adapter:publish(Session_id, Channel_code, Message),
-    {true, Req3, State}.
+    {Session_id, Req1} = h_utils:get_or_create_session(Req),
+    {Method, Req2} = cowboy_req:method(Req1),
+    {Channel_code, Req3} = cowboy_req:binding(channel, Req2),
+    case {Method, Channel_code} of
+	{ _, undefined} -> Result_status = false;
+	{<<"POST">>, Channel_code} ->
+	    ok = h_server_adapter:subscribe(Session_id, Channel_code),
+	    Result_status = true;
+	_ -> Result_status = false
+    end,
+    {Result_status, Req3, State}.
 
 delete_resource(Req, State) ->
     error_logger:info_report(delete_resource),
-    {Session_id, Req1} = r_utils:get_or_create_session(Req),
+    {Session_id, Req1} = h_utils:get_or_create_session(Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
     case Channel_code of
 	undefined -> Result_status = false;
 	Channel_code ->
-	    ok = r_server_adapter:unsubscribe(Channel_code, Session_id),
+	    ok = h_server_adapter:unsubscribe(Session_id, Channel_code),
 	    Result_status = true
     end,
     

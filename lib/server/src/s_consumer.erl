@@ -45,7 +45,6 @@ start_link(Code) ->
 
 -spec get(binary()) -> {ok, pid()} | {error, not_found}.
 get(Code) ->
-    error_logger:info_report({s_consumer__get, {code, Code}}),
     %% check if ets table has given Pid
     %% if it doesn't or value is a dead process
     %% set value to undefined.
@@ -151,7 +150,7 @@ handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=
 		   {ok, Result} -> Result
 	       end,
     Messages_dict2 = dict:erase(Channel_code, Messages_dict),
-    error_logger:info_report({get_messages__channel_code, Messages_dict, Messages_dict2, Messages}),
+    error_logger:info_report({get_messages__channel_code, Messages}),
     Reply = {ok, Messages},
     {reply, Reply, State#state{messages=Messages_dict2}};
 
@@ -181,7 +180,6 @@ handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
 handle_cast({push_message, Channel_code, Message},
 	    #state{messages=Messages_dict}=State) ->
     error_logger:info_report({message_received, Channel_code, Message}),
-    error_logger:info_report(State#state{messages=dict:append(Channel_code, Message, Messages_dict)}),
     {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)}};
 
 handle_cast({subscribe, Channel_code},
@@ -189,17 +187,16 @@ handle_cast({subscribe, Channel_code},
     
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
     %% if value is already exist in the dictionary log a warning
-    case dict:is_key(Channel_pid, Channels_dict) of
+    case dict:is_key(Channel_code, Channels_dict) of
 	true ->
-	    error_logger:warning_report("Value Already_exist ~p~n",[Channel_code]);
+	    {noreply,State};
 	false ->
-	    ok
-    end,
-    ok = s_channel:add_handler(Channel_pid, Channel_code, self()),
-    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
-    {noreply, State2#state{channels=dict:store(Channel_code,
+	    ok = s_channel:add_handler(Channel_pid, Channel_code, self()),
+	    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
+	    {noreply, State2#state{channels=dict:store(Channel_code,
 					       Channel_pid,
-					       Channels_dict)}};
+					       Channels_dict)}}
+    end;
 
 handle_cast({publish, Channel_code, Message}, State) ->
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
@@ -215,8 +212,7 @@ handle_cast({unsubscribe, Channel_code},
 	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
 	    ok = s_channel:delete_handler(Channel_pid, self());
 	error ->
-	    Channels_dict2 = Channels_dict,
-	    error_logger:warning_report("Value Already_exist ~p~n",[Channel_code])
+	    Channels_dict2 = Channels_dict
     end,
     error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
     {noreply, State#state{channels=Channels_dict2}};

@@ -4,16 +4,11 @@
 
 -define(CONSUMER1, <<"consumercode1">>).
 -define(CONSUMER2, <<"consumercode2">>).
-
-
-
-
-
-
 -define(CHANNEL1, <<"channelcode1">>).
 -define(CHANNEL2, <<"channelcode2">>).
 -define(MESSAGE1, <<"message1">>).
 -define(MESSAGE2, <<"message2">>).
+-define(DELAY, 50).
 
 setup_server()->
     error_logger:info_report("Setup server"),
@@ -39,9 +34,13 @@ server_test_() ->
              %% tests subscribe
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
+	     %% multiple subscribtions to same Channel should not create multiple
+	     %% channel event handlers
+             ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
+             ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
 
 	     % make sure to wait until consumers register themselves
-	     timer:sleep(20),
+	     timer:sleep(?DELAY),
 	     %% test get channels
              {ok,[Channel_code]} = server:get_channels(),
 	     %% test get subscribtions
@@ -51,7 +50,7 @@ server_test_() ->
 	     %% test send message
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1),
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE2),
-	     timer:sleep(20),
+	     timer:sleep(?DELAY),
 	     %% test get_messages
 	     {ok, Messages} = server:get_messages(Consumer_code2),
 	     ?assertEqual({ok,[?MESSAGE1, ?MESSAGE2]}, dict:find(Channel_code, Messages)),
@@ -63,10 +62,10 @@ server_test_() ->
 	     ?assertEqual(error, dict:find(Channel_code, Messages3)),
 	     %% make sure that channels are seperate
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2)),
-	     timer:sleep(20),
+	     timer:sleep(?DELAY),
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1),
              ok = server:publish(Consumer_code1, Channel_code2, ?MESSAGE2),
-	     timer:sleep(20),
+	     timer:sleep(?DELAY),
 	     %% test get_messages single channel
 	     ?assertEqual({ok,[?MESSAGE1]},
 			  server:get_messages(Consumer_code2, Channel_code)),
@@ -81,7 +80,7 @@ server_test_() ->
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code)),
 	     % make sure to wait until consumers unregister themselves
-	     timer:sleep(20),
+	     timer:sleep(?DELAY),
              %% error_logger:info_report({"debug", server:get_channels()}),
              ?assertEqual({ok,[Channel_code2, Channel_code]}, server:get_channels()),
              ?assertEqual({ok,[]}, server:get_subscribtions(Consumer_code1)),

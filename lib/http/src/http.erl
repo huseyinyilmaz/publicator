@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 06 Jul 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
--module(rest).
+-module(http).
 
 %% API
 -export([start/0, stop/0]).
@@ -25,7 +25,7 @@ start() ->
 	ok = application:start(crypto),
 	ok = application:start(ranch),
 	ok = application:start(cowboy),
-        ok = application:start(rest).
+        ok = application:start(http).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -34,7 +34,7 @@ start() ->
 %%--------------------------------------------------------------------
 -spec stop() -> ok.
 stop() ->
-    ok = application:stop(rest),
+    ok = application:stop(http),
     ok = application:stop(cowboy),
     ok = application:stop(ranch),
     ok = application:stop(crypto).

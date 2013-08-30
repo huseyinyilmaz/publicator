@@ -5,7 +5,7 @@
 %%% @end
 %%% Created : 12 Jul 2013 by Huseyin Yilmaz <huseyin@saturn.local>
 
--module(r_message_get_handler).
+-module(h_message_get_handler).
 
 -export([init/3, allowed_methods/2,
 	 content_types_provided/2]).
@@ -29,19 +29,19 @@ content_types_provided(Req, State) ->
 
 %% called for Get Request
 get_json(Req, State) ->
-    {Session_id, Req1} = r_utils:get_or_create_session(Req),
+    {Session_id, Req1} = h_utils:get_or_create_session(Req),
     {Method, Req2} = cowboy_req:method(Req1),
     {Channel_code, Req3} = cowboy_req:binding(channel, Req2),
     
-    error_logger:info_report({get_json, sessin_id, Session_id}),
-    %% {ok, Response} = r_server_adapter:get_channels(),
+    error_logger:info_report({get_json, session_id, Session_id}),
+    %% {ok, Response} = h_server_adapter:get_channels(),
     %% Body = jiffy:encode(Response),
     %% {Body, Req1, State}.
     case Channel_code of
 	undefined ->
-	    {ok, Result_text} = r_server_adapter:get_messages(Session_id),
-	    error_logger:info_report({xxxxxxxxxxxxxxxxxx, Result_text}),
-	    Body = jiffy:encode(Result_text);
+	    {ok, Result_text} = h_server_adapter:get_messages(Session_id),
+	    error_logger:info_report({jiffy,jiffy:encode({dict:to_list(Result_text)})}),
+	    Body = jiffy:encode({dict:to_list(Result_text)});
 	{_, Channel_code} -> Body = <<"Unknown method">> %% fix this
     end,
     
