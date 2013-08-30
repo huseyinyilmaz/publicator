@@ -45,18 +45,16 @@ stop() ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
--spec get_messages(binary(), binary()) -> {ok, undefined}.
-get_messages(Consumer_code, Channel) ->
-    %% {ok, Consumer_code1, Consumer_pid} = get_or_create_consumer(Consumer_code),
-    %% {ok, Messages} = s_consumer:get_messages(Consumer_pid, Channel),
-    %% {ok, Consumer_code1, Messages}.
-    ok.
-
--spec get_messages(binary()) -> {ok, undefined}.
+-spec get_messages(binary(), binary()) -> {ok, [binary()]}.
+get_messages(Consumer_code, Channel_code) ->
+    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
+    s_consumer:get_messages(Consumer_pid, Channel_code).
+ 
+-spec get_messages(binary()) -> {ok, dict()}.
 get_messages(Consumer_code) ->
-    %% Consumer_pid = get_consumer(Consumer_code),
-    %% s_consumer:get_messages(Consumer_pid).
-    ok.
+    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
+    s_consumer:get_messages(Consumer_pid).
+
 
 publish(Consumer_code, Channel_code, Message)->
     {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),

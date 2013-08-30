@@ -17,24 +17,20 @@
 %%% API
 %%%===================================================================
 init()->
-    ets:new(channels,[set, public, named_table]),
-    ets:new(consumers,[set, public, named_table]),
-    error_logger:info_report({s_manager__init, "Ets table initialization complete"}).
+    channels = ets:new(channels,[set, public, named_table]),
+    consumers = ets:new(consumers,[set, public, named_table]).
 
 destroy()->
-    ets:delete(channels),
-    ets:delete(consumers),
-    error_logger:info_report({s_manager__destroy, "Ets table removal complete"}).
-    
+    true = ets:delete(channels),
+    true = ets:delete(consumers),
+    ok.
+
 get_channels()->
     ets:foldl(fun({Key,_Value},Acc) -> [Key| Acc] end, [], channels).
 
 
 get_channel(Channel_code) ->
     %% XXX if PID is dead, remove it and return not_found
-    error_logger:info_report({get_channel_before_ets_lookup, Channel_code}),    
-    Val = ets:lookup(channels, Channel_code),
-    error_logger:info_report({get_channel_after_ets_lookup, Channel_code, Val}),    
     case ets:lookup(channels, Channel_code) of
 	[] -> {error, not_found};
 	%% {ok, Channel_pid} = s_channel_sup:start_child(Channel_code);

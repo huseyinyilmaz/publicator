@@ -43,7 +43,7 @@ start_link(Code) ->
     error_logger:info_report({consumer_start_link, Code}),
     gen_server:start_link(?SERVER, [Code], []).
 
--spec get(binary()) -> {ok,undefined}.
+-spec get(binary()) -> {ok, pid()} | {error, not_found}.
 get(Code) ->
     error_logger:info_report({s_consumer__get, {code, Code}}),
     %% check if ets table has given Pid
@@ -62,14 +62,16 @@ get(Code) ->
 	end.
 
 
--spec get_code(pid()) -> {ok,integer()}.
+-spec get_code(pid()) -> {ok, binary()}.
 get_code(Pid) ->
     gen_server:call(Pid, get_code).
 
+-spec get_messages(pid()) -> {ok, dict()}.
 get_messages(Pid) ->
     gen_server:call(Pid, get_messages).
 
--spec get_messages(integer(), integer()) -> {undefined}.
+
+-spec get_messages(pid(), binary()) -> {ok, [binary()]}.
 get_messages(Pid, Channel_code) ->
     gen_server:call(Pid, {get_messages, Channel_code}).
 
@@ -143,20 +145,21 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     {reply, Reply, State};
 
 %% Gets all messages for this user
-handle_call({get_messages, Resource_name}, _From, #state{messages=Messages_dict}=State) ->
-    Messages = case dict:find(Resource_name, Messages_dict) of
+handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=State) ->
+    Messages = case dict:find(Channel_code, Messages_dict) of
 		   error -> [];
 		   {ok, Result} -> Result
 	       end,
-    Messages_dict2 = dict:erase(Resource_name, Messages_dict),
+    Messages_dict2 = dict:erase(Channel_code, Messages_dict),
+    error_logger:info_report({get_messages__channel_code, Messages_dict, Messages_dict2, Messages}),
     Reply = {ok, Messages},
     {reply, Reply, State#state{messages=Messages_dict2}};
 
 %% Gets all messages for this user and returns them
 handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
-    Messages = lists:map(fun({_Key, Value}) -> Value end,
-			 dict:to_list(Messages_dict)),
-    error_logger:info_report({get_messages_callback_all_channels, Messages}),
+    %% Messages = lists:map(fun({_Key, Value}) -> Value end,
+    %% 			 dict:to_list(Messages_dict)),
+    Messages = Messages_dict,
     Reply = {ok, Messages},
     {reply, Reply, State#state{messages=dict:new()}};
 

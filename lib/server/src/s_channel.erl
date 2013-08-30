@@ -10,7 +10,7 @@
 
 -behaviour(gen_event).
 
--export([get/1, publish/3]).
+-export([publish/3]).
 %% API
 -export([start_link/0, add_handler/3, delete_handler/2]).
 
@@ -26,13 +26,6 @@
 %%%===================================================================
 %%% gen_event callbacks
 %%%===================================================================
-get(Name)->
-    case s_manager:get(Name) of
-	{error, not_found} -> {ok, Resource} = s_resource_sup:start_child(Name),
-			      {ok, Resource};
-	{ok, Pid} -> {ok, Pid}
-    end.
-
 
 publish(Channel_pid, Consumer_pid, Message) ->
     error_logger:info_report({s_channel__publish, Channel_pid, Consumer_pid, Message}),
@@ -92,22 +85,14 @@ init([Pid, Channel_code]) ->
     {ok, #state{consumer=Pid,
 		channel=Channel_code}}.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
 %% Whenever an event manager receives an event sent using
 %% gen_event:notify/2 or gen_event:sync_notify/2, this function is
 %% called for each installed event handler to handle the event.
-%%
-%% @spec handle_event(Event, State) ->
-%%                          {ok, State} |
-%%                          {swap_handler, Args1, State1, Mod2, Args2} |
-%%                          remove_handler
-%% @end
-%%--------------------------------------------------------------------
--spec handle_event(binary(), term()) -> {ok, term()} |
-					{swap_handler, term(), term(), term(), term()} |
-					remove_handler.
+-spec handle_event(term(), term()) ->
+			  {ok,_} |
+			  {ok,_,hibernate} |
+			  {swap_handler,_,_,atom() | {atom(),_},_}.
+
 
 %%% if owner of message is this consumer do not send message
 handle_event({_Consumer_pid, _Message}, #state{consumer=_Consumer_pid}=State) ->
@@ -115,7 +100,6 @@ handle_event({_Consumer_pid, _Message}, #state{consumer=_Consumer_pid}=State) ->
 
 handle_event({_Owner_Consumer_pid, Message}, #state{channel=Channel_code,
 					     consumer=Consumer_pid}=State) ->
-    error_logger:info_report({aaaaaaaaaaaaaaaaaaaaaaaaaa_handle_event,Message,Consumer_pid}),
     %% if user is dead remove handler
     s_consumer:push_message(Consumer_pid, Channel_code, Message),
     {ok, State}.

@@ -30,12 +30,18 @@ test: clean compile eunit
 eunit:
 	@$(REBAR) eunit skip_deps=true
 
+build-erlang-plt:
+	@$(DIALYZER) --build_plt --output_plt .erlang_dialyzer.plt \
+		--apps erts kernel stdlib ssl crypto
+
 build-plt:
-	@$(DIALYZER) --build_plt --output_plt .publicator_dialyzer.plt \
-		--apps kernel stdlib deps/*
+	@$(DIALYZER) --build_plt --add_to_plt --plt .erlang_dialyzer.plt \
+		--output_plt .publicator_dialyzer.plt \
+		--apps deps/*
 
 dialyze:
-	@$(DIALYZER) --src lib/*/src --plt .publicator_dialyzer.plt -Werror_handling \
+	@$(DIALYZER) --src lib/*/src --plt .publicator_dialyzer.plt\
+		-Werror_handling \
 		-Wrace_conditions -Wunmatched_returns # -Wunderspecs
 
 docs:
