@@ -3,6 +3,13 @@ REBAR = ./rebar
 MNESIA_DIR = /tmp/mnesia
 NODE_NAME = publicator
 
+pack: compile
+	@$(REBAR) generate
+	cd rel; tar -czvf publicator.tar.gz publicator
+	rm -rf rel/publicator
+	mv rel/publicator.tar.gz .
+	echo "publicator.tar.gz is created in current directory."
+
 # compile
 all: compile
 
@@ -56,10 +63,3 @@ start: compile
 	    -eval "debug:init(),\
 	           debug:start()."
 
-pack: init compile
-	@$(REBAR) generate
-	cp -r www rel/talkybee
-	cd rel; tar -czvf talkybee.tar.gz talkybee
-	rm -rf rel/talkybee
-	mv rel/talkybee.tar.gz .
-	echo "talkybee.tar.gz is created in current directory."

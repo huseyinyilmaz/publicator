@@ -42,7 +42,7 @@ get_json(Req, State) ->
 	    {ok, Result_text} = h_server_adapter:get_messages(Session_id),
 	    error_logger:info_report({jiffy,jiffy:encode({dict:to_list(Result_text)})}),
 	    Body = jiffy:encode({dict:to_list(Result_text)});
-	{_, Channel_code} -> Body = <<"Unknown method">> %% fix this
+	Channel_code -> Body = <<"Unknown method">> %% fix this
     end,
     
     {Body, Req3, State}.
