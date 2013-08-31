@@ -22,7 +22,10 @@ configure-dev:
 	cd devutils; if [ ! -d "sync" ]; then git clone git://github.com/rustyio/sync.git sync; fi
 	cd devutils/sync; mkdir -p ebin; make
 
-configure: get-deps
+configure: get-deps collectstatic
+
+collectstatic:
+	cp deps/bullet/priv/bullet.js www/js/bullet.js
 
 compile:
 	@$(REBAR) compile
