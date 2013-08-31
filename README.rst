@@ -64,6 +64,49 @@ If you do not want to full compile before starting to test use following
    $ make eunit
    
 
+Usage
+-----
+
+In order to use publicator you should add a publicator-session-id cookie to your requests. That way publicator will identify and associates you with your subscribed channels.
+
+To subscribe a channel:
+
+::
+
+   $ curl --request POST http://localhost:8766/subscribtions/$CHANNEL_CODE/ \
+	--include \
+	--header "Content-Type:application/json" \
+	--cookie "publicator-session-id=$SESSION_ID"
+
+To unscribe a channel:
+
+::
+
+    $ curl --request DELETE http://localhost:8766/subscribtions/$CHANNEL_CODE/ \
+	--include \
+	--header "Content-Type:application/json" \
+	--cookie "publicator-session-id=$SESSION_ID"
+
+To check for incoming messages that is coming from your subscribed channels:
+
+::
+
+    curl --request GET http://localhost:8766/messages/ \
+	--include \
+	--header "Content-Type:application/json" \
+	--cookie "publicator-session-id=$SESSION_ID"
+
+To send a message to a channel:
+
+::
+
+    curl --request POST http://localhost:8766/messages/$CHANNEL_CODE/ \
+	--include \
+	--header "Content-Type:application/json" \
+	--cookie "publicator-session-id=$CUSTOM_SESSION_ID" \
+	--data "message=$MESSAGE"
+
+Please beware that message senders do not receive messages they sent.
 
 .. |build| image:: https://travis-ci.org/huseyinyilmaz/publicator.png
 .. _build: https://travis-ci.org/huseyinyilmaz/publicator
