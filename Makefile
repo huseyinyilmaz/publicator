@@ -18,9 +18,11 @@ get-deps:
 	@$(REBAR) get-deps
 
 # initialize development
-init-dev:
+configure-dev:
 	cd devutils; if [ ! -d "sync" ]; then git clone git://github.com/rustyio/sync.git sync; fi
 	cd devutils/sync; mkdir -p ebin; make
+
+configure: get-deps
 
 compile:
 	@$(REBAR) compile
