@@ -8,7 +8,7 @@
 -define(CHANNEL2, <<"channelcode2">>).
 -define(MESSAGE1, <<"message1">>).
 -define(MESSAGE2, <<"message2">>).
--define(DELAY, 50).
+-define(DELAY, 100).
 
 setup_server()->
     error_logger:info_report("Setup server"),
