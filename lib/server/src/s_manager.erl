@@ -11,8 +11,7 @@
 %% API
 -export([init/0, destroy/0]).
 -export([get_channel/1, get_consumer/1, get_channels/0,
-	 add_channel/2, add_consumer/2, get_or_create_channel/1,
-	 get_or_create_consumer/1]).
+	 add_channel/2, add_consumer/2, get_or_create_channel/1, create_consumer/0]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -66,6 +65,18 @@ get_or_create_consumer(Consumer_code)->
     end,
     {ok, Consumer_pid}.
 
+%% Creates a new consumer and returns its code and pid number
+-spec create_consumer() -> {ok, binary(), pid()}.
+create_consumer()->
+    Consumer_code = s_utils:generate_code(),
+    case get_consumer(Consumer_code) of
+	{ok, _Pid} -> create_consumer();
+	{error, not_found} -> {ok, Consumer_pid} = s_consumer_sup:start_child(Consumer_code),
+			      s_manager:add_consumer(Consumer_code, Consumer_pid),
+			      {ok, Consumer_code, Consumer_pid}
+    end.
+
+    
 
 %%%===================================================================
 %%% Internal functions

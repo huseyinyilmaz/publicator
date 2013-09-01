@@ -96,10 +96,12 @@ init([Pid, Channel_code]) ->
 
 %%% if owner of message is this consumer do not send message
 handle_event({_Consumer_pid, _Message}, #state{consumer=_Consumer_pid}=State) ->
+    error_logger:info_report({owner_handle_event}),
     {ok, State};
 
 handle_event({_Owner_Consumer_pid, Message}, #state{channel=Channel_code,
-					     consumer=Consumer_pid}=State) ->
+						    consumer=Consumer_pid}=State) ->
+    error_logger:info_report({other_handle_event}),
     %% if user is dead remove handler
     s_consumer:push_message(Consumer_pid, Channel_code, Message),
     {ok, State}.

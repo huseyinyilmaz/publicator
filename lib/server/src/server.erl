@@ -12,7 +12,8 @@
 -export([start/0, stop/0]).
 -export([get_messages/2, get_messages/1, publish/3,
 	 subscribe/2, unsubscribe/2,
-	 get_channels/0, get_subscribtions/1]).
+	 get_channels/0, get_subscribtions/1,
+	 create_consumer/0]).
 
 %%%===================================================================
 %%% API
@@ -45,41 +46,62 @@ stop() ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
--spec get_messages(binary(), binary()) -> {ok, [binary()]}.
+-spec get_messages(binary(), binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
 get_messages(Consumer_code, Channel_code) ->
-    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    s_consumer:get_messages(Consumer_pid, Channel_code).
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    s_consumer:get_messages(Consumer_pid, Channel_code);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
  
--spec get_messages(binary()) -> {ok, dict()}.
+-spec get_messages(binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
 get_messages(Consumer_code) ->
-    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    s_consumer:get_messages(Consumer_pid).
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    s_consumer:get_messages(Consumer_pid);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
 
-
+-spec publish(binary(), binary(), binary()) -> ok | {error, consumer_not_found}.
 publish(Consumer_code, Channel_code, Message)->
-    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    ok = s_consumer:publish(Consumer_pid, Channel_code, Message).
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    ok = s_consumer:publish(Consumer_pid, Channel_code, Message);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
 
-
+-spec subscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
 subscribe(Consumer_code, Channel_code) ->
-    error_logger:info_report({subscribe, Consumer_code, Channel_code}),
-    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    ok = s_consumer:subscribe(Consumer_pid, Channel_code),
-    ok.
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    ok = s_consumer:subscribe(Consumer_pid, Channel_code);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
 
+-spec unsubscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
 unsubscribe(Consumer_code, Channel_code) ->
-    error_logger:info_report({unsubscribe, Channel_code, Consumer_code}),
-    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    ok = s_consumer:unsubscribe(Consumer_pid, Channel_code),
-    ok.
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    ok = s_consumer:unsubscribe(Consumer_pid, Channel_code);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
 
+-spec get_channels() -> {ok, [binary()]}.
 get_channels() ->
     {ok, s_manager:get_channels()}.
 
+
+-spec get_subscribtions(binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
 get_subscribtions(Consumer_code) ->
-    {ok, Consumer_pid} = s_manager:get_or_create_consumer(Consumer_code),
-    s_consumer:get_subscribtions(Consumer_pid).
-    
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    s_consumer:get_subscribtions(Consumer_pid);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
+
+-spec create_consumer() -> {ok, binary(), binary()}.
+create_consumer() ->
+    s_manager:create_consumer().
 
 %%%===================================================================
 %%% Internal functions

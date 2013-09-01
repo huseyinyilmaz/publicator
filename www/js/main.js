@@ -30,7 +30,8 @@ $(function(){
 
     publicatorApp.UsersView = Backbone.View.extend({
 	initialize: function(options){
-	    _.bindAll(this);
+	    console.log(this)
+	    _.bindAll(this, 'render' , 'initialize');
 	    this.collection.bind('add', this.render);
 	    this.collection.bind('remove', this.render);
 	    this.collection.bind('change', this.render);

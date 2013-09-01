@@ -199,7 +199,9 @@ handle_cast({subscribe, Channel_code},
     end;
 
 handle_cast({publish, Channel_code, Message}, State) ->
+    error_logger:info_report({abcdefgh, before_get_channel}),
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
+    error_logger:info_report({abcdefgh, gen_event:which_handlers(Channel_pid)}),
     s_channel:publish(Channel_pid, self(), Message),
     {noreply, State2};
 

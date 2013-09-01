@@ -22,7 +22,7 @@ start(_Type, _Args) ->
 		     {"/subscribtions/[:channel/]", h_subscribtion_handler, []},
 		     {"/messages/", h_message_get_handler, []},
 		     {"/messages/[:channel]", h_message_handler, []},
-
+		     {"/session/" , h_session_get_handler, []},
 		     {"/", cowboy_static,
 		      [{directory, <<"./www">>},
 		       {file, <<"index.html">>},

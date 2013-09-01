@@ -22,7 +22,9 @@
 %%--------------------------------------------------------------------
 generate_code()->
     list_to_binary(
-      integer_to_list(erlang:phash2({node(), now()}), 36)).
+      string:to_lower(
+	integer_to_list(
+	  erlang:phash2({node(), now()}), 36))).
 
 %%--------------------------------------------------------------------
 %% @doc
