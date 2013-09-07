@@ -137,25 +137,7 @@ server_message_test_() ->
 	     ?assertEqual(error, dict:find(Channel_code, Messages4)),
              %% tests unsubscribe
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
-             ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code)),
-	     % make sure to wait until consumers unregister themselves
-	     timer:sleep(?DELAY),
-             ?assertEqual({ok,[Channel_code2, Channel_code]}, server:get_channels()),
-             ?assertEqual({ok,[]}, server:get_subscribtions(Consumer_code1)),
-             ?assertEqual({ok,[Channel_code2]}, server:get_subscribtions(Consumer_code2)),
-             ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code2)),
-             ?assertEqual({ok,[]}, server:get_subscribtions(Consumer_code2)),
-             ok
+             ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code))
 	 end)
      }}.
 
-%% messagging_test_() ->
-%%     {setup,
-%%      fun setup_server/0,
-%%      fun cleanup_server/1,
-%%      {"Test messaging functionality",
-%%       ?_test(
-%% 	 begin
-%%        ok
-%% 	 end)
-%%      }}.
