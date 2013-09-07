@@ -12,7 +12,7 @@
 
 -export([publish/3]).
 %% API
--export([start_link/0, add_handler/3, delete_handler/2]).
+-export([start_link/0, stop/1, add_handler/3, delete_handler/2]).
 
 %% gen_event callbacks
 -export([init/1, handle_event/2, handle_call/2, 
@@ -41,6 +41,9 @@ publish(Channel_pid, Consumer_pid, Message) ->
 start_link() ->
     gen_event:start_link().
 
+
+stop(Pid)->
+    gen_event:stop(Pid).
 %%--------------------------------------------------------------------
 %% @doc
 %% Adds an event handler
@@ -51,9 +54,9 @@ start_link() ->
 -spec add_handler(pid(),binary() ,pid()) -> ok | {'EXIT', term()} | term().
 add_handler(Pid, Channel_code, Consumer_pid) ->
     Res = gen_event:add_handler(Pid,
-				{?MODULE, Consumer_pid},
-				[Consumer_pid, Channel_code]),
-    error_logger:info_report({s_channel__add_channel, Consumer_pid, Res}),
+			       {?MODULE, Consumer_pid},
+			       [Consumer_pid, Channel_code]),
+    error_logger:info_report({s_channel__add_channel,Channel_code, Pid, Consumer_pid}),
     Res.
     
     
@@ -150,7 +153,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
-    io:format("~p, ~p~n", [_Reason, _State]),
+    io:format("s_channel_terminate has been called ~n ~p, ~n~p~n", [_Reason, _State]),
     ok.
 
 %%--------------------------------------------------------------------

@@ -95,6 +95,7 @@ unsubscribe(Pid, Channel_code)->
 
 
 publish(Pid, Channel_code, Message)->
+    error_logger:info_report({s_consumer__publish, Pid, Channel_code, Message}),
     gen_server:cast(Pid, {publish, Channel_code, Message}).
 
 get_subscribtions(Pid) ->
@@ -186,6 +187,7 @@ handle_cast({subscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
     
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
+    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_pid, State2}),
     %% if value is already exist in the dictionary log a warning
     case dict:is_key(Channel_code, Channels_dict) of
 	true ->
@@ -199,9 +201,10 @@ handle_cast({subscribe, Channel_code},
     end;
 
 handle_cast({publish, Channel_code, Message}, State) ->
-    error_logger:info_report({abcdefgh, before_get_channel}),
+    error_logger:info_report({s_consumer__handle_cast__publish}),
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    error_logger:info_report({abcdefgh, gen_event:which_handlers(Channel_pid)}),
+    error_logger:info_report({publish_2_which_hadlers,
+			      gen_event:which_handlers(Channel_pid)}),
     s_channel:publish(Channel_pid, self(), Message),
     {noreply, State2};
 
@@ -248,6 +251,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
+    io:format("s_consumer_terminate has been called ~n ~p, ~n~p~n", [_Reason, _State]),
     ok.
 
 %%--------------------------------------------------------------------

@@ -79,7 +79,6 @@ server_subscribtion_test_() ->
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code)),
 	     % make sure to wait until consumers unregister themselves
 	     timer:sleep(?DELAY),
-             %% error_logger:info_report({"debug", server:get_channels()}),
              ?assertEqual({ok,[Channel_code2, Channel_code]}, server:get_channels()),
              ?assertEqual({ok,[Channel_code2]}, server:get_subscribtions(Consumer_code1)),
              ?assertEqual({ok,[]}, server:get_subscribtions(Consumer_code2)),
@@ -114,7 +113,6 @@ server_message_test_() ->
 	     timer:sleep(?DELAY),
 	     %% test get_messages
 	     {ok, Messages} = server:get_messages(Consumer_code2),
-	     error_logger:info_report({abcde, Messages}),
 	     ?assertEqual({ok,[?MESSAGE1, ?MESSAGE2]}, dict:find(Channel_code, Messages)),
 	     %% make sure that Messages has been cleared
 	     {ok, Messages2} = server:get_messages(Consumer_code2),
@@ -135,7 +133,6 @@ server_message_test_() ->
 			  server:get_messages(Consumer_code2, Channel_code)),
 	     %% test get rest of the channels after getting one channnel
 	     {ok, Messages4} = server:get_messages(Consumer_code2),
-	     error_logger:info_report({Messages4}),
 	     ?assertEqual({ok,[?MESSAGE2]}, dict:find(Channel_code2, Messages4)),
 	     ?assertEqual(error, dict:find(Channel_code, Messages4)),
              %% tests unsubscribe
@@ -143,7 +140,6 @@ server_message_test_() ->
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code)),
 	     % make sure to wait until consumers unregister themselves
 	     timer:sleep(?DELAY),
-             %% error_logger:info_report({"debug", server:get_channels()}),
              ?assertEqual({ok,[Channel_code2, Channel_code]}, server:get_channels()),
              ?assertEqual({ok,[]}, server:get_subscribtions(Consumer_code1)),
              ?assertEqual({ok,[Channel_code2]}, server:get_subscribtions(Consumer_code2)),
