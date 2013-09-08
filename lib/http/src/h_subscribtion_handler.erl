@@ -26,9 +26,10 @@ content_types_accepted(Req, State)->
 
 post_json(Req, State) ->
     error_logger:info_report(post_json),
-    {Session_id, Req1} = h_utils:get_or_create_session(Req),
+    {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Method, Req2} = cowboy_req:method(Req1),
     {Channel_code, Req3} = cowboy_req:binding(channel, Req2),
+    error_logger:info_report({post_json, Channel_code,Session_id}),
     case {Method, Channel_code} of
 	{ _, undefined} -> Result_status = false;
 	{<<"POST">>, Channel_code} ->
