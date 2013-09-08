@@ -11,7 +11,7 @@
 %% API
 -export([start/0, get_session/0, setup_server/0, get_subscribtions/1,
 	 subscribe/2, blackbox_test/2, channel_test/3,
-	create_consumer/2,test/1, find_square/2]).
+	create_consumer/2,test/1, find_square/2, test_consumer/4]).
 
 %%%===================================================================
 %%% API
@@ -65,22 +65,28 @@ subscribe(Session_id, Channel_code) ->
 create_channel(Channel_code, Consumer_count)->
     Consumer_list = [get_session() || _C <- lists:seq(1, Consumer_count)],
     error_logger:info_report({create_room,Consumer_list}),
-    timer:sleep(3000),
     lists:map(fun(C)->subscribe(C, Channel_code)end,Consumer_list),
     Consumer_list.
     
 create_consumer(Consumer_code, Channel_pids)->
     lists:map(fun({Code, Pid})->
 		      subscribe(Consumer_code, Code),
-		      timer:sleep(2000),
 		      Pid ! {consumer_done,
 			     Consumer_code,
 			     Code}
 	      end,
 	      Channel_pids).
 
+test_consumer(Consumer_code,
+	      Channel_code_list,
+	      _Total_consumer_count,
+	      Pid)->
+    Result = [subscribe(Consumer_code, Code)||Code <- Channel_code_list],
+    error_logger:info_report({subscribtions_completed}),
+    Pid ! {consumer_done, self(), Consumer_code, Result}.
+
+
 channel_test(Channel_code, Consumer_code_list, Pid)->
-    io:format("XXXXX",[]),
     error_logger:info_report({channel_test__consumer_list, Consumer_code_list}),
     Result = lists:all(
 	       fun(C)->
@@ -104,23 +110,29 @@ blackbox_test(Channel_count, Consumer_count)->
 				     << <<"channel_">>/binary,
 					Bin/binary >>
 				  end, lists:seq(1,Channel_count)),
-    
+    %% Create_consumer_codes
     Consumer_code_list = [get_session() || _C <- lists:seq(1, Consumer_count)],
-    Channel_pids = [{C,
-    		     spawn(tests, channel_test, [C, Consumer_code_list,self()])}
-					|| C <- Channel_code_list],
-    _Consumer_pids = [spawn(tests, create_consumer, [C, Channel_pids]) || C <- Consumer_code_list],
+
+    Consumer_pids = [spawn(tests, test_consumer,
+			   [C,
+			    Channel_code_list,
+			    Consumer_count,
+			    self()])
+		     || C <- Consumer_code_list],
 
      Result = lists:map(
-     		fun(C)->
+     		fun(Pid)->
      			receive
-     			    {channel_done,
+     			    {consumer_done,
+			     Pid,
      			     C,
-     			     Result} -> {C,Result}
+     			     Result} ->
+				error_logger:info_report({aaa,consumer_completed, C}),
+				{C,Result}
      			end
      		end,
-     		Channel_code_list),
-    {result,Result}.
+     		Consumer_pids),
+    {xxxxxx, result,Result}.
 
 
 
@@ -128,13 +140,12 @@ blackbox_test(Channel_count, Consumer_count)->
 
 
 start()->
-    setup_server(),
-    blackbox_test(100,1),
-    cleanup_server().
+    Result = blackbox_test(5,5),
+    Result.
 
 
 find_square(Number, Pid)->
-    Pid! {result, self(), Number*Number}.
+    Pid! {xxxxxx, result, self(), Number*Number}.
 
 test(Count)->
     Find_square_process_pids = [spawn(tests, find_square,[Num, self()])
