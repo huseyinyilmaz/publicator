@@ -42,6 +42,10 @@ test: clean compile eunit
 eunit:
 	@$(REBAR) eunit skip_deps=true
 
+ct: compile
+
+	@$(REBAR) ct skip_deps=true
+
 build-erlang-plt:
 	@$(DIALYZER) --build_plt --output_plt .erlang_dialyzer.plt \
 		--apps erts kernel stdlib ssl crypto

@@ -9,7 +9,7 @@
 -module(s_utils).
 
 %% API
--export([generate_code/0, get_env/3, set_env/3]).
+-export([generate_code/0, get_env/3, set_env/3, ensure_started/1]).
 
 %%%===================================================================
 %%% API
@@ -47,6 +47,16 @@ get_env(AppName, Key, Default) ->
 -spec set_env(atom(), atom(), any()) -> any().
 set_env(AppName, Key, Value) ->
     application:set_env(AppName, Key, Value).
+
+
+
+ensure_started(App) ->
+    case application:start(App) of
+        ok ->
+            ok;
+        {error, {already_started, App}} ->
+            ok
+    end.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

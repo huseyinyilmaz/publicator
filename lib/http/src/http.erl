@@ -22,10 +22,10 @@
 %%--------------------------------------------------------------------
 -spec start() -> ok.
 start() ->
-	ok = application:start(crypto),
-	ok = application:start(ranch),
-	ok = application:start(cowboy),
-        ok = application:start(http).
+	ok = s_utils:ensure_started(crypto),
+	ok = s_utils:ensure_started(ranch),
+	ok = s_utils:ensure_started(cowboy),
+        ok = s_utils:ensure_started(http).
 
 %%--------------------------------------------------------------------
 %% @doc
