@@ -40,7 +40,6 @@
 %%--------------------------------------------------------------------
 -spec start_link(binary()) -> {ok, pid()} | ignore | {error, any()}.
 start_link(Code) ->
-    error_logger:info_report({consumer_start_link, Code}),
     gen_server:start_link(?SERVER, [Code], []).
 
 -spec get(binary()) -> {ok, pid()} | {error, not_found}.
@@ -95,7 +94,6 @@ unsubscribe(Pid, Channel_code)->
 
 
 publish(Pid, Channel_code, Message)->
-    error_logger:info_report({s_consumer__publish, Pid, Channel_code, Message}),
     gen_server:cast(Pid, {publish, Channel_code, Message}).
 
 get_subscribtions(Pid) ->
@@ -151,7 +149,6 @@ handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=
 		   {ok, Result} -> Result
 	       end,
     Messages_dict2 = dict:erase(Channel_code, Messages_dict),
-    error_logger:info_report({get_messages__channel_code, Messages}),
     Reply = {ok, Messages},
     {reply, Reply, State#state{messages=Messages_dict2}};
 
@@ -180,31 +177,25 @@ handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
 
 handle_cast({push_message, Channel_code, Message},
 	    #state{messages=Messages_dict}=State) ->
-    error_logger:info_report({message_received, Channel_code, Message}),
     {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)}};
 
 handle_cast({subscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
     
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_pid, State2}),
     %% if value is already exist in the dictionary log a warning
     case dict:is_key(Channel_code, Channels_dict) of
 	true ->
 	    {noreply,State};
 	false ->
 	    ok = s_channel:add_handler(Channel_pid, Channel_code, self()),
-	    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
 	    {noreply, State2#state{channels=dict:store(Channel_code,
 					       Channel_pid,
 					       Channels_dict)}}
     end;
 
 handle_cast({publish, Channel_code, Message}, State) ->
-    error_logger:info_report({s_consumer__handle_cast__publish}),
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    error_logger:info_report({publish_2_which_hadlers,
-			      gen_event:which_handlers(Channel_pid)}),
     s_channel:publish(Channel_pid, self(), Message),
     {noreply, State2};
 
@@ -219,7 +210,6 @@ handle_cast({unsubscribe, Channel_code},
 	error ->
 	    Channels_dict2 = Channels_dict
     end,
-    error_logger:info_report({s_consumer__handle_cast__subscribe, Channel_code}),
     {noreply, State#state{channels=Channels_dict2}};
 
 handle_cast(stop, State) ->

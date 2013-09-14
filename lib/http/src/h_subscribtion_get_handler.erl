@@ -32,7 +32,6 @@ get_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     error_logger:info_report({get_json, sessin_id, Session_id}),
     {ok, Result} = h_server_adapter:get_subscribtions(Session_id),
-    error_logger:info_report({xxxxxxxxxxxxxxxxxx, Result}),
     Body = jiffy:encode(Result),
     {Body, Req1, State}.
 

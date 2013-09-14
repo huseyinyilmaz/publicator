@@ -18,14 +18,13 @@ allowed_methods(Req, State) ->
 
 %% POST
 content_types_accepted(Req, State)->
-    error_logger:info_report(content_types_accepted),
     {[{{<<"text">>, <<"plain">>, []}, post_json},
       {{<<"text">>, <<"html">>, []}, post_json},
       {{<<"application">>, <<"json">>, []}, post_json}
      ], Req, State}.
 
 post_json(Req, State) ->
-    {Session_id, Req1} = h_utils:get_or_create_session(Req),
+    {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
     {ok, [{<<"message">>, Message}], Req3} = cowboy_req:body_qs(Req2),
     ok = h_server_adapter:publish(Session_id, Channel_code, Message),

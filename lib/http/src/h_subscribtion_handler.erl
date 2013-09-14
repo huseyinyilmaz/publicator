@@ -18,18 +18,15 @@ allowed_methods(Req, State) ->
 
 %% POST
 content_types_accepted(Req, State)->
-    error_logger:info_report(content_types_accepted),
     {[{{<<"text">>, <<"plain">>, []}, post_json},
       {{<<"text">>, <<"html">>, []}, post_json},
       {{<<"application">>, <<"json">>, []}, post_json}
      ], Req, State}.
 
 post_json(Req, State) ->
-    error_logger:info_report(post_json),
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Method, Req2} = cowboy_req:method(Req1),
     {Channel_code, Req3} = cowboy_req:binding(channel, Req2),
-    error_logger:info_report({post_json, Channel_code,Session_id}),
     case {Method, Channel_code} of
 	{ _, undefined} -> Result_status = false;
 	{<<"POST">>, Channel_code} ->
@@ -40,7 +37,6 @@ post_json(Req, State) ->
     {Result_status, Req3, State}.
 
 delete_resource(Req, State) ->
-    error_logger:info_report(delete_resource),
     {Session_id, Req1} = h_utils:get_or_create_session(Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
     case Channel_code of

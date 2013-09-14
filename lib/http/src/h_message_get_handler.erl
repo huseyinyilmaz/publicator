@@ -29,14 +29,9 @@ content_types_provided(Req, State) ->
 
 %% called for Get Request
 get_json(Req, State) ->
-    {Session_id, Req1} = h_utils:get_or_create_session(Req),
-    {Method, Req2} = cowboy_req:method(Req1),
-    {Channel_code, Req3} = cowboy_req:binding(channel, Req2),
+    {Session_id, Req1} = cowboy_req:binding(session, Req),
+    {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
     
-    error_logger:info_report({get_json, session_id, Session_id}),
-    %% {ok, Response} = h_server_adapter:get_channels(),
-    %% Body = jiffy:encode(Response),
-    %% {Body, Req1, State}.
     case Channel_code of
 	undefined ->
 	    {ok, Result_text} = h_server_adapter:get_messages(Session_id),
@@ -45,7 +40,7 @@ get_json(Req, State) ->
 	Channel_code -> Body = <<"Unknown method">> %% fix this
     end,
     
-    {Body, Req3, State}.
+    {Body, Req2, State}.
 
 %%%===================================================================
 %%% Internal functions
