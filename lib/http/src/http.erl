@@ -22,10 +22,11 @@
 %%--------------------------------------------------------------------
 -spec start() -> ok.
 start() ->
-	ok = s_utils:ensure_started(crypto),
-	ok = s_utils:ensure_started(ranch),
-	ok = s_utils:ensure_started(cowboy),
-        ok = s_utils:ensure_started(http).
+    ok = s_utils:ensure_started(crypto),
+    ok = s_utils:ensure_started(ranch),
+    ok = s_utils:ensure_started(cowlib),
+    ok = s_utils:ensure_started(cowboy),
+    ok = s_utils:ensure_started(http).
 
 %%--------------------------------------------------------------------
 %% @doc

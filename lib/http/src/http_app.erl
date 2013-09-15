@@ -23,6 +23,10 @@ start(_Type, _Args) ->
 		     {"/:session/messages/", h_message_get_handler, []},
 		     {"/:session/messages/[:channel]", h_message_handler, []},
 		     {"/session/" , h_session_get_handler, []},
+
+		     {"/ws", bullet_handler, [{handler, websocket_handler}]},
+
+		     
 		     {"/", cowboy_static,
 		      [{directory, <<"./www">>},
 		       {file, <<"index.html">>},

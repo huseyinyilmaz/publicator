@@ -27,6 +27,7 @@ init() ->
     application:start(sasl),    
     %% appmon:start(),
     code:add_patha("deps/ranch/ebin"),
+    code:add_patha("deps/cowlib/ebin"),
     code:add_patha("deps/cowboy/ebin"),
     code:add_patha("deps/jiffy/ebin"),
     code:add_patha("deps/mimetypes/ebin"),
