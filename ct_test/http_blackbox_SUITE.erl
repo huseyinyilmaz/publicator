@@ -73,7 +73,7 @@ end_per_group(_GroupName, _Config) ->
 init_per_testcase(_TestCase, Config) ->
     %% ok = server:start(),
     %% ok = http:start(),
-    ok = inets:start(),
+    {ok, _Pid} = ibrowse:start(),
     Config.
 
 %%--------------------------------------------------------------------
@@ -87,7 +87,7 @@ init_per_testcase(_TestCase, Config) ->
 end_per_testcase(_TestCase, _Config) ->
     %% ok = http:stop(),
     %% ok = server:stop(),
-    ok = inets:stop(),
+    ok = ibrowse:stop(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -146,19 +146,21 @@ create_channel(Channel_count, Consumer_count) ->
     %% Create_consumer_codes
     Consumer_code_list = [h_rest_client:get_session() || _C <- lists:seq(1, Consumer_count)],
 
-    Consumer_pids = [spawn(http_blackbox_SUITE, consumer,
-			   [C,
-			    [{Consumer_code, Channel_code}
-			     || Consumer_code <- Consumer_code_list,
+    
+    _Consumer_pids = [spawn(http_blackbox_SUITE, consumer_sender,[C,Channel_code_list]) and
+		      spawn(http_blackbox_SUITE, consumer_receiver,
+			    [C,
+			     Channel_code_list,
+			     [make_message(Consumer_code, Channel_code) ||
+				Consumer_code <- Consumer_code_list,
 				Channel_code <- Channel_code_list,
-				Consumer_code =/= C],
-			    Channel_code_list,
-			    self()])
+				Consumer_code =/= C],			    
+			     self()])
 		     || C <- Consumer_code_list],
     %get subscribtions complete messages
     Res = lists:map(fun(Code)->
 			    receive
-				{subscribed, Code} -> ok
+				{finished, Code} -> ok
 			    end
 		    end,
 		    Consumer_code_list),
@@ -169,7 +171,7 @@ create_channel(Channel_count, Consumer_count) ->
 test_1_room_1000_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
-    create_channel(2,2),
+    create_channel(5,5),
     ok.
 
 
@@ -180,27 +182,22 @@ test_1_room_1000_consumer(_Config) ->
 %% message format will be {message, Channel_code, Consumer_code}
 %% Parent_pid: Pid of parent that will be send a consumer completed message
 %% once expected messages will be send and all expected messages will be received
-consumer(Code, Message_expected, Send_channel_list, Parent_pid) ->
-    %get channel_list to subscribe
-    Channel_list = sets:to_list(
-		     sets:from_list(
-		       [Channel_code ||
-			   {_Consumer_code, Channel_code}<- Message_expected])),
+consumer_sender(Code, Channel_list) ->
     %send messages
-    Val = lists:map(fun(Channel_code)->
-			    ct:pal("presubscribe, ~n ~p ~n ~p ~n",[Channel_code, Code]),
-			    Res = h_rest_client:subscribe(Code,Channel_code),
-			    ct:pal("subscribed, ~n ~p ~n ~p ~n ~p ~n",[Res, Channel_code, Code])
-		    end,
-		    Channel_list),
     %send subscribtion complete message and wait for continue
-    ct:pal("AAAsubscribtions completed ~p~n" ,[Code]),
-    Parent_pid ! {subscribed, Code},
-    receive
-	receive_continue -> ok
-    end,
-    
-    ct:pal("in consumer= ~p ~p ~p ~p ~p~n", [Code, Message_expected, Send_channel_list,Channel_list, Val]),
-    
+    lists:map(fun(X)->h_rest_client:publish(Code, X, Code) end,
+	     Channel_list).
+
+consumer_receiver(Code, Channel_list, Message_expected, Parent_pid) ->
+    %% Subscribe to all channels
+    lists:map(fun(Channel_code)->
+		      h_rest_client:subscribe(Code,Channel_code)
+	      end,
+	      Channel_list),
+    get_messages(Code, Message_expected),
+    Parent_pid ! {finished, Code}.
+
+get_messages(Code, Message_expected) ->
     ok.
-    
+
+make_message(Code, Channel_code) -> {Code, Channel_code}.

@@ -9,7 +9,7 @@
 -module(h_rest_client).
 
 %% API
--export([get_session/0, get_subscribtions/1, subscribe/2]).
+-export([get_session/0, get_subscribtions/1, subscribe/2, publish/3]).
 
 %%%===================================================================
 %%% API
@@ -23,16 +23,15 @@
 get_request(Uri) ->
     Host = "http://localhost:8766/",
     Url = Host ++ Uri,
-    {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} =
-	httpc:request(get, {Url, []}, [], []),
+    {ok, "200" , _Headers, Body} =
+	ibrowse:send_req(Url, [], get),
     Body.
 
-post_request(Uri) ->
+post_request(Uri, Data) ->
     Host = "http://localhost:8766/",
     Url = Host ++ Uri,
-    {ok, {{_Version, 204, _ReasonPhrase}, _Headers, Body}} =
-	httpc:request(post, {Url, [], "text/html", []}, [], [{body_format, string},
-								    {relaxed, true}]),
+    {ok, "204", _Headers, Body} =
+	ibrowse:send_req(Url,[{"Content-Type", "text/html"}],post,Data),
     Body.
 
 get_session()->
@@ -52,7 +51,12 @@ subscribe(Session_id, Channel_code) ->
 			    "subscribtions/" ++ binary_to_list(Channel_code) ++ "/"),
     io:format("XXXXX~p~n",[Uri]),
     
-    post_request(Uri).    
+    post_request(Uri, []).    
+
+publish(Session_id, Channel_code, Message) ->
+    Uri = prefix_session_id(Session_id,
+			    "messages/" ++ binary_to_list(Channel_code) ++ "/"),
+    post_request(Uri, [{"message",Message}]).
 
 %%%===================================================================
 %%% Internal functions
