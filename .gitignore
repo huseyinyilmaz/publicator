@@ -17,3 +17,4 @@ test
 *.o
 *.beam
 *.plt
+publicator_test

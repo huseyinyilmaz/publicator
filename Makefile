@@ -72,3 +72,8 @@ start: compile
 	    -eval "debug:init(),\
 	           debug:start()."
 
+
+blackbox:
+	rm -f publicator_test
+	cd devutils/publicator_test/; ../../rebar compile escriptize;mv publicator_test ../../
+	./publicator_test
