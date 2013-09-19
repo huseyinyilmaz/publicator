@@ -38,11 +38,11 @@ stream(Raw_data, Req, State) ->
 
 info(Data, Req, State) ->
     error_logger:info_report({info, Data}),
-    h_chat_adapter:handle_info(Data, Req, State).
+    h_server_adapter:handle_info(Data, Req, State).
 
 terminate(_Req, State) ->
     error_logger:info_report(terminate_bullet_handler),
-    h_chat_adapter:terminate(State).
+    h_server_adapter:terminate(State).
 
 
 %%%===================================================================

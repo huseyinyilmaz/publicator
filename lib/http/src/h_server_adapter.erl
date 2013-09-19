@@ -12,7 +12,7 @@
 -export([subscribe/2, unsubscribe/2, get_channels/0, get_subscribtions/1,
 	 get_messages/1, publish/3, create_consumer/0]).
 
--export([handle_request/3]).
+-export([handle_request/3, handle_info/3, terminate/1]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -34,6 +34,10 @@ handle_request(Msg, Req, State)->
     Result=jiffy:encode({[{<<"type">>,<<"unhandled_msg">>},{<<"msg">>, Msg}]}),
     {reply, Result, Req, State}.
 
+handle_info(_Msg,Req,State)->
+    {reply, [], Req,State}.
+
+terminate(_State)-> ok.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

@@ -1,4 +1,5 @@
 $(function(){
+    return 1;
     window.enable_logging = true;
     //////////////////////
     // Create namespace //

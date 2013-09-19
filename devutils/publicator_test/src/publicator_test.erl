@@ -18,7 +18,8 @@ main([Host, Channel_count_str, Consumer_count_str]) ->
     try
 	Channel_count = list_to_integer(Channel_count_str),
 	Consumer_count = list_to_integer(Consumer_count_str),
-	io:format("Host = ~p~n Channel_count = ~p~n Consumer_count = ~p~n", [Host, Channel_count, Consumer_count])
+	io:format("Host = ~p~n Channel_count = ~p~n Consumer_count = ~p~n",
+		  [Host, Channel_count, Consumer_count])
     catch
         _:_ ->
             usage()
