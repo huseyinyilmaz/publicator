@@ -15,7 +15,8 @@
 -export([start_link/1, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
 	 get_messages/2, get_messages/1, subscribe/2,
-	 publish/3, get_subscribtions/1, unsubscribe/2]).
+	 publish/3, get_subscribtions/1, unsubscribe/2,
+	 add_message_handler/2, remove_message_handler/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -26,7 +27,8 @@
 -record(state, {code :: binary(),
 		channels :: dict(),
 		channels_cache ::dict(),
-		messages :: dict()}).
+		messages :: dict(),
+		handlers :: [pid()]}).
 
 %% -include("c_room_event.hrl").
 
@@ -98,6 +100,13 @@ publish(Pid, Channel_code, Message)->
 
 get_subscribtions(Pid) ->
     gen_server:call(Pid, get_subscribtions).
+
+add_message_handler(Pid, Handler_pid) ->
+    gen_server:cast(Pid, {add_message_handler, Handler_pid}).
+
+remove_message_handler(Pid,Handler_pid) ->
+    gen_server:cast(Pid, {remove_message_handler, Handler_pid}).
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================

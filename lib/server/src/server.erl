@@ -11,7 +11,7 @@
 %% API
 -export([start/0, stop/0]).
 -export([get_messages/2, get_messages/1, publish/3,
-	 subscribe/2, unsubscribe/2,
+	 subscribe/2, subscribe/3, unsubscribe/2, unsubscribe/3,
 	 get_channels/0, get_subscribtions/1,
 	 create_consumer/0]).
 
@@ -78,6 +78,15 @@ subscribe(Consumer_code, Channel_code) ->
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
+-spec subscribe(binary(), binary(), pid()) -> ok | {error, consumer_not_found}.
+subscribe(Consumer_code, Channel_code, Handler) ->
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    ok = s_consumer:subscribe(Consumer_pid, Channel_code),
+	    ok = s_consumer:add_message_handler(Consumer_pid, Handler);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
+
 -spec unsubscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
 unsubscribe(Consumer_code, Channel_code) ->
     case s_manager:get_consumer(Consumer_code) of
@@ -85,6 +94,16 @@ unsubscribe(Consumer_code, Channel_code) ->
 	    ok = s_consumer:unsubscribe(Consumer_pid, Channel_code);
 	{error, not_found} -> {error, consumer_not_found}
     end.
+
+-spec unsubscribe(binary(), binary(), pid()) -> ok | {error, consumer_not_found}.
+unsubscribe(Consumer_code, Channel_code, Handler) ->
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    ok = s_consumer:unsubscribe(Consumer_pid, Channel_code),
+	    ok = s_consumer:remove_message_handler(Consumer_pid, Handler);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
+
 
 -spec get_channels() -> {ok, [binary()]}.
 get_channels() ->

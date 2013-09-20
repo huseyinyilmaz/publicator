@@ -1,9 +1,17 @@
 enable_logging = true;
 
+function get_new_publicator_session_id(callback){
+    function get_random_string(){return Math.random().toString(36).substring(7);};
+    function callback_fun(e){callback(e.session)}
+
+    //Add random string string to end of the url so it will not be cached from browser
+    $.getJSON('session/' + get_random_string() ,callback_fun);
+};
+
 function get_publicator_client(session_id){
     // Create chat client 
     var publicatorClient = {
-	
+
 	connect: function(session_id){
 	    this.send_message({type: 'connect_to_room',
 			       room_code: room_code,
@@ -17,6 +25,25 @@ function get_publicator_client(session_id){
 	    this.bullet.send(json_string);
 	},
 	
+	subscribe: function(channel_code){
+	    this.send_message({
+		type: 'subscribe',
+		data: channel_code});},
+	unsubscribe: function(channel_code){
+	    this.send_message({
+		type: 'unsubscribe',
+		data: channel_code});},
+	get_subscribtions: function(){
+	    this.send_message({
+		type: 'get_subscribtions',
+		data: null});},
+	
+	publish: function(channel_code, message){
+	    this.send_message({
+		type: 'publish',
+		data: {'channel_code': channel_code,
+		       'message':message}});},
+
 	handlers: {
 	    onopen_handler_list:[],
 	    ondisconnect_handler_list:[],
@@ -34,7 +61,7 @@ function get_publicator_client(session_id){
 
 
     var host = location.host;
-    var bullet = $.bullet('ws://' + host + '/ws');
+    var bullet = $.bullet('ws://' + host + '/' + session_id + '/ws/');
     publicatorClient.bullet = bullet;
 
     function call_fun_list(fun_list){
@@ -50,26 +77,39 @@ function get_publicator_client(session_id){
     bullet.onmessage = function(e){
 	publicatorClient.handlers.onmessage_handler_list.forEach(function(fun){
 	    fun(JSON.parse(e.data));
-	});
-    }
+	});};
     
     return publicatorClient;
     
 };
 
 var host = location.host;
+window.clients = [];
 
-$.getJSON('session/',function(data){
-    client = get_publicator_client(data.session);
+
+function parse_session_data(session_id){
+    var client = get_publicator_client(session_id);
     client.onheartbeat(function(){
 	console.log('on hearthbeat');
-    })
+    });
     client.onmessage(function(e){
-	console.log('message',e);
-    })
-
-    window.publicatorClient = client;
+	console.log('response',e);
+    });
+    client.onopen(function(){
+	console.log('onopen');
+	client.subscribe('channel_a');
+	client.get_subscribtions();
+	client.get_subscribtions();
+	client.publish('channel_a', 'message');
+    });
+    // client.send_message(1);
+    window.clients.push(client)
     console.log(client);
-});
+}
+
+
+get_new_publicator_session_id(parse_session_data);
+get_new_publicator_session_id(parse_session_data);
+get_new_publicator_session_id(parse_session_data);
 
 

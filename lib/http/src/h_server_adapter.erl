@@ -9,35 +9,30 @@
 -module(h_server_adapter).
 
 %% API
--export([subscribe/2, unsubscribe/2, get_channels/0, get_subscribtions/1,
+-export([subscribe/2, subscribe/3, unsubscribe/2, unsubscribe/3,
+	 get_channels/0, get_subscribtions/1,
 	 get_messages/1, publish/3, create_consumer/0]).
 
--export([handle_request/3, handle_info/3, terminate/1]).
 %%%===================================================================
 %%% API
 %%%===================================================================
     
 subscribe(Session_id, Channel_code)-> server:subscribe(Session_id, Channel_code).
+subscribe(Session_id, Channel_code, Handler)-> server:subscribe(Session_id,
+								Channel_code,
+								Handler).
+
 unsubscribe(Session_id, Channel_code)-> server:unsubscribe(Session_id, Channel_code).
+unsubscribe(Session_id, Channel_code, Handler)-> server:unsubscribe(Session_id,
+								    Channel_code,
+								    Handler).
+
 get_channels()-> server:get_channels().
 get_subscribtions(Session_id) -> server:get_subscribtions(Session_id).
 get_messages(Session_id) -> server:get_messages(Session_id).
 publish(Session_id, Channel_code, Message)-> server:publish(Session_id, Channel_code, Message).
 create_consumer() -> server:create_consumer().
 
-
-
-%%%===================================================================
-%%% WEBSOCKET HANDLERS
-%%%===================================================================
-handle_request(Msg, Req, State)->
-    Result=jiffy:encode({[{<<"type">>,<<"unhandled_msg">>},{<<"msg">>, Msg}]}),
-    {reply, Result, Req, State}.
-
-handle_info(_Msg,Req,State)->
-    {reply, [], Req,State}.
-
-terminate(_State)-> ok.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

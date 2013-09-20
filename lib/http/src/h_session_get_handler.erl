@@ -27,9 +27,10 @@ allowed_methods(Req, State) ->
 %% GET
 content_types_provided(Req, State) ->
     {[
-      {{<<"text">>, <<"plain">>, []}, get_json},
-      {{<<"text">>, <<"html">>, []}, get_json},
-      {{<<"application">>, <<"json">>, []}, get_json}
+      {{<<"text">>, <<"plain">>, '*'}, get_json},
+      {{<<"text">>, <<"html">>, '*'}, get_json},
+      {{<<"application">>, <<"json">>, '*'}, get_json},
+      {{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, get_json}
      ], Req, State}.
 
 %% called for Get Request
