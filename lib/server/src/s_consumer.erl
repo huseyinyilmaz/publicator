@@ -130,7 +130,8 @@ init([Code]) ->
 	    {ok, #state{code=Code,
 			channels=dict:new(),
 			channels_cache=dict:new(),
-			messages=dict:new()}}
+			messages=dict:new(),
+			handlers=[]}}
     end.
 
 %%--------------------------------------------------------------------
@@ -185,8 +186,18 @@ handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
 %%--------------------------------------------------------------------
 
 handle_cast({push_message, Channel_code, Message},
-	    #state{messages=Messages_dict}=State) ->
+	    #state{messages=Messages_dict, handlers=[]}=State) ->
     {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)}};
+
+handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}=State) ->
+    Alive_handler_list = lists:filter(fun is_process_alive/1, Handler_list),
+    case Alive_handler_list of
+	[] -> handle_cast({push_message, Channel_code, Message}, State);
+	_ -> lists:foreach(fun(Pid)->
+				   Pid ! {message, Channel_code, Message}
+			   end, Handler_list),
+	     {noreply, State#state{handlers=Alive_handler_list}}
+	end;
 
 handle_cast({subscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
@@ -220,6 +231,20 @@ handle_cast({unsubscribe, Channel_code},
 	    Channels_dict2 = Channels_dict
     end,
     {noreply, State#state{channels=Channels_dict2}};
+
+
+handle_cast({add_message_handler, Handler_pid},
+	    #state{handlers=Handler_list}=State) ->
+    case lists:member(Handler_pid, Handler_list) of
+	true -> New_handler_list = Handler_list;
+	false -> New_handler_list = [Handler_pid | Handler_list]
+    end,
+    {noreply, State#state{handlers=New_handler_list}};
+
+handle_cast({remove_message_handler, Handler_pid},
+	    #state{handlers=Handler_list}=State) ->
+    {noreply, State#state{handlers=lists:delete(Handler_pid, Handler_list)}};
+
 
 handle_cast(stop, State) ->
     {stop, normal, State}.

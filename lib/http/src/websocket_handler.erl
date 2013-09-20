@@ -109,8 +109,14 @@ handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
 			    {<<"session">>, Session_id}]),
     {reply, Result, Req, State}.
 
-handle_info(_Msg,Req,State)->
-    {reply, [], Req,State}.
+handle_info({message, Channel_code, Message}, Req, State)->
+    Result = make_response(<<"message">>, Message,
+			  [{<<"channel_code">>, Channel_code}]),
+    {reply, Result, Req, State};
+    
+handle_info(Msg,Req,State)->
+    Result = make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
+    {reply, Result, Req, State}.
 
 handle_terminate(_State)-> ok.
 

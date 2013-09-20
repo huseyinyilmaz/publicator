@@ -100,7 +100,7 @@ function parse_session_data(session_id){
 	client.subscribe('channel_a');
 	client.get_subscribtions();
 	client.get_subscribtions();
-	client.publish('channel_a', 'message');
+	client.publish('channel_a', 'sample message text');
     });
     // client.send_message(1);
     window.clients.push(client)
