@@ -1,22 +1,26 @@
-enable_logging = true;
+"use strict";
 
-function get_new_publicator_session_id(callback){
-    function get_random_string(){return Math.random().toString(36).substring(7);};
-    function callback_fun(e){callback(e.session)}
+window.enable_logging = true;
 
-    //Add random string string to end of the url so it will not be cached from browser
-    $.getJSON('session/' + get_random_string() ,callback_fun);
-};
 
-function get_publicator_client(session_id){
-    // Create chat client 
-    var publicatorClient = {
+window.publicator = {
+    get_session_id: function(callback){
+	function get_random_string(){return Math.random().toString(36).substring(7);};
+	function callback_fun(e){callback(e.session)}
 
-	connect: function(session_id){
-	    this.send_message({type: 'connect_to_room',
-			       room_code: room_code,
-			       user_code: user_code,
-			       user_nick: user_nick});
+	//Add random string string to end of the url so it will not be cached from browser
+	$.getJSON('session/' + get_random_string() ,callback_fun);
+    },
+
+    get_client: function(session_id){
+	// Create chat client 
+	var publicatorClient = {
+
+	    connect: function(session_id){
+		this.send_message({type: 'connect_to_room',
+				   room_code: room_code,
+				   user_code: user_code,
+				   user_nick: user_nick});
 	},
 	send_message: function(obj){
 	    if(enable_logging && console)
@@ -81,35 +85,5 @@ function get_publicator_client(session_id){
     
     return publicatorClient;
     
-};
-
-var host = location.host;
-window.clients = [];
-
-
-function parse_session_data(session_id){
-    var client = get_publicator_client(session_id);
-    client.onheartbeat(function(){
-	console.log('on hearthbeat');
-    });
-    client.onmessage(function(e){
-	console.log('response',e);
-    });
-    client.onopen(function(){
-	console.log('onopen');
-	client.subscribe('channel_a');
-	client.get_subscribtions();
-	client.get_subscribtions();
-	client.publish('channel_a', 'sample message text');
-    });
-    // client.send_message(1);
-    window.clients.push(client)
-    console.log(client);
+    }
 }
-
-
-get_new_publicator_session_id(parse_session_data);
-get_new_publicator_session_id(parse_session_data);
-get_new_publicator_session_id(parse_session_data);
-
-

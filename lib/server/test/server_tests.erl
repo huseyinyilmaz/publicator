@@ -142,3 +142,29 @@ server_message_test_() ->
 	 end)
      }}.
 
+
+server_handler_mode_test_() ->
+    {setup,
+     fun setup_server/0,
+     fun cleanup_server/1,
+     {"",
+      ?_test(begin
+		 %% Create consumers
+		 {ok, Consumer_code1, _} = server:create_consumer(),
+		 {ok, Consumer_code2, _} = server:create_consumer(),
+		 Channel_code = ?CHANNEL1,
+		 Channel_code2 = ?CHANNEL2,
+		 timer:sleep(?DELAY),
+
+		 ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
+		 ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
+		 ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code2)),
+		 ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2)),
+
+		 mock1_pid = process_mock:make_message_receiver(self(), mock1),
+		 mock2_pid = process_mock:make_message_receiver(self(), mock2),
+		 mock3_pid = process_mock:make_message_receiver(self(), mock3),
+		 mock4_pid = process_mock:make_message_receiver(self(), mock4),
+
+		 ok
+	     end)}}.

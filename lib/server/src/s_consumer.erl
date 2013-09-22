@@ -98,12 +98,15 @@ unsubscribe(Pid, Channel_code)->
 publish(Pid, Channel_code, Message)->
     gen_server:cast(Pid, {publish, Channel_code, Message}).
 
+-spec get_subscribtions(pid()) -> {ok, [binary()]}.
 get_subscribtions(Pid) ->
     gen_server:call(Pid, get_subscribtions).
 
+-spec add_message_handler(pid(), pid()) -> ok.
 add_message_handler(Pid, Handler_pid) ->
     gen_server:cast(Pid, {add_message_handler, Handler_pid}).
 
+-spec remove_message_handler(pid(), pid()) -> ok.
 remove_message_handler(Pid,Handler_pid) ->
     gen_server:cast(Pid, {remove_message_handler, Handler_pid}).
 
@@ -191,12 +194,15 @@ handle_cast({push_message, Channel_code, Message},
 
 handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}=State) ->
     Alive_handler_list = lists:filter(fun is_process_alive/1, Handler_list),
+    New_state = State#state{handlers=Alive_handler_list},
     case Alive_handler_list of
-	[] -> handle_cast({push_message, Channel_code, Message}, State);
+	[] ->
+	    error_logger:info_report("All hadlers are dead, Switch to buffer mode"),
+	    handle_cast({push_message, Channel_code, Message}, New_state);
 	_ -> lists:foreach(fun(Pid)->
 				   Pid ! {message, Channel_code, Message}
 			   end, Handler_list),
-	     {noreply, State#state{handlers=Alive_handler_list}}
+	     {noreply, New_state}
 	end;
 
 handle_cast({subscribe, Channel_code},

@@ -1,3 +1,35 @@
+//client debug code
+var host = location.host;
+window.clients = [];
+
+
+function parse_session_data(session_id){
+    var client = publicator.get_client(session_id);
+    client.onheartbeat(function(){
+	console.log('on hearthbeat');
+    });
+    client.onmessage(function(e){
+	console.log('response',e);
+    });
+    client.onopen(function(){
+	console.log('onopen');
+	client.subscribe('channel_a');
+	client.get_subscribtions();
+	client.get_subscribtions();
+	client.publish('channel_a', 'sample message text');
+    });
+    // client.send_message(1);
+    window.clients.push(client)
+    console.log(client);
+}
+
+
+publicator.get_session_id(parse_session_data);
+publicator.get_session_id(parse_session_data);
+publicator.get_session_id(parse_session_data);
+
+//end of client debug code
+
 $(function(){
     return 1;
     window.enable_logging = true;

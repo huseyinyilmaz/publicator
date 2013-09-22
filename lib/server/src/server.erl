@@ -15,6 +15,8 @@
 	 get_channels/0, get_subscribtions/1,
 	 create_consumer/0]).
 
+-export([add_message_handler/2, remove_message_handler/2]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -117,6 +119,23 @@ get_subscribtions(Consumer_code) ->
 	    s_consumer:get_subscribtions(Consumer_pid);
 	{error, not_found} -> {error, consumer_not_found}
     end.
+
+-spec add_message_handler(binary(), pid()) -> ok.
+add_message_handler(Consumer_code, Handler_pid) ->
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    s_consumer:add_message_handler(Consumer_pid, Handler_pid);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
+
+-spec remove_message_handler(binary(), pid()) -> ok.
+remove_message_handler(Consumer_code, Handler_pid) ->
+    case s_manager:get_consumer(Consumer_code) of
+	{ok, Consumer_pid} ->
+	    s_consumer:remove_message_handler(Consumer_pid, Handler_pid);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
+
 
 -spec create_consumer() -> {ok, binary(), binary()}.
 create_consumer() ->
