@@ -78,7 +78,7 @@ get_or_create_channel(Channel_code)->
 
 %% Creates a new consumer and returns its code and pid number
 -spec create_consumer() -> {ok, binary(), pid()}.
-create_consumer()->
+create_consumer() ->
     Consumer_code = s_utils:generate_code(),
     case get_consumer(Consumer_code) of
 	{ok, _Pid} -> create_consumer();
@@ -87,12 +87,11 @@ create_consumer()->
 				  {error, already_exists, Consumer_code, _Org_consumer_pid} ->
 				      s_consumer:stop(New_consumer_pid),
 				      create_consumer();
-				  _-> {ok, Consumer_code, New_consumer_pid}
+				  _ -> {ok, Consumer_code, New_consumer_pid}
 			      end
 			      
     end.
 
-    
 
 %%%===================================================================
 %%% Internal functions

@@ -14,7 +14,7 @@
 -export([info/3]).
 -export([terminate/2]).
 
--record(state,{session_id}).
+-record(state,{session_id, consumer_pid}).
 
 
 %%%===================================================================
@@ -30,6 +30,7 @@ init(_Transport, Req, _Opts, _Active) ->
     error_logger:info_report("Initializing bullet handler"),
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     io:format("XXX Req=~p~n Opts=~p~n",[Req, _Opts]),
+    
     {ok, Req1, #state{session_id=Session_id}}.
 
 stream(Raw_data, Req, State) ->
