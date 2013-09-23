@@ -161,10 +161,10 @@ server_handler_mode_test_() ->
 		 ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code2)),
 		 ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2)),
 
-		 mock1_pid = process_mock:make_message_receiver(self(), mock1),
-		 mock2_pid = process_mock:make_message_receiver(self(), mock2),
-		 mock3_pid = process_mock:make_message_receiver(self(), mock3),
-		 mock4_pid = process_mock:make_message_receiver(self(), mock4),
+		 Mock1_pid = process_mock:make_message_receiver(self(), mock1),
+		 Mock2_pid = process_mock:make_message_receiver(self(), mock2),
+		 Mock3_pid = process_mock:make_message_receiver(self(), mock3),
+		 Mock4_pid = process_mock:make_message_receiver(self(), mock4),
 
 		 ok
 	     end)}}.
