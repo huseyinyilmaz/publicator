@@ -150,10 +150,11 @@ server_handler_mode_test_() ->
      {"",
       ?_test(begin
 		 %% Create consumers
-		 {ok, Consumer_code1, _} = server:create_consumer(),
-		 {ok, Consumer_code2, _} = server:create_consumer(),
+		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(),
+		 {ok, Consumer_code2, Consumer_pid2} = server:create_consumer(),
 		 Channel_code = ?CHANNEL1,
 		 Channel_code2 = ?CHANNEL2,
+		 Message1 = <<"Message1">>,
 		 timer:sleep(?DELAY),
 
 		 ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
@@ -166,5 +167,15 @@ server_handler_mode_test_() ->
 		 Mock3_pid = process_mock:make_message_receiver(self(), mock3),
 		 Mock4_pid = process_mock:make_message_receiver(self(), mock4),
 
+		 server:add_message_handler(Consumer_code1, Mock1_pid),
+		 server:add_message_handler(Consumer_code2, Mock2_pid),
+		 server:add_message_handler(Consumer_code2, Mock3_pid),
+		 server:add_message_handler(Consumer_code2, Mock4_pid),
+
+		 s_consumer:publish(Consumer_pid1, Channel_code, Message1),
+		 ?assertEqual(Message1, process_mock:receive_message(mock2)),
+		 ?assertEqual(Message1, process_mock:receive_message(mock3)),
+		 ?assertEqual(Message1, process_mock:receive_message(mock4)),
+		 
 		 ok
 	     end)}}.
