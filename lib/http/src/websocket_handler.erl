@@ -27,11 +27,15 @@
 %%--------------------------------------------------------------------
 
 init(_Transport, Req, _Opts, _Active) ->
-    error_logger:info_report("Initializing bullet handler"),
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    io:format("XXX Req=~p~n Opts=~p~n",[Req, _Opts]),
     
-    {ok, Req1, #state{session_id=Session_id}}.
+    {ok, Consumer_pid} = h_server_adapter:get_consumer(Session_id),
+    ok = h_server_adapter:add_message_handler(Session_id, self()),
+    State = #state{session_id=Session_id,
+		   consumer_pid=Consumer_pid},
+    log(State, "Initializing bullet handler State=~p", [State]),
+    log(State, "XXXXXAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCC=========~n",[]),
+    {ok, Req1, State}.
 
 stream(Raw_data, Req, State) ->
     error_logger:info_report({raw_request, Raw_data}),
@@ -75,13 +79,15 @@ handle_request(Request_data, Req, State)->
 
 
 handle_request(<<"subscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    ok = h_server_adapter:subscribe(Session_id, Data, self()),
+    ok = h_server_adapter:subscribe(Session_id, Data),
+    ok = h_server_adapter:add_message_handler(Session_id, self()),
     Result = make_response(<<"subscribed">>,
 			   Data),
     {reply, Result, Req, State};
 
 handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    ok = h_server_adapter:unsubscribe(Session_id, Data, self()),
+    ok = h_server_adapter:unsubscribe(Session_id, Data),
+    ok = h_server_adapter:remove_message_handler(Session_id, self()),
     Result = make_response(<<"unsubscribed">>,
 			   Data),
     {reply, Result, Req, State};
@@ -119,7 +125,11 @@ handle_info(Msg,Req,State)->
     Result = make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
     {reply, Result, Req, State}.
 
-handle_terminate(_State)-> ok.
+handle_terminate(#state{session_id=Session_id}=State)->
+    io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"),
+    error_logger:info_report("Terminating websocket handler for session ~p~n", [State]),
+    ok = h_server_adapter:remove_message_handler(Session_id, self()),
+    ok.
 
 %%%===================================================================
 %%% Internal functions
@@ -136,3 +146,10 @@ handle_publish_request(Channel_code, Message, Req,
     ok = h_server_adapter:publish(Session_id, Channel_code, Message),
     {ok, Req, State}.
     
+
+log(State,String)->
+    log(State,String,[]).
+
+log(#state{session_id=Session_id}=_State, String, Args) ->
+    error_logger:info_report("[~p] ~p~n", [Session_id,
+					   io_lib:format(String, Args)]).

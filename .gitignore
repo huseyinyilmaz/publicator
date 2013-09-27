@@ -3,6 +3,7 @@
 \.\#*
 *.pyc
 logs/
+log/
 ebin/
 doc/
 publicator.tar.gz
