@@ -37,7 +37,7 @@ post_json(Req, State) ->
     {Result_status, Req3, State}.
 
 delete_resource(Req, State) ->
-    {Session_id, Req1} = h_utils:get_or_create_session(Req),
+    {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
     case Channel_code of
 	undefined -> Result_status = false;

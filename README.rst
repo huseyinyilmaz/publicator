@@ -16,7 +16,7 @@
 in-memory pub-sub server that works on http-rest interface.
 
 How to build a release
-----------------------
+======================
 To use publicator in a production system, you should package it. Your package will include all dependencies including erlang runtime itself. So you won't need erlang installed on your production system in order to run it. To generate a package first download source code from github.
 
 ::
@@ -26,6 +26,7 @@ To use publicator in a production system, you should package it. Your package wi
 Now you can generate a package for your system.
 
 ::
+
    $ make configure
    $ make
 
@@ -37,7 +38,7 @@ publicator.tar.gz will be generated in project root directory (current directory
 
 
 How to configure for development
----------------------------------
+================================
 
 If you want to checkout the code you can configure the system for development.
 
@@ -65,48 +66,84 @@ If you do not want to full compile before starting to test use following
    
 
 Usage
------
+=====
 
-In order to use publicator you should add a publicator-session-id cookie to your requests. That way publicator will identify and associates you with your subscribed channels.
+Rest Interface
+--------------
+
+First thing you should do to use publictor is to get a session id from the system. You can get your session id from session/
+
+::
+
+$ curl http://localhost:8766/session/
+{"session":"session123"}
+
+Here You get a session id "session123" from the system. With this session id You can use publicator. System will recognize You with this session id and associates your subscribed channels to You.
 
 To subscribe a channel:
 
 ::
 
-   $ curl --request POST http://localhost:8766/subscribtions/$CHANNEL_CODE/ \
-	--include \
-	--header "Content-Type:application/json" \
-	--cookie "publicator-session-id=$SESSION_ID"
+   $ curl --request POST http://localhost:8766/$SESSION_ID/subscribtions/$CHANNEL_CODE/ \
+   --include \
+   --header "Content-Type: application/json"
+
+   HTTP/1.1 204 No Content
+   connection: keep-alive
+   server: Cowboy
+   date: Sun, 29 Sep 2013 10:29:07 GMT
+   content-length: 0
+   content-type: text/html
+
 
 To unscribe a channel:
 
 ::
 
-    $ curl --request DELETE http://localhost:8766/subscribtions/$CHANNEL_CODE/ \
-	--include \
-	--header "Content-Type:application/json" \
-	--cookie "publicator-session-id=$SESSION_ID"
+   $ curl --request DELETE http://localhost:8766/$SESSION_ID/subscribtions/$CHANNEL_CODE/ /
+   --include \
+   --header "Content-Type: application/json"
 
-To check for incoming messages that is coming from your subscribed channels:
-
-::
-
-    curl --request GET http://localhost:8766/messages/ \
-	--include \
-	--header "Content-Type:application/json" \
-	--cookie "publicator-session-id=$SESSION_ID"
+   HTTP/1.1 204 No Content
+   connection: keep-alive
+   server: Cowboy
+   date: Sun, 29 Sep 2013 10:43:00 GMT
+   content-length: 0
+   content-type: text/html
 
 To send a message to a channel:
 
 ::
 
-    curl --request POST http://localhost:8766/messages/$CHANNEL_CODE/ \
-	--include \
-	--header "Content-Type:application/json" \
-	--cookie "publicator-session-id=$CUSTOM_SESSION_ID" \
-	--data "message=$MESSAGE"
+   $ curl --request POST http://localhost:8766/$SESSION_ID/messages/$CHANNEL_CODE/ \
+   --include \
+   --header "Content-Type: application/json" \
+   --data "message=Message1"
 
-Please beware that message senders do not receive messages they sent.
+   HTTP/1.1 204 No Content
+   connection: keep-alive
+   server: Cowboy
+   date: Sun, 29 Sep 2013 10:47:38 GMT
+   content-length: 0
+   content-type: text/html
+
+To check for incoming messages that is coming from your subscribed channels:
+
+::
+
+   $ curl --request GET http://localhost:8766/$SESSION_ID2/messages/ \
+   --include \
+   --header "Content-Type: application/json"
+
+   HTTP/1.1 200 OK
+   connection: keep-alive
+   server: Cowboy
+   date: Sun, 29 Sep 2013 10:48:46 GMT
+   content-length: 25
+   content-type: text/plain
+   vary: accept
+
+Please beware that message publishers do not receive messages they sent. Thats why in this example we are receiving messages from different session id.
 
 .. |build| image:: https://travis-ci.org/huseyinyilmaz/publicator.png
 .. _build: https://travis-ci.org/huseyinyilmaz/publicator
