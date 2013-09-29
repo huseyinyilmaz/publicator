@@ -24,7 +24,7 @@
 -spec init() -> ok.
 init() ->
     io:format("Initializing environment", []),
-    %% application:start(sasl),    
+    application:start(sasl),    
     %% appmon:start(),
     code:add_patha("deps/ranch/ebin"),
     code:add_patha("deps/cowlib/ebin"),
@@ -32,12 +32,8 @@ init() ->
     code:add_patha("deps/jiffy/ebin"),
     code:add_patha("deps/mimetypes/ebin"),
 
-    code:add_patha("deps/goldrush/ebin"),
-    code:add_patha("deps/lager/ebin"),
-
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
-    lager:start(),
     sync:go(),
     ok.
 

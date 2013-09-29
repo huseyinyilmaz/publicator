@@ -14,7 +14,7 @@ publicator.tar.gz
 .DS_Store
 .eunit
 deps
-test
+/test
 *.o
 *.beam
 *.plt
