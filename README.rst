@@ -143,7 +143,17 @@ To check for incoming messages that is coming from your subscribed channels:
    content-type: text/plain
    vary: accept
 
-Please beware that message publishers do not receive messages they sent. Thats why in this example we are receiving messages from different session id.
+   {"channel1":["Message1"]}
+
+
+   Please beware that message publishers do not receive messages they sent. Thats why in this example we are receiving messages from different session id. Format of message url is channel_code to message list mapping. for instance
+
+::
+
+   {"channel_name1": ["msg1", "msg2",......],
+    "channel_name2": ["msg3", "msg4",......],
+    .....
+   }
 
 .. |build| image:: https://travis-ci.org/huseyinyilmaz/publicator.png
 .. _build: https://travis-ci.org/huseyinyilmaz/publicator
