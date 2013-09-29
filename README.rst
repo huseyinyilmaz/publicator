@@ -145,8 +145,7 @@ To check for incoming messages that is coming from your subscribed channels:
 
    {"channel1":["Message1"]}
 
-
-   Please beware that message publishers do not receive messages they sent. Thats why in this example we are receiving messages from different session id. Format of message url is channel_code to message list mapping. for instance
+Please beware that message publishers do not receive messages they sent. Thats why in this example we are receiving messages from different session id. Format of message url is channel_code to message list mapping. for instance
 
 ::
 
