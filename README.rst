@@ -100,7 +100,7 @@ To unscribe a channel:
 
 ::
 
-   $ curl --request DELETE http://localhost:8766/$SESSION_ID/subscribtions/$CHANNEL_CODE/ /
+   $ curl --request DELETE http://localhost:8766/$SESSION_ID/subscribtions/$CHANNEL_CODE/ \
    --include \
    --header "Content-Type: application/json"
 
