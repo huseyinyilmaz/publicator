@@ -29,7 +29,6 @@ publicator.get_session_id(parse_session_data);
 publicator.get_session_id(parse_session_data);
 
 //end of client debug code
-
 $(function(){
     return 1;
     window.enable_logging = true;
@@ -40,6 +39,9 @@ $(function(){
 	session_id: '',
 	subscribe:function(channel_code){},
 	unsubscribe:function(channel_code){},
+	send_message: function(channel_code,msg){},
+	create_session: function(){return 1},
+	connect:function(session_id){},
     };
 
     window.publicatorApp = publicatorApp;
@@ -83,7 +85,7 @@ $(function(){
 	el: '#channels_container'
     });
 						   
-function send_message(){
+    function send_message(){
 	var main_input = $('#main_input');
 	chatClient.send_message({type: 'message',
 				 value:main_input.val()});
@@ -96,7 +98,5 @@ function send_message(){
 	    send_message();
     });
 
-						   alert(1);
-					     
 					     
 });
