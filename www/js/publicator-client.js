@@ -6,8 +6,9 @@ window.enable_logging = true;
 window.publicator = {
     get_session_id: function(callback){
 	function get_random_string(){return Math.random().toString(36).substring(7);};
-	function callback_fun(e){callback(e.session)}
-
+	function callback_fun(e){
+	    var session_id = e.session;
+	    callback(session_id)}
 	//Add random string string to end of the url so it will not be cached from browser
 	$.getJSON('session/' + get_random_string() ,callback_fun);
     },

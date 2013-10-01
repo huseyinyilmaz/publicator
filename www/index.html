@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Talky Bee</title>
+  <title>Publicator client</title>
   <meta charset="utf-8">
   <title>Bootstrap, from Twitter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,20 +36,33 @@
 {{/log}}
 </script>
 
-<script type="text/mustache" id="user_nick_template">
-  <button type="button" class="btn btn-link pr0 pl0" id="current_user_nick_button">
-     {{nick}}
-  </button>
+
+<script type="text/mustache" id="add_channel_template">
+      <button class="btn btn-warning mt10 mb10 ml10 mr10"
+              type="button"
+              id="add_channel_button">Add Channel</button>
 </script>
 
-<script type="text/mustache" id="user_nick_edit_template">
+
+<script type="text/mustache" id="add_channel_edit_template">
   <div class="input-append">
-    <input id="edit_nick_input" type="text" >
-    <button class="btn" type="button" id="edit_nick_ok_button">Ok</button>
-    <button class="btn" type="button" id="edit_nick_cancel_button">Cancel</button>
+    <input id="add_channel_input" type="text" >
+    <button class="btn btn-default" type="button" id="add_channel_ok_button">Ok</button>
+    <button class="btn btn-default" type="button" id="add_channel_cancel_button">Cancel</button>
   </div>  
 </script>
 
+<script type="text/mustache" id="session_disconnected_template">
+<div class="alert alert-danger">
+  <span class="glyphicon glyphicon-warning-sign"/> Disconnected
+</div>  
+</script>
+
+<script type="text/mustache" id="session_connected_template">
+<div class="alert alert-success">
+  <span class="glyphicon glyphicon-warning-sign"/> Connected
+</div>  
+</script>
 
 
 <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -66,11 +79,19 @@
   <div class="container-fluid">
     <div class="row-fluid">
       <div class="col-md-3"><h3 class="mute">Publicator Client</h3></div>
-      <div class="col-md-7">Share your url and talk to people.</div>
-      <div class="col-md-2">
-        <button class="btn btn-info" type="button" id="help_button">help</button>  
+      <div class="col-md-4">Share your url and talk to people.</div>
+      <div class="col-md-2 mt2" id="connection_panel">
       </div>
+      <div class="col-md-2 mt2">
+        <span class="text-muted s18">Session id:</span>
+        <span id="session_id_span" class="text-success s24">testtesttest</span>
+      </div>
+      
     </div>
+    <div class="col-md-1 tar">
+      <button class="btn btn-info" type="button" id="help_button">help</button>  
+    </div>
+  </div>
   </div>
 
 
@@ -79,9 +100,7 @@
 
 <!-- Side Panel -->
 <div class="pf t100 b70 w200 r0 oa">
-    <div id='lock_panel'>
-      <button class="btn btn-danger mt10 mb10 ml10 mr10" type="button" id="lock_button">Lock Room</button>
-    </div>
+    <div id='add_channel_panel'></div>
     <div id="channels_container" class="mt10 mb10 ml10 mr10"></div>
   </div>
 
