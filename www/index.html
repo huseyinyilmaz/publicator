@@ -18,13 +18,9 @@
 <!-- templates -->
 <!--------------->
 <script type="text/mustache" id="channels_template">
-<table class="table table-bordered table-striped">
-  {{#collection.models}}
-    <tr>
-      <td class="td-{{code}}">{{code}}</td>
-    </tr>
-    {{/collection.models}}
-  </table>
+{{#collection.models}}
+  <a href="#" class="list-group-item{{#is_active}} active{{/is_active}}" id="{{channel_id_prefix}}{{id}}">{{code}}</li>
+{{/collection.models}}
 </script>
 
 <script type="text/mustache" id="message_template">
@@ -64,6 +60,9 @@
 </div>  
 </script>
 
+<script type="text/mustache" id="channel_name_template">
+  <div class="alert alert-success">Channel: {{code}}</div>
+</script>
 
 <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 <!--[if lt IE 9]>
@@ -79,7 +78,9 @@
   <div class="container-fluid">
     <div class="row-fluid">
       <div class="col-md-3"><h3 class="mute">Publicator Client</h3></div>
-      <div class="col-md-4">Share your url and talk to people.</div>
+      <div class="col-md-4 lead" id="channel_name_panel">
+        <div class="alert alert-warning">No channel selected</div>
+      </div>
       <div class="col-md-2 mt2" id="connection_panel">
       </div>
       <div class="col-md-2 mt2">
@@ -100,8 +101,10 @@
 
 <!-- Side Panel -->
 <div class="pf t100 b70 w200 r0 oa">
-    <div id='add_channel_panel'></div>
-    <div id="channels_container" class="mt10 mb10 ml10 mr10"></div>
+  <!-- mt10 mb10 ml10 mr10 -->
+  <div id="channels_container" class="list-group"></div>
+  <div id='add_channel_panel'></div>
+  
   </div>
 
 

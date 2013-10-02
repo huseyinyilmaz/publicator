@@ -27,11 +27,11 @@ $(function(){
 		    break;
 		case 'subscribtions':
 		    _.each(e.data, function(code){
-			publicatorApp.channels.add({code:code},
+			publicatorApp.channels.add({id:code,
+						    code:code},
 						   {merge:true});
 		    });
 		    break;
-
 		};//end switch
 	    }, this));
 	    
@@ -75,10 +75,6 @@ $(function(){
 	render_add_channel:function(){
 	    $('#add_channel_panel').html(this.add_channel_template_text);
 	    $('#add_channel_button').click(_.bind(this.render_add_channel_edit, this));
-					     
-
-    
-	    
 	},
 	render_add_channel_edit:function(){
 	    $('#add_channel_panel').html(this.add_channel_edit_template_text);
@@ -87,9 +83,13 @@ $(function(){
 		this.client.subscribe($('#add_channel_input').val());
 		this.render_add_channel();
 		this.client.get_subscribtions();
-	    }
+	    };
 	    $('#add_channel_ok_button').click(_.bind(add_channel, this));
-	    
+	    $('#add_channel_input').keypress(_.bind(function(e){
+		var k = e.which || e.keyCode;
+		if(e.type=='keypress' && k==13)
+		    add_channel.apply(this,[]);
+	    }, this)).focus();
 	}
 	
     };
@@ -98,17 +98,22 @@ $(function(){
     ////////////
     // Models //
     ////////////
-    var Channel = Backbone.Model.extend({});
-    var ChannelCollection = Backbone.Collection.extend({model: Channel});
-
     var Message = Backbone.Model.extend({});
     var MessageCollection = Backbone.Collection.extend({model: Message});
+
+    var Channel = Backbone.Model.extend({
+	defaults: function(e){
+	    return {is_active:false,
+		    messages: new MessageCollection()};
+	}
+    });
+    var ChannelCollection = Backbone.Collection.extend({model: Channel});
+
 
     
     ///////////
     // Views //
     ///////////
-
     publicatorApp.ChannelsView = Backbone.View.extend({
 	initialize: function(options){
 	    _.bindAll(this, 'render' , 'initialize');
@@ -116,13 +121,39 @@ $(function(){
 	    this.collection.bind('remove', this.render);
 	    this.collection.bind('change', this.render);
 	    this.template_text = $('#channels_template').html();
+	    this.channel_name_template_text = $('#channel_name_template').html();
 	},
 	render: function(){
+	    var channel_id_prefix = 'channel_list_item_';
+	    var channel_name_template_text = this.channel_name_template_text;
+	    var collection = this.collection;
 	    this.$el.html(
 		Mustache.render(this.template_text,
 				{collection:this.collection,
-				 code: function(){return this.get('code');}})
-	    )}
+				 code: function(){return this.get('code');},
+				 is_active:function(){return this.get('is_active')},
+				 channel_id_prefix: channel_id_prefix
+				}));
+		_.each(collection.models,
+		       function(ch){
+			   $('#' + channel_id_prefix + ch.id).click(
+			       function(e){
+				   if(!ch.get('is_active')){
+				       collection.each(
+					   function(e){
+					       e.set('is_active',false,
+						     {silent: true});});
+				       ch.set('is_active', true);
+				       // XXX set Message view collection
+				       $("#channel_name_panel").html(
+					   Mustache.render(channel_name_template_text,
+							   {code:ch.get('code')}));
+				   }
+				   e.preventDefault();
+			       }
+			   )
+		       });
+	    }
     });
 
 
