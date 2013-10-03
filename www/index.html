@@ -25,10 +25,10 @@
 
 <script type="text/mustache" id="message_template">
 {{^log}}
-  {{nick}} - {{message}}
+ <p class="text-success"> {{message}}</p>
 {{/log}}
 {{#log}}
-  <small class="muted">{{nick}} - {{message}}</small>
+  <p class="text-warning">{{message}}</p>
 {{/log}}
 </script>
 
@@ -110,21 +110,17 @@
 
 
 <!-- Bottom Area -->
-<div id="bottomArea" class="pf b0 h70 r0 l0 oa">
-<table class="table mb0">
-  <tr>
-    <td style="padding-right: 0px !important;" id="current_user_nick_button_container">
-      <button type="button" class="btn btn-link pr0 pl0" id="current_user_nick_button">...loading</button>
-    </td>
-    <td class="wf">
-      <input id="main_input" type="text" class="wf mb0">
-    </td>
-    <td>
-      <button class="btn" type="button" id="send_button">Send</button>
-    </td>
-  </tr>
-</table>
-</div>
+<div id="bottomArea" class="container-fluid pf b0 h70 r0 l0 oa by">
+  <div class="row-fluid mt10">
+    <div class="col-md-11">
+      <input id="main_input" type="text" class="wf mb0 form-control"
+             disabled="disabled"/>
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-default wf" type="button" id="send_button"
+              disabled="disabled">Send</button>
+    </div>
+  </div>
 </div>
 
 

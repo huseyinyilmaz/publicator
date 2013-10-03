@@ -6,9 +6,13 @@ $(function(){
     var publicatorApp = {
 	session_id: '',
 	client: null,
+	channels: null,
 	subscribe:function(channel_code){},
 	unsubscribe:function(channel_code){},
-	send_message: function(channel_code,msg){},
+	send_message: function(msg){
+	    var channel_code = this.channels.get_active_channel().get('code');
+	    this.client.publish(channel_code, msg);
+	},
 	create_session: function(){return 1},
 	connect:function(session_id){
 	    this.log('initialize system with session id -', session_id);
@@ -68,9 +72,17 @@ $(function(){
 	
 	render_disconnected:function(){
 	    $('#connection_panel').html(this.disconnected_template_text);
+	    $('#send_button').attr('disabled', 'disabled');
+	    $('#main_input').attr('disabled', 'disabled');
+
+	    
 	},
 	render_connected:function(){
 	    $('#connection_panel').html(this.connected_template_text);
+	    if(this.channels.get_active_channel()){
+		$('#send_button').removeAttr('disabled');
+		$('#main_input').removeAttr('disabled')}
+	    
 	},
 	render_add_channel:function(){
 	    $('#add_channel_panel').html(this.add_channel_template_text);
@@ -98,8 +110,19 @@ $(function(){
     ////////////
     // Models //
     ////////////
-    var Message = Backbone.Model.extend({});
-    var MessageCollection = Backbone.Collection.extend({model: Message});
+    var Message = Backbone.Model.extend({
+	defaults: {log: false}
+    });
+
+    var MessageCollection = Backbone.Collection.extend({
+	model: Message,
+	message:function(msg){
+	    this.add({message: msg, log: false});
+	},
+	log:function(msg){
+	    this.add({message: msg, log: true});
+	},
+    });
 
     var Channel = Backbone.Model.extend({
 	defaults: function(e){
@@ -107,7 +130,12 @@ $(function(){
 		    messages: new MessageCollection()};
 	}
     });
-    var ChannelCollection = Backbone.Collection.extend({model: Channel});
+    var ChannelCollection = Backbone.Collection.extend({
+	model: Channel,
+    	get_active_channel: function(){
+	    return this.findWhere({is_active: true});
+	}
+});
 
 
     
@@ -144,6 +172,8 @@ $(function(){
 					       e.set('is_active',false,
 						     {silent: true});});
 				       ch.set('is_active', true);
+				       $('#send_button').removeAttr('disabled');
+				       $('#main_input').removeAttr('disabled')
 				       // XXX set Message view collection
 				       $("#channel_name_panel").html(
 					   Mustache.render(channel_name_template_text,
@@ -155,6 +185,26 @@ $(function(){
 		       });
 	    }
     });
+
+
+    publicatorApp.MessagesView = Backbone.View.extend({
+	template_text: $('#message_template').html(),
+	initialize: function(){
+	    _.bindAll(this, 'addMessage');
+	    this.collection.bind('add', this.addMessage);
+	},
+	
+	addMessage: function(model){
+	    this.$el.append(Mustache.render(
+		this.template_text,
+		model.toJSON()));
+            // keep the scroll to bottom
+            this.$el.stop().animate({
+		scrollTop: this.$el[0].scrollHeight
+            }, 800);
+	},
+    });
+    
 
 
     ////////////
@@ -185,6 +235,19 @@ $(function(){
     // render page components
     publicatorApp.render_disconnected();
     publicatorApp.render_add_channel();
+    //Add main input events
+    function send_message(){
+	var main_input = $('#main_input');
+	publicatorApp.send_message(main_input.val());
+	main_input.val('');}
+    
+    $('#send_button').click(send_message);
+    $('#main_input').keypress(function(e){
+	var k = e.which || e.keyCode;
+	if(e.type=='keypress' && k==13)
+	    send_message();
+    });
+    
     // load system
     publicatorApp.router = new publicatorApp.Router();
     Backbone.history.start();
@@ -197,6 +260,16 @@ $(function(){
 	el: '#channels_container'
     });
 
+    var firstCollection = new MessageCollection();
+    
+    publicatorApp.messagesView = new publicatorApp.MessagesView({
+	collection: firstCollection,
+	el: '#messages_container'
+    });
+
+    firstCollection.message('Welcome to publicator client.');
+    firstCollection.log('Add a channel and select it to see messages in that channel.')
+
 
 
     
@@ -204,19 +277,5 @@ $(function(){
     window.publicatorApp = publicatorApp;
 
 
-
-    
-    function send_message(){
-	var main_input = $('#main_input');
-	chatClient.send_message({type: 'message',
-				 value:main_input.val()});
-	main_input.val('');}
-    
-    $('#send_button').click(send_message);
-    $('#main_input').keypress(function(e){
-	var k = e.which || e.keyCode;
-	if(e.type=='keypress' && k==13)
-	    send_message();
-    });
 
 });
