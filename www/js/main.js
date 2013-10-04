@@ -10,7 +10,9 @@ $(function(){
 	subscribe:function(channel_code){},
 	unsubscribe:function(channel_code){},
 	send_message: function(msg){
-	    var channel_code = this.channels.get_active_channel().get('code');
+	    var channel = this.channels.get_active_channel();
+	    var channel_code = channel.get('code');
+	    channel.get('messages').log('Message published - ' + msg);
 	    this.client.publish(channel_code, msg);
 	},
 	create_session: function(){return 1},
@@ -30,12 +32,21 @@ $(function(){
 		case 'heartbeat':
 		    break;
 		case 'subscribtions':
-		    _.each(e.data, function(code){
-			publicatorApp.channels.add({id:code,
-						    code:code},
-						   {merge:true});
-		    });
+		    _.each(e.data, _.bind(function(code){
+			this.channels.add({id:code,
+					   code:code},
+					  {merge:true});
+		    }, this));
 		    break;
+		case 'message':
+		    this.log('messages received');
+		    var channel = this.channels.get_channel(e.channel_code);
+		    this.log(channel);
+		    var messages = channel.get('messages');
+		    this.log(messages);
+		    messages.message(e.data);
+		    break;
+		    
 		};//end switch
 	    }, this));
 	    
@@ -132,9 +143,8 @@ $(function(){
     });
     var ChannelCollection = Backbone.Collection.extend({
 	model: Channel,
-    	get_active_channel: function(){
-	    return this.findWhere({is_active: true});
-	}
+    	get_active_channel: function(){return this.findWhere({is_active: true});},
+	get_channel:function(code){return this.findWhere({code: code});}
 });
 
 
@@ -178,6 +188,8 @@ $(function(){
 				       $("#channel_name_panel").html(
 					   Mustache.render(channel_name_template_text,
 							   {code:ch.get('code')}));
+				       var messageView = publicatorApp.messageView;
+				       messageView.set_collection(ch.get('messages'));
 				   }
 				   e.preventDefault();
 			       }
@@ -187,13 +199,18 @@ $(function(){
     });
 
 
-    publicatorApp.MessagesView = Backbone.View.extend({
+    publicatorApp.MessageView = Backbone.View.extend({
 	template_text: $('#message_template').html(),
 	initialize: function(){
-	    _.bindAll(this, 'addMessage');
+	    _.bindAll(this, 'addMessage', 'set_collection');
 	    this.collection.bind('add', this.addMessage);
 	},
-	
+	set_collection:function(collection){
+	    this.collection.unbind('add', this.addMessage);
+	    this.collection = collection;
+	    this.collection.bind('add', this.addMessage);
+	    this.render();
+	},
 	addMessage: function(model){
 	    this.$el.append(Mustache.render(
 		this.template_text,
@@ -203,6 +220,12 @@ $(function(){
 		scrollTop: this.$el[0].scrollHeight
             }, 800);
 	},
+	render: function(){
+	    this.$el.html('');
+	    _.forEach(this.collection.models,
+		      this.addMessage);
+	    
+	}	
     });
     
 
@@ -238,7 +261,8 @@ $(function(){
     //Add main input events
     function send_message(){
 	var main_input = $('#main_input');
-	publicatorApp.send_message(main_input.val());
+	var msg = main_input.val();
+	publicatorApp.send_message(msg);
 	main_input.val('');}
     
     $('#send_button').click(send_message);
@@ -262,7 +286,7 @@ $(function(){
 
     var firstCollection = new MessageCollection();
     
-    publicatorApp.messagesView = new publicatorApp.MessagesView({
+    publicatorApp.messageView = new publicatorApp.MessageView({
 	collection: firstCollection,
 	el: '#messages_container'
     });
