@@ -46,6 +46,11 @@ $(function(){
 		    this.log(messages);
 		    messages.message(e.data);
 		    break;
+		case 'error':
+		    console.error('An Error ocurred on server. Starting a new connection');
+		    console.error('error: ' + e.data);
+		    publicatorApp.router.start_new_session();
+		    break;
 		    
 		};//end switch
 	    }, this));

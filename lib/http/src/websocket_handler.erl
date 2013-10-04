@@ -29,12 +29,15 @@
 init(_Transport, Req, _Opts, _Active) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     
-    {ok, Consumer_pid} = h_server_adapter:get_consumer(Session_id),
-    ok = h_server_adapter:add_message_handler(Session_id, self()),
-    State = #state{session_id=Session_id,
-		   consumer_pid=Consumer_pid},
-    log(State, "Initializing bullet handler State=~p", [State]),
-    log(State, "XXXXXAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCC=========~n",[]),
+    case h_server_adapter:get_consumer(Session_id) of
+	{ok, Consumer_pid} ->
+            ok = h_server_adapter:add_message_handler(Session_id, self()),
+            State = #state{session_id=Session_id,
+        		   consumer_pid=Consumer_pid},
+            log(State, "Initializing bullet handler State=~p", [State]);
+	{error, not_found}->
+	    State = #state{session_id=no_session, consumer_pid=undefined}
+    end,
     {ok, Req1, State}.
 
 stream(Raw_data, Req, State) ->
@@ -57,6 +60,10 @@ terminate(_Req, State) ->
 %%%===================================================================
 
 %% Handle incoming requests
+handle_request(_Request_data, Req, #state{session_id=no_session}=State)->
+    Result = make_response(<<"error">>,
+			  <<"Invalid session id">>),
+    {reply, Result, Req, State};
 handle_request(Request_data, Req, State)->
     
     %% Make sure that message format is valid
@@ -125,8 +132,12 @@ handle_info(Msg,Req,State)->
     Result = make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
     {reply, Result, Req, State}.
 
+handle_terminate(#state{session_id=no_session})->
+    io:format("terminate no_session handler"),
+    {error, erroraa};
+
 handle_terminate(#state{session_id=Session_id}=State)->
-    io:format("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"),
+    io:format("terminate handler for session ~p~n", [Session_id]),
     error_logger:info_report("Terminating websocket handler for session ~p~n", [State]),
     ok = h_server_adapter:remove_message_handler(Session_id, self()),
     ok.
