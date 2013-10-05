@@ -13,8 +13,8 @@
 -export([stream/3]).
 -export([info/3]).
 -export([terminate/2]).
-
--record(state,{session_id, consumer_pid}).
+-export([make_response/2, make_response/3]).
+-record(state,{session_id, consumer_pid, consumer_monitor_ref}).
 
 
 %%%===================================================================
@@ -28,30 +28,44 @@
 
 init(_Transport, Req, _Opts, _Active) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    
     case h_server_adapter:get_consumer(Session_id) of
 	{ok, Consumer_pid} ->
             ok = h_server_adapter:add_message_handler(Session_id, self()),
+	    Consumer_monitor_ref = monitor(process, Consumer_pid),
             State = #state{session_id=Session_id,
-        		   consumer_pid=Consumer_pid},
+        		   consumer_pid=Consumer_pid,
+			   consumer_monitor_ref=Consumer_monitor_ref},
             log(State, "Initializing bullet handler State=~p", [State]);
 	{error, not_found}->
-	    State = #state{session_id=no_session, consumer_pid=undefined}
+	    State = #state{session_id=no_session, consumer_pid=undefined,
+			   consumer_monitor_ref=undefined},
+	    log(State, "Given session id does not exist(~p)",[Session_id])
+		
     end,
     {ok, Req1, State}.
 
 stream(Raw_data, Req, State) ->
-    error_logger:info_report({raw_request, Raw_data}),
+    log(State, "Got request raw request=~p~n", [Raw_data]),
     Request_data = jiffy:decode(Raw_data),
-    error_logger:info_report({processed_request, Request_data}),
+    log(State, "Processed request=~p~n", [Request_data]),
     handle_request(Request_data, Req, State).
 
+info({'DOWN', Ref, process, Consumer_pid, Reason},
+     Req, #state{consumer_pid=Consumer_pid,
+		 consumer_monitor_ref=Ref}=State)->
+    
+    log(State, "Consumer process died reason = ~p", [Reason]),
+    Result = make_response(<<"error">>, <<"Consumer_handler is died unexpectedly">>,
+			   [{<<"reason_for_dead_process">>, Reason}]),
+    {reply, Result, Req, State};
+    
+
 info(Data, Req, State) ->
-    error_logger:info_report({info, Data}),
+    log(State, "Got an info request=~p~n",[Data]),
     handle_info(Data, Req, State).
 
 terminate(_Req, State) ->
-    error_logger:info_report(terminate_bullet_handler),
+    log(State, "Terminate bullet handler."),
     handle_terminate(State).
 
 
@@ -132,13 +146,9 @@ handle_info(Msg,Req,State)->
     Result = make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
     {reply, Result, Req, State}.
 
-handle_terminate(#state{session_id=no_session})->
-    io:format("terminate no_session handler"),
-    {error, erroraa};
-
+handle_terminate(#state{session_id=no_session})-> ok;
 handle_terminate(#state{session_id=Session_id}=State)->
-    io:format("terminate handler for session ~p~n", [Session_id]),
-    error_logger:info_report("Terminating websocket handler for session ~p~n", [State]),
+    log(State, "Terminate websocket handler"),
     ok = h_server_adapter:remove_message_handler(Session_id, self()),
     ok.
 
@@ -157,10 +167,11 @@ handle_publish_request(Channel_code, Message, Req,
     ok = h_server_adapter:publish(Session_id, Channel_code, Message),
     {ok, Req, State}.
     
-
-log(State,String)->
+log(State,
+    String)->
     log(State,String,[]).
 
 log(#state{session_id=Session_id}=_State, String, Args) ->
-    error_logger:info_report("[~p] ~p~n", [Session_id,
-					   io_lib:format(String, Args)]).
+    Log_msg = lists:concat(["~p - ", String]),
+    M = io_lib:format(Log_msg,[Session_id|Args]),
+    error_logger:info_report(M).
