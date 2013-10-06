@@ -10,6 +10,9 @@
 
 %% API
 -export([get_or_create_session/1, drop_session/1]).
+-export([make_response/2, make_response/3]).
+-export([error_response/1, error_response/2]).
+-export([no_session_response/0]).
 
 -define(COOKIE_NAME, <<"publicator-session-id">>).
 %%%===================================================================
@@ -60,7 +63,23 @@ get_or_create_session(Req) ->
 	     Req2 = Req1
     end,
     {Session_id, Req2}.
-    
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+make_response(Type, Data) ->
+    make_response(Type,Data,[]).
+
+make_response(Type, Data, Extra_list) ->
+    jiffy:encode({[{<<"type">>, Type},
+		   {<<"data">>, Data}| Extra_list]}).
+
+error_response(Data) ->
+    error_response(Data,[]).
+
+error_response(Data,Extra_list)->
+    make_response(<<"error">>,Data,Extra_list).
+
+no_session_response()-> error_response(<<"No session found">>).

@@ -25,28 +25,26 @@ content_types_accepted(Req, State)->
 
 post_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    {Method, Req2} = cowboy_req:method(Req1),
-    {Channel_code, Req3} = cowboy_req:binding(channel, Req2),
-    case {Method, Channel_code} of
-	{ _, undefined} -> Result_status = false;
-	{<<"POST">>, Channel_code} ->
-	    ok = h_server_adapter:subscribe(Session_id, Channel_code),
-	    Result_status = true;
-	_ -> Result_status = false
+    {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
+    case h_server_adapter:subscribe(Session_id, Channel_code) of
+	ok -> Resp = true;
+	{error, consumer_not_found} ->
+	    %% will return 422
+	    Resp=false
     end,
-    {Result_status, Req3, State}.
+    {Resp, Req2, State}.
 
 delete_resource(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
-    case Channel_code of
-	undefined -> Result_status = false;
-	Channel_code ->
-	    ok = h_server_adapter:unsubscribe(Session_id, Channel_code),
-	    Result_status = true
+    case h_server_adapter:unsubscribe(Session_id, Channel_code) of
+	ok -> Resp = true;
+	{error, consumer_not_found} ->
+	    %% this will return 500. it should return something else?
+	    error_logger:info_report(subscribtions,delete,consumer_not_found),
+	    Resp=false
     end,
-    
-    {Result_status, Req2, State}.
+    {Resp, Req2, State}.
     
 %%%===================================================================
 %%% Internal functions

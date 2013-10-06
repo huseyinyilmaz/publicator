@@ -187,4 +187,9 @@ server_handler_mode_test_() ->
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock3)),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock4)),
 		 ?assertEqual(Expected_msg2, process_mock:receive_message(mock1))
+                 %% ::{assertEqual_failed,[{module,server_tests},
+                 %%                      {line,189},
+                 %%                      {expression,"process_mock : receive_message ( mock1 )"},
+                 %%                      {expected,{message,<<"channelcode2">>,<<"Message2">>}},
+                 %%                      {value,{error,no_message_received}}]}		     
 	     end)}}.

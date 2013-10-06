@@ -27,8 +27,13 @@ post_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
     {ok, [{<<"message">>, Message}], Req3} = cowboy_req:body_qs(Req2),
-    ok = h_server_adapter:publish(Session_id, Channel_code, Message),
-    {true, Req3, State}.
+    case h_server_adapter:publish(Session_id, Channel_code, Message) of
+	ok -> Resp = true;
+	{error, consumer_not_found} ->
+	    %% will return 422
+	    Resp = false
+    end,
+    {Resp, Req3, State}.
 
 %%%===================================================================
 %%% Internal functions
