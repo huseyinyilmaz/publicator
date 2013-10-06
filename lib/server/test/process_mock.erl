@@ -4,7 +4,7 @@
 receive_message(Id) ->
 	receive
 		{mock_received, Id, Msg} -> Msg
-		after 2000 -> {error, no_message_received}
+		after 5000 -> {error, no_message_received}
 	end.
 
 
