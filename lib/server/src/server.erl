@@ -74,10 +74,14 @@ publish(Consumer_code, Channel_code, Message)->
 
 -spec subscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
 subscribe(Consumer_code, Channel_code) ->
-    case s_manager:get_consumer(Consumer_code) of
-	{ok, Consumer_pid} ->
-	    ok = s_consumer:subscribe(Consumer_pid, Channel_code);
-	{error, not_found} -> {error, consumer_not_found}
+    case is_channel_code_valid(Channel_code) of
+	false -> {error, invalid_channel_code};
+	true ->
+	    case s_manager:get_consumer(Consumer_code) of
+		{ok, Consumer_pid} ->
+		    ok = s_consumer:subscribe(Consumer_pid, Channel_code);
+		{error, not_found} -> {error, consumer_not_found}
+	    end
     end.
 
 -spec unsubscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
@@ -129,3 +133,9 @@ get_consumer(Consumer_code) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+is_channel_code_valid(Channel_code) ->
+    case re:run(Channel_code,"^[0-9a-z_]*$",[{capture, none}]) of
+	match -> true;
+	nomatch -> false
+	end.

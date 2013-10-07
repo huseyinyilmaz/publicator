@@ -94,16 +94,16 @@ handle_request(Request_data, Req, State)->
     end.
 
 
-
-
-
 handle_request(<<"subscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    ok = h_server_adapter:subscribe(Session_id, Data),
-    ok = h_server_adapter:add_message_handler(Session_id, self()),
-    Result = h_utils:make_response(<<"subscribed">>,
-			   Data),
+    case h_server_adapter:subscribe(Session_id, Data) of
+	{error, invalid_channel_code} ->
+	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
+	ok->
+	    ok = h_server_adapter:add_message_handler(Session_id, self()),
+	    Result = h_utils:make_response(<<"subscribed">>, Data)
+	    
+    end,
     {reply, Result, Req, State};
-
 handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
     ok = h_server_adapter:unsubscribe(Session_id, Data),
     ok = h_server_adapter:remove_message_handler(Session_id, self()),
