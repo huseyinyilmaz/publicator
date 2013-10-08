@@ -24,12 +24,16 @@
 </script>
 
 <script type="text/mustache" id="message_template">
-{{^log}}
+{{#msg}}
  <p class="text-success"> {{message}}</p>
-{{/log}}
+{{/msg}}
 {{#log}}
   <p class="text-warning">{{message}}</p>
 {{/log}}
+{{#error}}
+  <p class="text-error">{{message}}</p>
+{{/error}}
+  
 </script>
 
 

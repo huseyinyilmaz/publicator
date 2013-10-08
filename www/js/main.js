@@ -47,9 +47,14 @@ $(function(){
 		    messages.message(e.data);
 		    break;
 		case 'error':
-		    console.error('An Error ocurred on server. Starting a new connection');
-		    console.error('error: ' + e.data);
-		    publicatorApp.router.start_new_session();
+		    if(e.data=='invalid_channel_code'){
+			alert("Given chanel name is invalid.");
+		    }
+		    else{
+			console.error('An Error ocurred on server. Starting a new connection');
+			console.error('error: ' + e.data);
+			publicatorApp.router.start_new_session();
+		    }
 		    break;
 		    
 		};//end switch
@@ -127,17 +132,20 @@ $(function(){
     // Models //
     ////////////
     var Message = Backbone.Model.extend({
-	defaults: {log: false}
+	defaults: {type: 'msg'}
     });
 
     var MessageCollection = Backbone.Collection.extend({
 	model: Message,
 	message:function(msg){
-	    this.add({message: msg, log: false});
+	    this.add({message: msg, type: 'msg'});
 	},
 	log:function(msg){
-	    this.add({message: msg, log: true});
+	    this.add({message: msg, type: 'log'});
 	},
+	error:function(msg){
+	    this.add({message: msg, type: 'error'});
+	}
     });
 
     var Channel = Backbone.Model.extend({
@@ -219,7 +227,11 @@ $(function(){
 	addMessage: function(model){
 	    this.$el.append(Mustache.render(
 		this.template_text,
-		model.toJSON()));
+		{msg: model.get('msg'),
+		 is_msg: function(){return model.get('type') == 'msg'},
+		 is_log: function(){return model.get('type') == 'log'},
+		 is_error: function(){return model.get('type') == 'error'}
+		}));
             // keep the scroll to bottom
             this.$el.stop().animate({
 		scrollTop: this.$el[0].scrollHeight
