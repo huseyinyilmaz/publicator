@@ -23,6 +23,7 @@
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
+-define(TIMEOUT, 1000).
 
 -record(state, {code :: binary(),
 		channels :: dict(),
@@ -130,11 +131,13 @@ init([Code]) ->
 	{ok , _} -> {stop, already_exists};
 	{error, not_found} ->
 	    ets:insert(consumers, {Code, self()}),
-	    {ok, #state{code=Code,
-			channels=dict:new(),
-			channels_cache=dict:new(),
-			messages=dict:new(),
-			handlers=[]}}
+	    {ok,
+	     #state{code=Code,
+		    channels=dict:new(),
+		    channels_cache=dict:new(),
+		    messages=dict:new(),
+		    handlers=[]},
+	     ?TIMEOUT}
     end.
 
 %%--------------------------------------------------------------------
@@ -153,7 +156,7 @@ init([Code]) ->
 %%--------------------------------------------------------------------
 handle_call(get_code, _From, #state{code=Code}=State) ->
     Reply = {ok, Code},
-    {reply, Reply, State};
+    {reply, Reply, State, ?TIMEOUT};
 
 %% Gets all messages for this user
 handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=State) ->
@@ -163,7 +166,8 @@ handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=
 	       end,
     Messages_dict2 = dict:erase(Channel_code, Messages_dict),
     Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=Messages_dict2}};
+    {reply, Reply, State#state{messages=Messages_dict2},
+    ?TIMEOUT};
 
 %% Gets all messages for this user and returns them
 handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
@@ -171,11 +175,11 @@ handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
     %% 			 dict:to_list(Messages_dict)),
     Messages = Messages_dict,
     Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=dict:new()}};
+    {reply, Reply, State#state{messages=dict:new()}, ?TIMEOUT};
 
 handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
     Reply = {ok, dict:fetch_keys(Channels_dict)},
-    {reply,Reply, State}.
+    {reply,Reply, State, ?TIMEOUT}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -190,7 +194,8 @@ handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
 
 handle_cast({push_message, Channel_code, Message},
 	    #state{messages=Messages_dict, handlers=[]}=State) ->
-    {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)}};
+    {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)},
+     ?TIMEOUT};
 
 handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}=State) ->
     Alive_handler_list = lists:filter(fun is_process_alive/1, Handler_list),
@@ -202,7 +207,7 @@ handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}
 	_ -> lists:foreach(fun(Pid)->
 				   Pid ! {message, Channel_code, Message}
 			   end, Handler_list),
-	     {noreply, New_state}
+	     {noreply, New_state, ?TIMEOUT}
 	end;
 
 handle_cast({subscribe, Channel_code},
@@ -212,18 +217,19 @@ handle_cast({subscribe, Channel_code},
     %% if value is already exist in the dictionary log a warning
     case dict:is_key(Channel_code, Channels_dict) of
 	true ->
-	    {noreply,State};
+	    {noreply, State, ?TIMEOUT};
 	false ->
 	    ok = s_channel:add_handler(Channel_pid, Channel_code, self()),
 	    {noreply, State2#state{channels=dict:store(Channel_code,
 					       Channel_pid,
-					       Channels_dict)}}
+						       Channels_dict)},
+	     ?TIMEOUT}
     end;
 
 handle_cast({publish, Channel_code, Message}, State) ->
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
     s_channel:publish(Channel_pid, self(), Message),
-    {noreply, State2};
+    {noreply, State2, ?TIMEOUT};
 
 handle_cast({unsubscribe, Channel_code},
 	    #state{channels=Channels_dict}=State) ->
@@ -236,7 +242,7 @@ handle_cast({unsubscribe, Channel_code},
 	error ->
 	    Channels_dict2 = Channels_dict
     end,
-    {noreply, State#state{channels=Channels_dict2}};
+    {noreply, State#state{channels=Channels_dict2}, ?TIMEOUT};
 
 
 handle_cast({add_message_handler, Handler_pid},
@@ -245,15 +251,15 @@ handle_cast({add_message_handler, Handler_pid},
 	true -> New_handler_list = Handler_list;
 	false -> New_handler_list = [Handler_pid | Handler_list]
     end,
-    {noreply, State#state{handlers=New_handler_list}};
+    {noreply, State#state{handlers=New_handler_list}, ?TIMEOUT};
 
 handle_cast({remove_message_handler, Handler_pid},
 	    #state{handlers=Handler_list}=State) ->
-    {noreply, State#state{handlers=lists:delete(Handler_pid, Handler_list)}};
+    {noreply, State#state{handlers=lists:delete(Handler_pid, Handler_list)}, ?TIMEOUT};
 
 
 handle_cast(stop, State) ->
-    {stop, normal, State}.
+    {stop, normal, State, ?TIMEOUT}.
 
 
 %%--------------------------------------------------------------------
@@ -267,7 +273,7 @@ handle_cast(stop, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(_Info, State) ->
-    {noreply, State}.
+    {noreply, State, ?TIMEOUT}.
 
 %%--------------------------------------------------------------------
 %% @private
