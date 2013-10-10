@@ -5,6 +5,7 @@ NODE_NAME = publicator
 
 pack: compile
 	@$(REBAR) generate
+	cp -r www rel/publicator
 	cd rel; tar -czvf publicator.tar.gz publicator
 	rm -rf rel/publicator
 	mv rel/publicator.tar.gz .
