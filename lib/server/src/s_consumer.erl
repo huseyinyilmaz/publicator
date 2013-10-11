@@ -43,24 +43,18 @@
 %%--------------------------------------------------------------------
 -spec start_link(binary()) -> {ok, pid()} | ignore | {error, any()}.
 start_link(Code) ->
-    gen_server:start_link(?SERVER, [Code], []).
+    gen_server:start_link(?MODULE, [Code], []).
 
 -spec get(binary()) -> {ok, pid()} | {error, not_found}.
 get(Code) ->
     %% check if ets table has given Pid
     %% if it doesn't or value is a dead process
     %% set value to undefined.
-    case ets:lookup(consumers, Code) of
-	[{Code, Pid}] ->
-	    %% if process is dead remove it and
-	    %% return not found
-	    case is_process_alive(Pid) of
-		true -> {ok, Pid};
-		false -> ets:delete(consumers, Code),
-			 {error, not_found}
-	    end;
-	    [] -> {error, not_found}
-	end.
+    Key = make_consumer_key(Code),
+    case gproc:where({n, l, Key}) of
+	undefined -> {error, not_found};
+	Pid when is_pid(Pid) -> {ok, Pid}
+    end.
 
 
 -spec get_code(pid()) -> {ok, binary()}.
@@ -127,19 +121,22 @@ remove_message_handler(Pid,Handler_pid) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Code]) ->
-    case s_consumer:get(Code) of
-	{ok , _} -> {stop, already_exists};
-	{error, not_found} ->
-	    ets:insert(consumers, {Code, self()}),
+    Key = make_consumer_key(Code),
+    Self = self(),
+    case gproc:reg_or_locate({n,l,Key}) of
+	{Self, undefined} ->
 	    {ok,
 	     #state{code=Code,
 		    channels=dict:new(),
 		    channels_cache=dict:new(),
 		    messages=dict:new(),
 		    handlers=[]},
-	     ?TIMEOUT}
+	     ?TIMEOUT
+	    };
+	{Pid, undefined} when is_pid(Pid) -> 
+	    {stop, {already_exists, Pid}}
     end.
-
+    
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -305,6 +302,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+-spec make_consumer_key(binary()) -> server:consumer_key().
+make_consumer_key(Consumer_code) -> {channel, Consumer_code}.
+
 %%% Gets Channel from subscribtions list or channels cache,
 %%% If it cannot find it, function fill query the global channel list
 get_cached_channel(Channel_code, #state{channels=Channels_dict,
@@ -319,7 +319,7 @@ get_cached_channel(Channel_code, #state{channels=Channels_dict,
 		error ->
 		    %% result is not in Channel_dict nor Channel_cache_dict
 		    {ok, New_channel_pid}
-			= s_manager:get_or_create_channel(Channel_code),
+			= s_channel:get_channel(Channel_code),
 		    State2 = State#state{channels_cache=
 					     dict:store(Channel_code,
 							New_channel_pid,

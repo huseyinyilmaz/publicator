@@ -1,156 +1,140 @@
 %%%-------------------------------------------------------------------
-%%% @author Huseyin Yilmaz <>
+%%% @author Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%% @copyright (C) 2013, Huseyin Yilmaz
 %%% @doc
-%%% Handles all room events
+%%%
 %%% @end
-%%% Created : 21 Feb 2013 by Huseyin Yilmaz <>
+%%% Created : 11 Oct 2013 by Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%%-------------------------------------------------------------------
 -module(s_channel).
 
--behaviour(gen_event).
+-behaviour(gen_server).
 
--export([publish/3]).
 %% API
--export([start_link/0, stop/1, add_handler/3, delete_handler/2]).
-
-%% gen_event callbacks
--export([init/1, handle_event/2, handle_call/2, 
-	 handle_info/2, terminate/2, code_change/3]).
+-export([start_link/1]).
+-export([publish/2]).
+-export([get_channel/1]).
+%% gen_server callbacks
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2,
+	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
--define(TIMEOUT, 1000).
 
--record(state, {consumer :: pid(),
-		channel :: binary()}).
+-record(state, {code :: binary(),
+		consumers :: [binary()]
+	       }).
 
 %%%===================================================================
-%%% gen_event callbacks
+%%% API
 %%%===================================================================
-
-publish(Channel_pid, Consumer_pid, Message) ->
-    ok = gen_event:notify(Channel_pid, {Consumer_pid, Message}).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Creates an event manager
+%% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | {error, Error}
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_event:start_link().
+start_link(Code) ->
+    gen_server:start_link(?MODULE, [Code], []).
 
 
-stop(Pid)->
-    gen_event:stop(Pid).
-%%--------------------------------------------------------------------
-%% @doc
-%% Adds an event handler
-%%
-%% @spec add_handler() -> ok | {'EXIT', Reason} | term()
-%% @end
-%%--------------------------------------------------------------------
--spec add_handler(pid(),binary() ,pid()) -> ok | {'EXIT', term()} | term().
-add_handler(Pid, Channel_code, Consumer_pid) ->
-    Res = gen_event:add_handler(Pid,
-			       {?MODULE, Consumer_pid},
-			       [Consumer_pid, Channel_code]),
-    Res.
-    
-    
+publish(Channel_pid, Message) ->
+    ok.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Adds an event handler
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec delete_handler(pid(), pid()) -> ok.
-delete_handler(Pid, Upid) ->
-    gen_event:delete_handler(Pid, {?MODULE, Upid}, [delete_handler, Upid]).
+get_channel(Channel_code)->
+    Key = make_channel_key(Channel_code),
+    case gproc:where({n, l, Key}) of
+	undefined -> s_channel_sup:start_child(Channel_code);
+	Pid when is_pid(Pid) -> {ok, Pid}
+    end.
 
+
+    %% Key = make_channel_code(Channel_code).
+    %% case gproc:get_or_locate({n, l, Key}) 
 %%%===================================================================
-%%% gen_event callbacks
+%%% gen_server callbacks
 %%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Whenever a new event handler is added to an event manager,
-%% this function is called to initialize the event handler.
+%% Initializes the server
 %%
-%% @spec init(Args) -> {ok, State}
+%% @spec init(Args) -> {ok, State} |
+%%                     {ok, State, Timeout} |
+%%                     ignore |
+%%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Pid, Channel_code]) ->
-    {ok, #state{consumer=Pid,
-		channel=Channel_code}}.
-
-%% Whenever an event manager receives an event sent using
-%% gen_event:notify/2 or gen_event:sync_notify/2, this function is
-%% called for each installed event handler to handle the event.
--spec handle_event(term(), term()) ->
-			  {ok,_} |
-			  {ok,_,hibernate} |
-			  {swap_handler,_,_,atom() | {atom(),_},_}.
-
-
-%%% if owner of message is this consumer do not send message
-handle_event({_Consumer_pid, _Message}, #state{consumer=_Consumer_pid}=State) ->
-    {ok, State};
-
-handle_event({_Owner_Consumer_pid, Message}, #state{channel=Channel_code,
-						    consumer=Consumer_pid}=State) ->
-    %% if user is dead remove handler
-    s_consumer:push_message(Consumer_pid, Channel_code, Message),
-    {ok, State}.
+%% if a channel with same name is already registered stop this server 
+init([Code]) ->
+    Key = make_channel_key(Code),
+    Self = self(),
+    case gproc:reg_or_locate({n,l,Key}) of
+	{Self, undefined} ->
+	    {ok, #state{code=Code,
+			consumers=[]}};
+	{Pid, undefined} when is_pid(Pid) -> 
+	    {stop, {already_exists, Pid}}
+    end.
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Whenever an event manager receives a request sent using
-%% gen_event:call/3,4, this function is called for the specified
-%% event handler to handle the request.
+%% Handling call messages
 %%
-%% @spec handle_call(Request, State) ->
-%%                   {ok, Reply, State} |
-%%                   {swap_handler, Reply, Args1, State1, Mod2, Args2} |
-%%                   {remove_handler, Reply}
+%% @spec handle_call(Request, From, State) ->
+%%                                   {reply, Reply, State} |
+%%                                   {reply, Reply, State, Timeout} |
+%%                                   {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, Reply, State} |
+%%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(_Request, State) ->
+handle_call(_Request, _From, State) ->
     Reply = ok,
-    {ok, Reply, State}.
+    {reply, Reply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% This function is called for each installed event handler when
-%% an event manager receives any other message than an event or a
-%% synchronous request (or a system message).
+%% Handling cast messages
 %%
-%% @spec handle_info(Info, State) ->
-%%                         {ok, State} |
-%%                         {swap_handler, Args1, State1, Mod2, Args2} |
-%%                         remove_handler
+%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%%                                  {noreply, State, Timeout} |
+%%                                  {stop, Reason, State}
+%% @end
+%%--------------------------------------------------------------------
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling all non call/cast messages
+%%
+%% @spec handle_info(Info, State) -> {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
 handle_info(_Info, State) ->
-    {ok, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Whenever an event handler is deleted from an event manager, this
-%% function is called. It should be the opposite of Module:init/1 and
-%% do any necessary cleaning up.
+%% This function is called by a gen_server when it is about to
+%% terminate. It should be the opposite of Module:init/1 and do any
+%% necessary cleaning up. When it returns, the gen_server terminates
+%% with Reason. The return value is ignored.
 %%
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, _State) ->
-    io:format("s_channel_terminate has been called ~n ~p, ~n~p~n", [_Reason, _State]),
     ok.
 
 %%--------------------------------------------------------------------
@@ -167,3 +151,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+-spec make_channel_key(binary()) -> server:channel_key().
+make_channel_key(Channel_code) -> {channel, Channel_code}.

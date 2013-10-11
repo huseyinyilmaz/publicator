@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_child/0]).
+-export([start_link/0, start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -30,10 +30,13 @@
 %% @end
 %%--------------------------------------------------------------------
 %% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
-start_child() ->
+start_child(Channel_code) ->
     error_logger:info_report({start_new_user}),
-    Args_to_append = [],
-    supervisor:start_child(?SERVER, Args_to_append).
+    Args_to_append = [Channel_code],
+    case supervisor:start_child(?SERVER, Args_to_append) of
+	{ok, Pid} -> {ok, Pid};
+	{stop ,{already_exists, Pid}} -> {ok, Pid}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc

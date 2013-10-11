@@ -35,8 +35,6 @@
 %% @end
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
-    %% Create a global named tables
-    s_manager:init(),
     %% Start main supervisor
     case server_sup:start_link() of
 	{ok, Pid} ->

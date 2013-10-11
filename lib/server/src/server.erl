@@ -12,11 +12,13 @@
 -export([start/0, stop/0]).
 -export([get_messages/2, get_messages/1, publish/3,
 	 subscribe/2, unsubscribe/2,
-	 get_channels/0, get_subscribtions/1,
+	 get_subscribtions/1,
 	 create_consumer/0, get_consumer/1]).
 
 -export([add_message_handler/2, remove_message_handler/2]).
 
+
+-include("../include/server.hrl").
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -50,7 +52,7 @@ stop() ->
 %%--------------------------------------------------------------------
 -spec get_messages(binary(), binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
 get_messages(Consumer_code, Channel_code) ->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    s_consumer:get_messages(Consumer_pid, Channel_code);
 	{error, not_found} -> {error, consumer_not_found}
@@ -58,7 +60,7 @@ get_messages(Consumer_code, Channel_code) ->
  
 -spec get_messages(binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
 get_messages(Consumer_code) ->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    s_consumer:get_messages(Consumer_pid);
 	{error, not_found} -> {error, consumer_not_found}
@@ -66,7 +68,7 @@ get_messages(Consumer_code) ->
 
 -spec publish(binary(), binary(), binary()) -> ok | {error, consumer_not_found}.
 publish(Consumer_code, Channel_code, Message)->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    ok = s_consumer:publish(Consumer_pid, Channel_code, Message);
 	{error, not_found} -> {error, consumer_not_found}
@@ -77,7 +79,7 @@ subscribe(Consumer_code, Channel_code) ->
     case is_channel_code_valid(Channel_code) of
 	false -> {error, invalid_channel_code};
 	true ->
-	    case s_manager:get_consumer(Consumer_code) of
+	    case s_consumer:get(Consumer_code) of
 		{ok, Consumer_pid} ->
 		    ok = s_consumer:subscribe(Consumer_pid, Channel_code);
 		{error, not_found} -> {error, consumer_not_found}
@@ -86,20 +88,15 @@ subscribe(Consumer_code, Channel_code) ->
 
 -spec unsubscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
 unsubscribe(Consumer_code, Channel_code) ->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    ok = s_consumer:unsubscribe(Consumer_pid, Channel_code);
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
--spec get_channels() -> {ok, [binary()]}.
-get_channels() ->
-    {ok, s_manager:get_channels()}.
-
-
 -spec get_subscribtions(binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
 get_subscribtions(Consumer_code) ->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    s_consumer:get_subscribtions(Consumer_pid);
 	{error, not_found} -> {error, consumer_not_found}
@@ -107,7 +104,7 @@ get_subscribtions(Consumer_code) ->
 
 -spec add_message_handler(binary(), pid()) -> ok.
 add_message_handler(Consumer_code, Handler_pid) ->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    s_consumer:add_message_handler(Consumer_pid, Handler_pid);
 	{error, not_found} -> {error, consumer_not_found}
@@ -115,16 +112,16 @@ add_message_handler(Consumer_code, Handler_pid) ->
 
 -spec remove_message_handler(binary(), pid()) -> ok.
 remove_message_handler(Consumer_code, Handler_pid) ->
-    case s_manager:get_consumer(Consumer_code) of
+    case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
 	    s_consumer:remove_message_handler(Consumer_pid, Handler_pid);
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
 
--spec create_consumer() -> {ok, binary(), binary()}.
+-spec create_consumer() -> {ok, Code::binary(), Pid::binary()}.
 create_consumer() ->
-    s_manager:create_consumer().
+    s_consumer_sup:start_child().
 
 
 -spec get_consumer(binary()) -> {ok, pid()} | {error, not_found}.

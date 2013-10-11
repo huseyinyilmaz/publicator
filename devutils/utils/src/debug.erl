@@ -25,12 +25,15 @@
 init() ->
     io:format("Initializing environment", []),
     application:start(sasl),    
+    application:start(gproc),    
     %% appmon:start(),
     code:add_patha("deps/ranch/ebin"),
     code:add_patha("deps/cowlib/ebin"),
     code:add_patha("deps/cowboy/ebin"),
     code:add_patha("deps/jiffy/ebin"),
     code:add_patha("deps/mimetypes/ebin"),
+    code:add_patha("deps/gproc/ebin"),
+    code:add_patha("deps/ibrowse/ebin"),
 
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),

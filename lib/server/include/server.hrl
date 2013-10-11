@@ -1,0 +1,2 @@
+-type channel_key() :: {channel, binary()}.
+-type consumer_code():: {consumer, binary()}.
