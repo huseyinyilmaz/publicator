@@ -138,13 +138,13 @@ $(function(){
     var MessageCollection = Backbone.Collection.extend({
 	model: Message,
 	message:function(msg){
-	    this.add({message: msg, type: 'msg'});
+	    this.add({msg: msg, type: 'msg'});
 	},
 	log:function(msg){
-	    this.add({message: msg, type: 'log'});
+	    this.add({msg: msg, type: 'log'});
 	},
 	error:function(msg){
-	    this.add({message: msg, type: 'error'});
+	    this.add({msg: msg, type: 'error'});
 	}
     });
 

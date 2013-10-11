@@ -24,15 +24,15 @@
 </script>
 
 <script type="text/mustache" id="message_template">
-{{#msg}}
- <p class="text-success"> {{message}}</p>
-{{/msg}}
-{{#log}}
-  <p class="text-warning">{{message}}</p>
-{{/log}}
-{{#error}}
-  <p class="text-error">{{message}}</p>
-{{/error}}
+{{#is_msg}}
+ <p class="text-success"> {{msg}}</p>
+{{/is_msg}}
+{{#is_log}}
+  <p class="text-warning">{{msg}}</p>
+{{/is_log}}
+{{#is_error}}
+  <p class="text-error">{{msg}}</p>
+{{/is_error}}
   
 </script>
 
