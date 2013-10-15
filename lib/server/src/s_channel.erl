@@ -14,14 +14,19 @@
 -export([start_link/1]).
 -export([publish/2]).
 -export([get_channel/1]).
+-export([add_consumer/3]).
+-export([remove_consumer/2]).
+
+
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
+-define(TIMEOUT, 1000).
 
 -record(state, {code :: binary(),
-		consumers :: [binary()]
+		consumer_table :: ets:tid()
 	       }).
 
 %%%===================================================================
@@ -49,6 +54,12 @@ get_channel(Channel_code)->
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
 
+add_consumer(Channel_pid, Consumer_pid, Consumer_code) ->
+    gen_server:cast(Channel_pid, {add_consumer, Consumer_pid, Consumer_code}).
+
+remove_consumer(Channel_pid, Consumer_pid) ->
+    gen_server:cast(Channel_pid, {remove_consumer, Consumer_pid}).
+
 
     %% Key = make_channel_code(Channel_code).
     %% case gproc:get_or_locate({n, l, Key}) 
@@ -74,7 +85,7 @@ init([Code]) ->
     case gproc:reg_or_locate({n,l,Key}) of
 	{Self, undefined} ->
 	    {ok, #state{code=Code,
-			consumers=[]}};
+			consumer_table=ets:new(consumer_table,[set, public])}};
 	{Pid, undefined} when is_pid(Pid) -> 
 	    {stop, {already_exists, Pid}}
     end.
@@ -107,6 +118,19 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({add_consumer, Consumer_pid, Consumer_code},
+	    #state{consumer_table=Consumer_table}=State)->
+    ets:insert(Consumer_table,[{Consumer_pid, Consumer_code}]),
+    {noreply, State, ?TIMEOUT};
+
+handle_cast({remove_consumer, Consumer_pid},
+	    #state{consumer_table=Consumer_table}=State)->
+    ets:delete(Consumer_table, Consumer_pid),
+    {noreply, State, ?TIMEOUT};
+
+
+    
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 

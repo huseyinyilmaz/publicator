@@ -216,9 +216,9 @@ handle_cast({subscribe, Channel_code},
 	true ->
 	    {noreply, State, ?TIMEOUT};
 	false ->
-	    ok = s_channel:add_handler(Channel_pid, Channel_code, self()),
+	    ok = s_channel:add_consumer(Channel_pid, self(),Channel_code),
 	    {noreply, State2#state{channels=dict:store(Channel_code,
-					       Channel_pid,
+						       Channel_pid,
 						       Channels_dict)},
 	     ?TIMEOUT}
     end;
@@ -235,7 +235,7 @@ handle_cast({unsubscribe, Channel_code},
     case dict:find(Channel_code, Channels_dict) of
 	{ok, Channel_pid} ->
 	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
-	    ok = s_channel:delete_handler(Channel_pid, self());
+	    ok = s_channel:remove_consumer(Channel_pid, self());
 	error ->
 	    Channels_dict2 = Channels_dict
     end,
