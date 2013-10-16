@@ -13,11 +13,13 @@
 setup_server()->
     error_logger:info_report("Setup server"),
     ok = application:start(sasl),
+    ok = application:start(gproc),
     ok = server:start().
 
 cleanup_server(_)->
     error_logger:info_report("Cleanup server"),
     ok = server:stop(),
+    ok = application:stop(gproc),
     ok = application:stop(sasl).
 
 

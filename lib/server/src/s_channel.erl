@@ -17,7 +17,6 @@
 -export([add_consumer/3]).
 -export([remove_consumer/2]).
 
-
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
@@ -45,7 +44,8 @@ start_link(Code) ->
 
 
 publish(Channel_pid, Message) ->
-    ok.
+    gen_server:cast(Channel_pid, {publish, Message}).
+
 
 get_channel(Channel_code)->
     Key = make_channel_key(Channel_code),
@@ -118,6 +118,16 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({publish, Message},
+	    #state{code=Channel_code,
+		   consumer_table=Consumer_table}=State)->
+    %% todo run this on another temprary process
+    ets:foldl(fun({Consumer_pid, _Consumer_code}, Acc) ->
+		      s_consumer:push_message(Consumer_pid, Channel_code, Message),
+		      Acc
+	      end, ok, Consumer_table),
+    {noreply, State, ?TIMEOUT};
+
 handle_cast({add_consumer, Consumer_pid, Consumer_code},
 	    #state{consumer_table=Consumer_table}=State)->
     ets:insert(Consumer_table,[{Consumer_pid, Consumer_code}]),
@@ -176,5 +186,5 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec make_channel_key(binary()) -> server:channel_key().
+-spec make_channel_key(binary()) -> server:channel_hash_key().
 make_channel_key(Channel_code) -> {channel, Channel_code}.

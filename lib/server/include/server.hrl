@@ -1,2 +1,3 @@
--type channel_key() :: {channel, binary()}.
--type consumer_code():: {consumer, binary()}.
+-type code() :: binary.
+-type channel_hash_key() :: {channel, code()}.
+-type consumer_hash_key():: {consumer, code()}.

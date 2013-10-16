@@ -89,7 +89,7 @@ subscribe(Pid, Channel_code)->
 unsubscribe(Pid, Channel_code)->
     gen_server:cast(Pid, {unsubscribe, Channel_code}).
 
-
+-spec publish(pid(), binary(), binary()) -> ok.
 publish(Pid, Channel_code, Message)->
     gen_server:cast(Pid, {publish, Channel_code, Message}).
 
@@ -225,7 +225,7 @@ handle_cast({subscribe, Channel_code},
 
 handle_cast({publish, Channel_code, Message}, State) ->
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    s_channel:publish(Channel_pid, self(), Message),
+    s_channel:publish(Channel_pid, Message),
     {noreply, State2, ?TIMEOUT};
 
 handle_cast({unsubscribe, Channel_code},
@@ -302,7 +302,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec make_consumer_key(binary()) -> server:consumer_key().
+-spec make_consumer_key(server:code()) -> server:consumer_hash_key().
 make_consumer_key(Consumer_code) -> {channel, Consumer_code}.
 
 %%% Gets Channel from subscribtions list or channels cache,
