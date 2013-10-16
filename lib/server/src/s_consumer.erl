@@ -84,10 +84,10 @@ get_count() ->
     {ok, ets:info(consumer, size)}.
 
 subscribe(Pid, Channel_code)->
-    gen_server:cast(Pid, {subscribe, Channel_code}).
+    gen_server:call(Pid, {subscribe, Channel_code}).
 
 unsubscribe(Pid, Channel_code)->
-    gen_server:cast(Pid, {unsubscribe, Channel_code}).
+    gen_server:call(Pid, {unsubscribe, Channel_code}).
 
 -spec publish(pid(), binary(), binary()) -> ok.
 publish(Pid, Channel_code, Message)->
@@ -99,11 +99,11 @@ get_subscribtions(Pid) ->
 
 -spec add_message_handler(pid(), pid()) -> ok.
 add_message_handler(Pid, Handler_pid) ->
-    gen_server:cast(Pid, {add_message_handler, Handler_pid}).
+    gen_server:call(Pid, {add_message_handler, Handler_pid}).
 
 -spec remove_message_handler(pid(), pid()) -> ok.
 remove_message_handler(Pid,Handler_pid) ->
-    gen_server:cast(Pid, {remove_message_handler, Handler_pid}).
+    gen_server:call(Pid, {remove_message_handler, Handler_pid}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -154,6 +154,55 @@ init([Code]) ->
 handle_call(get_code, _From, #state{code=Code}=State) ->
     Reply = {ok, Code},
     {reply, Reply, State, ?TIMEOUT};
+
+handle_call({subscribe, Channel_code}, _From,
+	    #state{channels=Channels_dict}=State) ->
+    
+    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
+    Reply = ok,
+    %% if value is already exist in the dictionary log a warning
+    case dict:is_key(Channel_code, Channels_dict) of
+	true ->
+	    {reply, Reply, State, ?TIMEOUT};
+	false ->
+	    ok = s_channel:add_consumer(Channel_pid, self(),Channel_code),
+	    {reply, Reply, State2#state{channels=dict:store(Channel_code,
+							    Channel_pid,
+							    Channels_dict)},
+	     ?TIMEOUT}
+    end;
+
+handle_call({unsubscribe, Channel_code}, _From,
+	    #state{channels=Channels_dict}=State) ->
+
+    Reply = ok,
+    %% if value is already exist in the dictionary log a warning
+    case dict:find(Channel_code, Channels_dict) of
+	{ok, Channel_pid} ->
+	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
+	    ok = s_channel:remove_consumer(Channel_pid, self());
+	error ->
+	    Channels_dict2 = Channels_dict
+    end,
+    {reply, Reply, State#state{channels=Channels_dict2}, ?TIMEOUT};
+
+
+handle_call({add_message_handler, Handler_pid}, _From,
+	    #state{handlers=Handler_list}=State) ->
+    case lists:member(Handler_pid, Handler_list) of
+	true -> New_handler_list = Handler_list;
+	false -> New_handler_list = [Handler_pid | Handler_list]
+    end,
+    Reply = ok,
+    {reply, Reply, State#state{handlers=New_handler_list}, ?TIMEOUT};
+
+handle_call({remove_message_handler, Handler_pid}, _From,
+	    #state{handlers=Handler_list}=State) ->
+    Reply = ok,
+    {reply, Reply, State#state{handlers=lists:delete(Handler_pid, Handler_list)}, ?TIMEOUT};
+
+
+
 
 %% Gets all messages for this user
 handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=State) ->
@@ -207,53 +256,10 @@ handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}
 	     {noreply, New_state, ?TIMEOUT}
 	end;
 
-handle_cast({subscribe, Channel_code},
-	    #state{channels=Channels_dict}=State) ->
-    
-    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    %% if value is already exist in the dictionary log a warning
-    case dict:is_key(Channel_code, Channels_dict) of
-	true ->
-	    {noreply, State, ?TIMEOUT};
-	false ->
-	    ok = s_channel:add_consumer(Channel_pid, self(),Channel_code),
-	    {noreply, State2#state{channels=dict:store(Channel_code,
-						       Channel_pid,
-						       Channels_dict)},
-	     ?TIMEOUT}
-    end;
-
 handle_cast({publish, Channel_code, Message}, State) ->
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
     s_channel:publish(Channel_pid, Message),
     {noreply, State2, ?TIMEOUT};
-
-handle_cast({unsubscribe, Channel_code},
-	    #state{channels=Channels_dict}=State) ->
-    
-    %% if value is already exist in the dictionary log a warning
-    case dict:find(Channel_code, Channels_dict) of
-	{ok, Channel_pid} ->
-	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
-	    ok = s_channel:remove_consumer(Channel_pid, self());
-	error ->
-	    Channels_dict2 = Channels_dict
-    end,
-    {noreply, State#state{channels=Channels_dict2}, ?TIMEOUT};
-
-
-handle_cast({add_message_handler, Handler_pid},
-	    #state{handlers=Handler_list}=State) ->
-    case lists:member(Handler_pid, Handler_list) of
-	true -> New_handler_list = Handler_list;
-	false -> New_handler_list = [Handler_pid | Handler_list]
-    end,
-    {noreply, State#state{handlers=New_handler_list}, ?TIMEOUT};
-
-handle_cast({remove_message_handler, Handler_pid},
-	    #state{handlers=Handler_list}=State) ->
-    {noreply, State#state{handlers=lists:delete(Handler_pid, Handler_list)}, ?TIMEOUT};
-
 
 handle_cast(stop, State) ->
     {stop, normal, State, ?TIMEOUT}.
@@ -303,7 +309,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 -spec make_consumer_key(server:code()) -> server:consumer_hash_key().
-make_consumer_key(Consumer_code) -> {channel, Consumer_code}.
+make_consumer_key(Consumer_code) -> {consumer, Consumer_code}.
 
 %%% Gets Channel from subscribtions list or channels cache,
 %%% If it cannot find it, function fill query the global channel list

@@ -55,10 +55,10 @@ get_channel(Channel_code)->
     end.
 
 add_consumer(Channel_pid, Consumer_pid, Consumer_code) ->
-    gen_server:cast(Channel_pid, {add_consumer, Consumer_pid, Consumer_code}).
+    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code}).
 
 remove_consumer(Channel_pid, Consumer_pid) ->
-    gen_server:cast(Channel_pid, {remove_consumer, Consumer_pid}).
+    gen_server:call(Channel_pid, {remove_consumer, Consumer_pid}).
 
 
     %% Key = make_channel_code(Channel_code).
@@ -104,6 +104,22 @@ init([Code]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call({add_consumer, Consumer_pid, Consumer_code}, _From,
+	    #state{consumer_table=Consumer_table}=State)->
+    ets:insert(Consumer_table,[{Consumer_pid, Consumer_code}]),
+    Reply = ok,
+    {reply, Reply, State, ?TIMEOUT};
+
+handle_call({remove_consumer, Consumer_pid}, _From,
+	    #state{consumer_table=Consumer_table}=State)->
+    ets:delete(Consumer_table, Consumer_pid),
+    Reply = ok,
+    {reply, Reply, State, ?TIMEOUT};
+
+
+    
+
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -127,19 +143,6 @@ handle_cast({publish, Message},
 		      Acc
 	      end, ok, Consumer_table),
     {noreply, State, ?TIMEOUT};
-
-handle_cast({add_consumer, Consumer_pid, Consumer_code},
-	    #state{consumer_table=Consumer_table}=State)->
-    ets:insert(Consumer_table,[{Consumer_pid, Consumer_code}]),
-    {noreply, State, ?TIMEOUT};
-
-handle_cast({remove_consumer, Consumer_pid},
-	    #state{consumer_table=Consumer_table}=State)->
-    ets:delete(Consumer_table, Consumer_pid),
-    {noreply, State, ?TIMEOUT};
-
-
-    
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

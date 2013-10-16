@@ -35,7 +35,7 @@ start_child(Channel_code) ->
     Args_to_append = [Channel_code],
     case supervisor:start_child(?SERVER, Args_to_append) of
 	{ok, Pid} -> {ok, Pid};
-	{stop ,{already_exists, Pid}} -> {ok, Pid}
+	{error ,{already_exists, Pid}} -> {ok, Pid}
     end.
 
 %%--------------------------------------------------------------------

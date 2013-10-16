@@ -67,11 +67,10 @@ server_subscribtion_test_() ->
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code2)),
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
-
-	     % make sure to wait until consumers register themselves
-	     timer:sleep(?DELAY),
 	     %% test get channels
-             ?assertEqual({ok,[Channel_code2, Channel_code]}, server:get_channels()),
+	     {ok, Channel_list} = server:get_channels(),
+             ?assertEqual(lists:sort([Channel_code, Channel_code2]),
+			  lists:sort(Channel_list)),
 	     %% test get subscribtions
              ?assertEqual({ok,[Channel_code2, Channel_code]},
 			  server:get_subscribtions(Consumer_code1)),
@@ -80,9 +79,9 @@ server_subscribtion_test_() ->
              %% tests unsubscribe
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code)),
-	     % make sure to wait until consumers unregister themselves
-	     timer:sleep(?DELAY),
-             ?assertEqual({ok,[Channel_code2, Channel_code]}, server:get_channels()),
+	     {ok, Channel_list2} = server:get_channels(),
+             ?assertEqual(lists:sort([Channel_code, Channel_code2]),
+			  lists:sort(Channel_list2)),
              ?assertEqual({ok,[Channel_code2]}, server:get_subscribtions(Consumer_code1)),
              ?assertEqual({ok,[]}, server:get_subscribtions(Consumer_code2)),
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code2)),
@@ -108,8 +107,6 @@ server_message_test_() ->
 	     %% channel event handlers
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
-	     % make sure to wait until consumers register themselves
-	     timer:sleep(?DELAY),
 	     %% test send message
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1),
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE2),
@@ -117,15 +114,17 @@ server_message_test_() ->
 	     %% test get_messages
 	     {ok, Messages} = server:get_messages(Consumer_code2),
 	     ?assertEqual({ok,[?MESSAGE1, ?MESSAGE2]}, dict:find(Channel_code, Messages)),
+	     {ok, Messages2} = server:get_messages(Consumer_code1),
+	     ?assertEqual({ok,[?MESSAGE1, ?MESSAGE2]}, dict:find(Channel_code, Messages2)),
+	     
 	     %% make sure that Messages has been cleared
-	     {ok, Messages2} = server:get_messages(Consumer_code2),
-	     ?assertEqual(error, dict:find(Channel_code, Messages2)),
-	     %% make usre that original sender did not get the messages
-	     {ok, Messages3} = server:get_messages(Consumer_code1),
+	     {ok, Messages3} = server:get_messages(Consumer_code2),
 	     ?assertEqual(error, dict:find(Channel_code, Messages3)),
+	     %% make usre that original sender did not get the messages
+	     {ok, Messages4} = server:get_messages(Consumer_code1),
+	     ?assertEqual(error, dict:find(Channel_code, Messages4)),
 	     %% make sure that channels are seperate
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2)),
-	     timer:sleep(?DELAY),
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1),
              ok = server:publish(Consumer_code1, Channel_code2, ?MESSAGE2),
 	     timer:sleep(?DELAY),
@@ -135,9 +134,9 @@ server_message_test_() ->
 	     ?assertEqual({ok,[]},
 			  server:get_messages(Consumer_code2, Channel_code)),
 	     %% test get rest of the channels after getting one channnel
-	     {ok, Messages4} = server:get_messages(Consumer_code2),
-	     ?assertEqual({ok,[?MESSAGE2]}, dict:find(Channel_code2, Messages4)),
-	     ?assertEqual(error, dict:find(Channel_code, Messages4)),
+	     {ok, Messages5} = server:get_messages(Consumer_code2),
+	     ?assertEqual({ok,[?MESSAGE2]}, dict:find(Channel_code2, Messages5)),
+	     ?assertEqual(error, dict:find(Channel_code, Messages5)),
              %% tests unsubscribe
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code))
@@ -158,8 +157,8 @@ server_handler_mode_test_() ->
 		 Channel_code2 = ?CHANNEL2,
 		 Message1 = <<"Message1">>,
 		 Message2 = <<"Message2">>,
-		 
 		 timer:sleep(?DELAY),
+		 %% Add consumers to channels
 
 		 ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
 		 ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
@@ -182,16 +181,13 @@ server_handler_mode_test_() ->
 		 Expected_msg2 = {message,
 				  Channel_code2,
 				  Message2},
-		 
+
 		 s_consumer:publish(Consumer_pid1, Channel_code, Message1),
 		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2),
+		 timer:sleep(?DELAY),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock2)),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock3)),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock4)),
+		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock1)),
 		 ?assertEqual(Expected_msg2, process_mock:receive_message(mock1))
-                 %% ::{assertEqual_failed,[{module,server_tests},
-                 %%                      {line,189},
-                 %%                      {expression,"process_mock : receive_message ( mock1 )"},
-                 %%                      {expected,{message,<<"channelcode2">>,<<"Message2">>}},
-                 %%                      {value,{error,no_message_received}}]}		     
 	     end)}}.

@@ -13,11 +13,12 @@
 -export([get_messages/2, get_messages/1, publish/3,
 	 subscribe/2, unsubscribe/2,
 	 get_subscribtions/1,
-	 create_consumer/0, get_consumer/1]).
+	 create_consumer/0, get_consumer/1, get_channels/0]).
 
 -export([add_message_handler/2, remove_message_handler/2]).
 
 
+-include_lib("stdlib/include/qlc.hrl").
 -include("../include/server.hrl").
 %%%===================================================================
 %%% API
@@ -44,6 +45,13 @@ stop() ->
     ok = application:stop(server).
 
 
+
+-spec get_channels() -> {ok, [code()]}.
+get_channels() ->
+    Q1 = qlc:q([Channel_code|| {{n,l,{channel, Channel_code}}, _, undefined }
+				   <- gproc:table(names)]),
+    Channel_code_list = qlc:e(Q1),
+    {ok, Channel_code_list}.
 %%--------------------------------------------------------------------
 %% @doc
 %% Stops pub-sub server
