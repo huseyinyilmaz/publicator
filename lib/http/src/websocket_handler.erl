@@ -128,7 +128,15 @@ handle_request(<<"publish">>,
 	       Req, State) ->
     handle_publish_request(Channel_code, Message, Req,State);
 
-	
+handle_request(<<"get_consumers">>,
+	       {[{<<"channel_code">>,Channel_code}]},
+	       Req, State) ->
+    {ok, Consumers_data} = h_server_adapter:get_consumers(Channel_code),
+    Result = h_utils:make_response(<<"consumers">>,Consumers_data),
+    {reply, Result, Req, State};
+    
+
+
 handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
     Result = h_utils:make_response(<<"unhandled_msg">>, Data,
 			   [{<<"request_type">>, Type},

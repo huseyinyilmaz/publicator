@@ -12,7 +12,7 @@
 -export([subscribe/2, subscribe/3, unsubscribe/2, unsubscribe/3,
 	 get_channels/0, get_subscribtions/1,
 	 get_messages/1, publish/3, create_consumer/0,
-	 get_consumer/1]).
+	 get_consumer/1, get_consumers/1]).
 
 -export([add_message_handler/2, remove_message_handler/2]).
 
@@ -39,6 +39,8 @@ get_messages(Session_id) -> server:get_messages(Session_id).
 publish(Session_id, Channel_code, Message) -> server:publish(Session_id, Channel_code, Message).
 create_consumer() -> server:create_consumer().
 
+get_consumers(Channel_code) -> server:get_consumers(Channel_code).
+    
 add_message_handler(Session_id, Handler_pid) -> server:add_message_handler(Session_id,
 									   Handler_pid).
 remove_message_handler(Session_id, Handler_pid) -> server:remove_message_handler(Session_id,

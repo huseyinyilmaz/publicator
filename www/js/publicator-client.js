@@ -49,6 +49,11 @@ window.publicator = {
 		data: {'channel_code': channel_code,
 		       'message':message}});},
 
+	get_consumers: function(channel_code){
+	    this.send_message({
+		type: 'get_consumers',
+		data: {'channel_code': channel_code}});},
+	    
 	handlers: {
 	    onopen_handler_list:[],
 	    ondisconnect_handler_list:[],
