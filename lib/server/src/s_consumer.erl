@@ -156,7 +156,8 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     {reply, Reply, State, ?TIMEOUT};
 
 handle_call({subscribe, Channel_code}, _From,
-	    #state{channels=Channels_dict}=State) ->
+	    #state{code=Code,
+		   channels=Channels_dict}=State) ->
     
     {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
     Reply = ok,
@@ -165,7 +166,7 @@ handle_call({subscribe, Channel_code}, _From,
 	true ->
 	    {reply, Reply, State, ?TIMEOUT};
 	false ->
-	    ok = s_channel:add_consumer(Channel_pid, self(),Channel_code),
+	    ok = s_channel:add_consumer(Channel_pid, self(),Code),
 	    {reply, Reply, State2#state{channels=dict:store(Channel_code,
 							    Channel_pid,
 							    Channels_dict)},
@@ -173,14 +174,15 @@ handle_call({subscribe, Channel_code}, _From,
     end;
 
 handle_call({unsubscribe, Channel_code}, _From,
-	    #state{channels=Channels_dict}=State) ->
+	    #state{channels=Channels_dict,
+		   code=Code}=State) ->
 
     Reply = ok,
     %% if value is already exist in the dictionary log a warning
     case dict:find(Channel_code, Channels_dict) of
 	{ok, Channel_pid} ->
 	    Channels_dict2 = dict:erase(Channel_code, Channels_dict),
-	    ok = s_channel:remove_consumer(Channel_pid, self());
+	    ok = s_channel:remove_consumer(Channel_pid, Code);
 	error ->
 	    Channels_dict2 = Channels_dict
     end,

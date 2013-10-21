@@ -67,6 +67,12 @@ server_subscribtion_test_() ->
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code2)),
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code)),
+	     {ok, Consumer_list1} = server:get_consumers(Channel_code),
+             ?assertEqual(lists:sort([Consumer_code1, Consumer_code2]),
+			  lists:sort(Consumer_list1)),
+             ?assertEqual({ok, [Consumer_code1]},
+			  server:get_consumers(Channel_code2)),
+	     
 	     %% test get channels
 	     {ok, Channel_list} = server:get_channels(),
              ?assertEqual(lists:sort([Channel_code, Channel_code2]),

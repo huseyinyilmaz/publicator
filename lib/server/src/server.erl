@@ -14,7 +14,7 @@
 	 subscribe/2, unsubscribe/2,
 	 get_subscribtions/1,
 	 create_consumer/0, get_consumer/1, get_channels/0]).
-
+-export([get_consumers/1]).
 -export([add_message_handler/2, remove_message_handler/2]).
 
 
@@ -135,6 +135,15 @@ create_consumer() ->
 -spec get_consumer(binary()) -> {ok, pid()} | {error, not_found}.
 get_consumer(Consumer_code) ->
     s_consumer:get(Consumer_code).
+
+-spec get_consumers(binary()) -> {ok, pid()} | {error, not_found}.
+get_consumers(Channel_code) ->
+    case s_channel:get_channel(Channel_code) of
+	{ok, Consumer_pid} ->
+	    s_channel:get_consumers(Consumer_pid);
+	{error, not_found} -> {error, channel_not_found}
+    end.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
