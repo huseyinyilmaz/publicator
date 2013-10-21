@@ -11,7 +11,7 @@
 %% API
 -export([start/0, stop/0]).
 -export([get_messages/2, get_messages/1, publish/3,
-	 subscribe/2, unsubscribe/2,
+	 subscribe/3, unsubscribe/2,
 	 get_subscribtions/1,
 	 create_consumer/0, get_consumer/1, get_channels/0]).
 -export([get_consumers/1]).
@@ -82,14 +82,15 @@ publish(Consumer_code, Channel_code, Message)->
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
--spec subscribe(binary(), binary()) -> ok | {error, consumer_not_found}.
-subscribe(Consumer_code, Channel_code) ->
+-spec subscribe(binary(), binary(), channel_handler_type()) ->
+		       ok | {error, consumer_not_found}.
+subscribe(Consumer_code, Channel_code, Handler_type) ->
     case is_channel_code_valid(Channel_code) of
 	false -> {error, invalid_channel_code};
 	true ->
 	    case s_consumer:get(Consumer_code) of
 		{ok, Consumer_pid} ->
-		    ok = s_consumer:subscribe(Consumer_pid, Channel_code);
+		    ok = s_consumer:subscribe(Consumer_pid, Channel_code, Handler_type);
 		{error, not_found} -> {error, consumer_not_found}
 	    end
     end.

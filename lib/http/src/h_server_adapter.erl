@@ -9,7 +9,7 @@
 -module(h_server_adapter).
 
 %% API
--export([subscribe/2, subscribe/3, unsubscribe/2, unsubscribe/3,
+-export([subscribe/3, unsubscribe/2,
 	 get_channels/0, get_subscribtions/1,
 	 get_messages/1, publish/3, create_consumer/0,
 	 get_consumer/1, get_consumers/1]).
@@ -20,15 +20,16 @@
 %%% API
 %%%===================================================================
     
-subscribe(Session_id, Channel_code)-> server:subscribe(Session_id, Channel_code).
-subscribe(Session_id, Channel_code, Handler)-> server:subscribe(Session_id,
-								Channel_code,
-								Handler).
+subscribe(Session_id, Channel_code, Handler_type)->
+    server:subscribe(Session_id, Channel_code, Handler_type).
+%% subscribe(Session_id, Channel_code, Handler)-> server:subscribe(Session_id,
+%% 								Channel_code,
+%% 								Handler).
 
 unsubscribe(Session_id, Channel_code)-> server:unsubscribe(Session_id, Channel_code).
-unsubscribe(Session_id, Channel_code, Handler)-> server:unsubscribe(Session_id,
-								    Channel_code,
-								    Handler).
+%% unsubscribe(Session_id, Channel_code, Handler)-> server:unsubscribe(Session_id,
+%% 								    Channel_code,
+%% 								    Handler).
 
 get_channels()-> server:get_channels().
 

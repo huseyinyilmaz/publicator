@@ -14,7 +14,7 @@
 %% API
 -export([start_link/1, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
-	 get_messages/2, get_messages/1, subscribe/2,
+	 get_messages/2, get_messages/1, subscribe/3,
 	 publish/3, get_subscribtions/1, unsubscribe/2,
 	 add_message_handler/2, remove_message_handler/2]).
 
@@ -83,8 +83,9 @@ stop(Pid) ->
 get_count() ->
     {ok, ets:info(consumer, size)}.
 
-subscribe(Pid, Channel_code)->
-    gen_server:call(Pid, {subscribe, Channel_code}).
+-spec subscribe(pid(), binary(), server:channel_handler_type()) -> ok.
+subscribe(Pid, Channel_code, Handler_type)->
+    gen_server:call(Pid, {subscribe, Channel_code, Handler_type}).
 
 unsubscribe(Pid, Channel_code)->
     gen_server:call(Pid, {unsubscribe, Channel_code}).
@@ -155,7 +156,7 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     Reply = {ok, Code},
     {reply, Reply, State, ?TIMEOUT};
 
-handle_call({subscribe, Channel_code}, _From,
+handle_call({subscribe, Channel_code, Handler_type}, _From,
 	    #state{code=Code,
 		   channels=Channels_dict}=State) ->
     
@@ -166,7 +167,7 @@ handle_call({subscribe, Channel_code}, _From,
 	true ->
 	    {reply, Reply, State, ?TIMEOUT};
 	false ->
-	    ok = s_channel:add_consumer(Channel_pid, self(),Code),
+	    ok = s_channel:add_consumer(Channel_pid, self(),Code, Handler_type),
 	    {reply, Reply, State2#state{channels=dict:store(Channel_code,
 							    Channel_pid,
 							    Channels_dict)},

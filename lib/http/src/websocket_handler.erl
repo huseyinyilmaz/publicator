@@ -95,7 +95,7 @@ handle_request(Request_data, Req, State)->
 
 
 handle_request(<<"subscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    case h_server_adapter:subscribe(Session_id, Data) of
+    case h_server_adapter:subscribe(Session_id, Data, message_only) of
 	{error, invalid_channel_code} ->
 	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
 	ok->

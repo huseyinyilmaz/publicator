@@ -15,7 +15,7 @@
 -export([publish/2]).
 -export([get_channel/1]).
 -export([get_consumers/1]).
--export([add_consumer/3]).
+-export([add_consumer/4]).
 -export([remove_consumer/2]).
 
 %% gen_server callbacks
@@ -26,8 +26,7 @@
 -define(TIMEOUT, 1000).
 
 -record(state, {code :: binary(),
-		consumer_table :: ets:tid()
-	       }).
+		consumer_table :: ets:tid()}).
 
 %%%===================================================================
 %%% API
@@ -58,8 +57,8 @@ get_channel(Channel_code)->
 get_consumers(Channel_pid) ->
     gen_server:call(Channel_pid, get_consumers).
 
-add_consumer(Channel_pid, Consumer_pid, Consumer_code) ->
-    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code}).
+add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type) ->
+    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type}).
 
 remove_consumer(Channel_pid, Consumer_pid) ->
     gen_server:call(Channel_pid, {remove_consumer, Consumer_pid}).
@@ -108,9 +107,9 @@ init([Code]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({add_consumer, Consumer_pid, Consumer_code}, _From,
+handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
 	    #state{consumer_table=Consumer_table}=State)->
-    ets:insert(Consumer_table,[{Consumer_code, Consumer_pid}]),
+    ets:insert(Consumer_table,[{Consumer_code, {Consumer_pid, Handler_type}}]),
     Reply = ok,
     {reply, Reply, State, ?TIMEOUT};
 
@@ -147,7 +146,7 @@ handle_cast({publish, Message},
 	    #state{code=Channel_code,
 		   consumer_table=Consumer_table}=State)->
     %% todo run this on another temprary process
-    ets:foldl(fun({_Consumer_Code, Consumer_pid}, Acc) ->
+    ets:foldl(fun({_Consumer_Code, {Consumer_pid, _Handler_type}}, Acc) ->
 		      s_consumer:push_message(Consumer_pid, Channel_code, Message),
 		      Acc
 	      end, ok, Consumer_table),
