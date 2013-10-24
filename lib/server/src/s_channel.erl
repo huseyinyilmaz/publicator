@@ -110,6 +110,7 @@ init([Code]) ->
 handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
 	    #state{consumer_table=Consumer_table}=State)->
     ets:insert(Consumer_table,[{Consumer_code, {Consumer_pid, Handler_type}}]),
+    _Handler_list = ets:match(Consumer_table, {'_', {'_', all}}),
     Reply = ok,
     {reply, Reply, State, ?TIMEOUT};
 

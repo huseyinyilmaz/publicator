@@ -94,16 +94,22 @@ handle_request(Request_data, Req, State)->
     end.
 
 
-handle_request(<<"subscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    case h_server_adapter:subscribe(Session_id, Data, message_only) of
-	{error, invalid_channel_code} ->
-	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
-	ok->
-	    ok = h_server_adapter:add_message_handler(Session_id, self()),
-	    Result = h_utils:make_response(<<"subscribed">>, Data)
-	    
-    end,
-    {reply, Result, Req, State};
+handle_request(<<"subscribe">>,
+	       {[{<<"channel_code">>, Channel_code},
+		 {<<"type">>, Handler_type_bin}]},
+	       Req, State) ->
+    handle_subscribe_request(Handler_type_bin, Channel_code, Req,State);
+
+handle_request(<<"subscribe">>,
+	       {[{<<"type">>, Handler_type_bin},
+		 {<<"channel_code">>, Channel_code}]},
+	       Req, State) ->
+    handle_subscribe_request(Handler_type_bin, Channel_code, Req,State);
+
+
+handle_request(<<"full_subcribe">>, Data, Req, State) ->
+    handle_subscribe_request(all, Data, Req,State);
+
 handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
     ok = h_server_adapter:unsubscribe(Session_id, Data),
     ok = h_server_adapter:remove_message_handler(Session_id, self()),
@@ -166,7 +172,23 @@ handle_publish_request(Channel_code, Message, Req,
 		    #state{session_id=Session_id}=State) ->
     ok = h_server_adapter:publish(Session_id, Channel_code, Message),
     {ok, Req, State}.
-    
+
+handle_subscribe_request(Handler_type_bin, Channel_code, Req, #state{session_id=Session_id}=State) ->
+    Handler_type = case Handler_type_bin of
+		       <<"message_only">> -> message_only;
+		       <<"all">> -> all
+		   end,
+    case h_server_adapter:subscribe(Session_id, Channel_code, Handler_type) of
+	{error, invalid_channel_code} ->
+	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
+	ok->
+	    ok = h_server_adapter:add_message_handler(Session_id, self()),
+	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)
+	    
+    end,
+    {reply, Result, Req, State}.
+
+
 log(State,
     String)->
     log(State,String,[]).

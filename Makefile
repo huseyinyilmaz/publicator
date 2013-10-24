@@ -65,13 +65,17 @@ docs:
 	@$(REBAR) doc skip_deps=true
 
 # start for development
-start: compile
+start:
 	erl -pa lib/*/ebin deps/*/ebin devutils/*/ebin \
 	    -i  lib/*/include deps/*/include devutils/*/include \
+	    -s  lager \
+	    -sync log all \
+	    -gproc \
 	    -mnesia dir $(MNESIA_DIR) \
 	    -sname $(NODE_NAME) \
-	    -eval "debug:init(),\
-	           debug:start()."
+	    -eval "application:start(gproc),\
+                   server:start(),\
+                   http:start()."
 
 
 blackbox:

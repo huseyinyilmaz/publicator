@@ -29,11 +29,16 @@ window.publicator = {
 	    var json_string = JSON.stringify(obj);
 	    this.bullet.send(json_string);
 	},
-	
-	subscribe: function(channel_code){
+
+	subscribe: function(channel_code, handler_type){
+	    if(!handler_type){
+		handler_type = 'message_only';
+	    };
 	    this.send_message({
 		type: 'subscribe',
-		data: channel_code});},
+		data: {'channel_code': channel_code,
+		       'type': handler_type}});},
+	    
 	unsubscribe: function(channel_code){
 	    this.send_message({
 		type: 'unsubscribe',
