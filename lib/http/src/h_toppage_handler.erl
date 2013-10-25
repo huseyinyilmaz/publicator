@@ -28,7 +28,7 @@ allowed_methods(Req, State) ->
 
 %% processes given request.
 content_types_accepted(Req, State)->
-    error_logger:info_report(content_types_accepted),
+    lager:info(content_types_accepted),
     {[
       {{<<"application">>, <<"json">>, []}, process_json},
       {{<<"application">>, <<"x-www-form-urlencoded">>, []}, process_json}],
@@ -37,7 +37,7 @@ content_types_accepted(Req, State)->
 
 %% creates response. gets Req and State from c_t_accepted method
 content_types_provided(Req, State) ->
-    error_logger:info_report(content_types_provided),
+    lager:info(content_types_provided),
 	{[
 	  {{<<"text">>, <<"plain">>, []}, handle_json},
 	  {{<<"text">>, <<"html">>, []}, handle_json},
@@ -45,14 +45,14 @@ content_types_provided(Req, State) ->
 	], Req, State}.
 
 process_json(Req, State) ->
-    error_logger:info_report(process_json),
+    lager:info(process_json),
     {Response, Req1} = r_server_adapter:handle_request(Req),
     Body = jiffy:encode(Response),
     {Body, Req1, State}.
     
 
 handle_json(Req, State) ->
-    error_logger:info_report(handle_json),
+    lager:info(handle_json),
     %% {Response, Req1} = r_server_adapter:handle_request(Req),
     Body = jiffy:encode([1234]),
     {Body, Req, State}.

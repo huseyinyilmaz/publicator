@@ -20,7 +20,7 @@ allowed_methods(Req, State) ->
 
 %% GET
 content_types_provided(Req, State) ->
-    error_logger:info_report(content_types_provided),
+    lager:info(content_types_provided),
 	{[
 	  {{<<"text">>, <<"plain">>, []}, get_json},
 	  {{<<"text">>, <<"html">>, []}, get_json},
@@ -30,14 +30,14 @@ content_types_provided(Req, State) ->
 %% called for Get Request
 get_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    error_logger:info_report({get_json, sessin_id, Session_id}),
+    lager:info({get_json, sessin_id, Session_id}),
     case h_server_adapter:get_subscribtions(Session_id) of
 	{ok, Result_text} ->
 	    Body = jiffy:encode({dict:to_list(Result_text)}),
-	    error_logger:info_report({subscribtions, get, Body});
+	    lager:info({subscribtions, get, Body});
 	{error, consumer_not_found} ->
 	    Body = h_utils:no_session_response(),
-	    error_logger:info_report({subscribtions, get, <<"no session found">>})
+	    lager:info({subscribtions, get, <<"no session found">>})
     end,
     {Body, Req1, State}.
 

@@ -68,13 +68,15 @@ docs:
 start: compile
 	erl -pa lib/*/ebin deps/*/ebin devutils/*/ebin \
 	    -i  lib/*/include deps/*/include devutils/*/include \
+	    -boot start_sasl \
 	    -sync log all \
 	    -lager handlers '[{lager_console_backend, debug}]' \
 	    -mnesia dir $(MNESIA_DIR) \
 	    -sname $(NODE_NAME) \
 	    -eval "application:start(gproc)" \
+	    -s lager \
 	    -s server \
-	    -s http
+	    -s http\
 
 
 blackbox:

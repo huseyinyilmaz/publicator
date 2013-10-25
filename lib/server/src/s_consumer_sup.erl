@@ -32,7 +32,7 @@
 %% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
 start_child() ->
     Code = s_utils:generate_code(),
-    error_logger:info_report({start_new_consumer, Code}),
+    lager:info("~p~n", [{start_new_consumer, Code}]),
     Args_to_append = [Code],
     case supervisor:start_child(?SERVER, Args_to_append) of
 	{ok, Pid} -> {ok, Code, Pid};

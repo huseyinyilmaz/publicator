@@ -20,7 +20,7 @@ allowed_methods(Req, State) ->
 
 %% GET
 content_types_provided(Req, State) ->
-    error_logger:info_report(content_types_provided),
+    lager:info(content_types_provided),
 	{[
 	  {{<<"text">>, <<"plain">>, []}, get_json},
 	  {{<<"text">>, <<"html">>, []}, get_json},
@@ -32,7 +32,7 @@ get_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     case h_server_adapter:get_messages(Session_id) of
 	{ok, Result_text} ->
-	    error_logger:info_report({jiffy,jiffy:encode({dict:to_list(Result_text)})}),
+	    lager:info({jiffy,jiffy:encode({dict:to_list(Result_text)})}),
 	    Body = jiffy:encode({dict:to_list(Result_text)});
 	{error, consumer_not_found} ->
 	    Body = h_utils:no_session_response()

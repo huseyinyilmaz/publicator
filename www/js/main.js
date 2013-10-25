@@ -113,7 +113,7 @@ $(function(){
 	    $('#add_channel_panel').html(this.add_channel_edit_template_text);
 	    $('#add_channel_cancel_button').click(_.bind(this.render_add_channel, this));
 	    function add_channel(){
-		this.client.subscribe($('#add_channel_input').val());
+		this.client.subscribe($('#add_channel_input').val(), 'all');
 		this.render_add_channel();
 		this.client.get_subscribtions();
 	    };

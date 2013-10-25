@@ -189,11 +189,10 @@ handle_subscribe_request(Handler_type_bin, Channel_code, Req, #state{session_id=
     {reply, Result, Req, State}.
 
 
-log(State,
-    String)->
+log(State, String)->
     log(State,String,[]).
 
 log(#state{session_id=Session_id}=_State, String, Args) ->
     Log_msg = lists:concat(["~p - ", String]),
     M = io_lib:format(Log_msg,[Session_id|Args]),
-    error_logger:info_report(M).
+    lager:info(M).

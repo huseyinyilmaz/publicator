@@ -251,7 +251,7 @@ handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}
     New_state = State#state{handlers=Alive_handler_list},
     case Alive_handler_list of
 	[] ->
-	    error_logger:info_report("All hadlers are dead, Switch to buffer mode"),
+	    lager:info("All hadlers are dead, Switch to buffer mode"),
 	    handle_cast({push_message, Channel_code, Message}, New_state);
 	_ -> lists:foreach(fun(Pid)->
 				   Pid ! {message, Channel_code, Message}

@@ -108,12 +108,24 @@ init([Code]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
-	    #state{consumer_table=Consumer_table}=State)->
+	    #state{consumer_table=Consumer_table,
+		   code=Channel_code}=State)->
+    
     ets:insert(Consumer_table,[{Consumer_code, {Consumer_pid, Handler_type}}]),
-    Handler_list = ets:match(Consumer_table, {'_', {'_', all}}),
-    error_logger:info_report("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"),
-    lager:error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
-    lager:warning(Handler_list),
+    lager:info("Consumer ~p was subscribed to channel ~p with type ~p",[Consumer_code,
+									Channel_code,
+									Handler_type]),
+    Handler_list = ets:match(Consumer_table, {'$1', {'$2', all}}),
+
+    lists:foldl(fun([C_code, C_pid], Acc) ->
+			%% do not send to yourself
+			%% use something like add_consumer /etc
+			s_consumer:push_message(C_pid, Channel_code, C_code),
+			Acc
+		end, ok, Handler_list),
+    
+    lager:warning("VALUE XXX"),
+    lager:warning("Handlers_list=~p~n", [Handler_list]),
 
     Reply = ok,
     {reply, Reply, State, ?TIMEOUT};

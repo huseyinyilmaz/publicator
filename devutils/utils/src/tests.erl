@@ -17,7 +17,7 @@
 %% %%% API
 %% %%%===================================================================
 %% setup_server()->
-%%     error_logger:info_report("Setup server"),
+%%     lager:info("Setup server"),
 %%     %% server:start(),
 %%     %% http:start(),
 %%     %% code:add_patha("deps/jiffy/ebin"),
@@ -25,7 +25,7 @@
 %%     inets:start().
 
 %% cleanup_server()->
-%%     error_logger:info_report("Cleanup server"),
+%%     lager:info("Cleanup server"),
 %%     %% http:stop(),
 %%     %% server:stop(),
 %%     inets:stop().
@@ -64,7 +64,7 @@
 
 %% create_channel(Channel_code, Consumer_count)->
 %%     Consumer_list = [get_session() || _C <- lists:seq(1, Consumer_count)],
-%%     error_logger:info_report({create_room,Consumer_list}),
+%%     lager:info({create_room,Consumer_list}),
 %%     lists:map(fun(C)->subscribe(C, Channel_code)end,Consumer_list),
 %%     Consumer_list.
     
@@ -82,12 +82,12 @@
 %% 	      _Total_consumer_count,
 %% 	      Pid)->
 %%     Result = [subscribe(Consumer_code, Code)||Code <- Channel_code_list],
-%%     error_logger:info_report({subscribtions_completed}),
+%%     lager:info({subscribtions_completed}),
 %%     Pid ! {consumer_done, self(), Consumer_code, Result}.
 
 
 %% channel_test(Channel_code, Consumer_code_list, Pid)->
-%%     error_logger:info_report({channel_test__consumer_list, Consumer_code_list}),
+%%     lager:info({channel_test__consumer_list, Consumer_code_list}),
 %%     Result = lists:all(
 %% 	       fun(C)->
 %% 		       receive
@@ -127,7 +127,7 @@
 %% 			     Pid,
 %%      			     C,
 %%      			     Result} ->
-%% 				error_logger:info_report({aaa,consumer_completed, C}),
+%% 				lager:info({aaa,consumer_completed, C}),
 %% 				{C,Result}
 %%      			end
 %%      		end,

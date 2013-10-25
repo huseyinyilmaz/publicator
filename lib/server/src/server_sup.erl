@@ -65,7 +65,7 @@ init([]) ->
 
     Consumer_sup = {s_consumer_sup, {s_consumer_sup, start_link, []},
 		Restart, Shutdown, Type, [s_consumer_sup]},
-    error_logger:info_report("End of server_sup init function"),
+    lager:info("End of server_sup init function"),
     {ok, {SupFlags, [Consumer_sup, Channel_sup]}}.
 
 %%%===================================================================

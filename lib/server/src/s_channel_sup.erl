@@ -31,7 +31,7 @@
 %%--------------------------------------------------------------------
 %% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
 start_child(Channel_code) ->
-    error_logger:info_report({start_new_user}),
+    lager:info("Start a new user"),
     Args_to_append = [Channel_code],
     case supervisor:start_child(?SERVER, Args_to_append) of
 	{ok, Pid} -> {ok, Pid};
