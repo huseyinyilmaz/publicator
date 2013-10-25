@@ -153,7 +153,17 @@ handle_info({message, Channel_code, Message}, Req, State)->
     Result = h_utils:make_response(<<"message">>, Message,
 			  [{<<"channel_code">>, Channel_code}]),
     {reply, Result, Req, State};
-    
+
+handle_info({add_subscribtion, Channel_code, Consumer_code}, Req, State)->
+    Result = h_utils:make_response(<<"add_subscribtion">>, Consumer_code,
+			  [{<<"channel_code">>, Channel_code}]),
+    {reply, Result, Req, State};
+
+handle_info({remove_subscribtion, Channel_code, Consumer_code}, Req, State)->
+    Result = h_utils:make_response(<<"remove_subscribtion">>, Consumer_code,
+			  [{<<"channel_code">>, Channel_code}]),
+    {reply, Result, Req, State};
+
 handle_info(Msg,Req,State)->
     Result = h_utils:make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
     {reply, Result, Req, State}.

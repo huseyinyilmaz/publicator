@@ -118,10 +118,14 @@ handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
     Handler_list = ets:match(Consumer_table, {'$1', {'$2', all}}),
 
     lists:foldl(fun([C_code, C_pid], Acc) ->
-			%% do not send to yourself
-			%% use something like add_consumer /etc
-			s_consumer:push_message(C_pid, Channel_code, C_code),
-			Acc
+			%% Do not sent message to new created message
+			case C_code of
+			    Consumer_code -> ok;
+			    _ ->s_consumer:push_add_subscribtion(C_pid,
+								 Channel_code,
+								 Consumer_code),
+				Acc
+			end
 		end, ok, Handler_list),
     
     lager:warning("VALUE XXX"),
@@ -131,8 +135,26 @@ handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
     {reply, Reply, State, ?TIMEOUT};
 
 handle_call({remove_consumer, Consumer_code}, _From,
-	    #state{consumer_table=Consumer_table}=State)->
+	    #state{consumer_table=Consumer_table,
+		   code=Channel_code}=State)->
     ets:delete(Consumer_table, Consumer_code),
+
+    Handler_list = ets:match(Consumer_table, {'$1', {'$2', all}}),
+
+    lists:foldl(fun([C_code, C_pid], Acc) ->
+			%% Do not sent message to new created message
+			case C_code of
+			    Consumer_code -> ok;
+			    _ ->s_consumer:push_remove_subscribtion(C_pid,
+								    Channel_code,
+								    Consumer_code),
+				Acc
+			end
+		end, ok, Handler_list),
+    
+
+
+    
     Reply = ok,
     {reply, Reply, State, ?TIMEOUT};
 

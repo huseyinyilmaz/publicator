@@ -18,20 +18,22 @@
 	 publish/3, get_subscribtions/1, unsubscribe/2,
 	 add_message_handler/2, remove_message_handler/2]).
 
+-export([push_add_subscribtion/3]).
+
+-export([push_remove_subscribtion/3]).
+
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
--define(TIMEOUT, 1000).
+-define(TIMEOUT, 2 * 60 * 1000). % two minutes
 
 -record(state, {code :: binary(),
 		channels :: dict(),
 		channels_cache ::dict(),
 		messages :: dict(),
 		handlers :: [pid()]}).
-
-%% -include("c_room_event.hrl").
 
 %%%===================================================================
 %%% API
@@ -74,6 +76,15 @@ get_messages(Pid, Channel_code) ->
 -spec push_message(pid(), binary(), binary())-> ok.
 push_message(Pid, Channel_code, Message) ->
     gen_server:cast(Pid, {push_message, Channel_code, Message}).
+
+-spec push_add_subscribtion(pid(), binary(), binary())-> ok.
+push_add_subscribtion(Pid, Channel_code, Consumer_code) ->
+    gen_server:cast(Pid, {push_add_subscribtion, Channel_code, Consumer_code}).
+
+-spec push_remove_subscribtion(pid(), binary(), binary())-> ok.
+push_remove_subscribtion(Pid, Channel_code, Consumer_code) ->
+    gen_server:cast(Pid, {push_remove_subscribtion, Channel_code, Consumer_code}).
+
 
 -spec stop(pid()) -> ok.
 stop(Pid) ->
@@ -214,6 +225,7 @@ handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=
 		   {ok, Result} -> Result
 	       end,
     Messages_dict2 = dict:erase(Channel_code, Messages_dict),
+    %% Messages is type of {Type, Message} we should return this properly
     Reply = {ok, Messages},
     {reply, Reply, State#state{messages=Messages_dict2},
     ?TIMEOUT};
@@ -240,21 +252,31 @@ handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({push_message, Channel_code, Message}, State) ->
+    handle_cast({push, message, Channel_code, Message}, State);
 
-handle_cast({push_message, Channel_code, Message},
+handle_cast({push_add_subscribtion, Channel_code, Consumer_code}, State) ->
+    handle_cast({push, add_subscribtion, Channel_code, Consumer_code}, State);
+
+handle_cast({push_remove_subscribtion, Channel_code, Consumer_code}, State) ->
+    handle_cast({push, remove_subscribtion, Channel_code, Consumer_code}, State);
+
+handle_cast({push, Message_type, Channel_code, Message},
 	    #state{messages=Messages_dict, handlers=[]}=State) ->
-    {noreply, State#state{messages=dict:append(Channel_code, Message, Messages_dict)},
+    {noreply, State#state{messages=dict:append(Channel_code, {Message_type, Message},
+					       Messages_dict)},
      ?TIMEOUT};
 
-handle_cast({push_message, Channel_code, Message}, #state{handlers=Handler_list}=State) ->
+handle_cast({push, Message_type, Channel_code, Message},
+	    #state{handlers=Handler_list}=State) ->
     Alive_handler_list = lists:filter(fun is_process_alive/1, Handler_list),
     New_state = State#state{handlers=Alive_handler_list},
     case Alive_handler_list of
 	[] ->
 	    lager:info("All hadlers are dead, Switch to buffer mode"),
-	    handle_cast({push_message, Channel_code, Message}, New_state);
+	    handle_cast({push, Message_type, Channel_code, Message}, New_state);
 	_ -> lists:foreach(fun(Pid)->
-				   Pid ! {message, Channel_code, Message}
+				   Pid ! {Message_type, Channel_code, Message}
 			   end, Handler_list),
 	     {noreply, New_state, ?TIMEOUT}
 	end;
@@ -278,7 +300,12 @@ handle_cast(stop, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
+handle_info(timeout, #state{code=Code}=State)->
+    lager:warning("Consumer ~p has timeout", [Code]),
+    {stop,normal , State};
+
+handle_info(Info, #state{code=Code}=State) ->
+    lager:warning("Unhandled info message in consumer ~p (~p)", [Code, Info]),
     {noreply, State, ?TIMEOUT}.
 
 %%--------------------------------------------------------------------
@@ -292,8 +319,9 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
-    io:format("s_consumer_terminate has been called ~n ~p, ~n~p~n", [_Reason, _State]),
+terminate(Reason, #state{code=Code}=_State) ->
+    lager:info("=============================================================="),
+    lager:info("Terminate consumer ~p (~p)", [Code, Reason]),
     ok.
 
 %%--------------------------------------------------------------------
@@ -336,5 +364,3 @@ get_cached_channel(Channel_code, #state{channels=Channels_dict,
 		    {ok, New_channel_pid, State2}
 	    end
     end.
-
-    

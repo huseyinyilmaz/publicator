@@ -73,7 +73,7 @@ start: compile
 	    -lager handlers '[{lager_console_backend, debug}]' \
 	    -mnesia dir $(MNESIA_DIR) \
 	    -sname $(NODE_NAME) \
-	    -eval "application:start(gproc)" \
+	    -eval "application:start(gproc),sync:go()." \
 	    -s lager \
 	    -s server \
 	    -s http\
