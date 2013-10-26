@@ -118,9 +118,11 @@ server_message_test_() ->
 	     timer:sleep(?DELAY),
 	     %% test get_messages
 	     {ok, Messages} = server:get_messages(Consumer_code2),
-	     ?assertEqual({ok,[?MESSAGE1, ?MESSAGE2]}, dict:find(Channel_code, Messages)),
+	     ?assertEqual({ok,[{message, ?MESSAGE1},
+			       {message,?MESSAGE2}]}, dict:find(Channel_code, Messages)),
 	     {ok, Messages2} = server:get_messages(Consumer_code1),
-	     ?assertEqual({ok,[?MESSAGE1, ?MESSAGE2]}, dict:find(Channel_code, Messages2)),
+	     ?assertEqual({ok,[{message, ?MESSAGE1},
+			       {message, ?MESSAGE2}]}, dict:find(Channel_code, Messages2)),
 	     
 	     %% make sure that Messages has been cleared
 	     {ok, Messages3} = server:get_messages(Consumer_code2),
@@ -134,13 +136,13 @@ server_message_test_() ->
              ok = server:publish(Consumer_code1, Channel_code2, ?MESSAGE2),
 	     timer:sleep(?DELAY),
 	     %% test get_messages single channel
-	     ?assertEqual({ok,[?MESSAGE1]},
+	     ?assertEqual({ok,[{message, ?MESSAGE1}]},
 			  server:get_messages(Consumer_code2, Channel_code)),
 	     ?assertEqual({ok,[]},
 			  server:get_messages(Consumer_code2, Channel_code)),
 	     %% test get rest of the channels after getting one channnel
 	     {ok, Messages5} = server:get_messages(Consumer_code2),
-	     ?assertEqual({ok,[?MESSAGE2]}, dict:find(Channel_code2, Messages5)),
+	     ?assertEqual({ok,[{message, ?MESSAGE2}]}, dict:find(Channel_code2, Messages5)),
 	     ?assertEqual(error, dict:find(Channel_code, Messages5)),
              %% tests unsubscribe
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
