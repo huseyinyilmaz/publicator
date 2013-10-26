@@ -151,11 +151,11 @@ server_message_test_() ->
      }}.
 
 
-server_handler_mode_test_() ->
+server_handler_message_only_mode_test_() ->
     {setup,
      fun setup_server/0,
      fun cleanup_server/1,
-     {"",
+     {"Test consumers that has message_only handler processes",
       ?_test(begin
 		 %% Create consumers
 		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(),
@@ -201,4 +201,91 @@ server_handler_mode_test_() ->
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock4)),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock1)),
 		 ?assertEqual(Expected_msg2, process_mock:receive_message(mock1))
+	     end)}}.
+
+
+server_all_handler_mode_test_() ->
+    {setup,
+     fun setup_server/0,
+     fun cleanup_server/1,
+     {"Test consumers that has all handler processes",
+      ?_test(begin
+		 %% Create consumers
+		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(),
+		 {ok, Consumer_code2, Consumer_pid2} = server:create_consumer(),
+		 Channel_code = ?CHANNEL1,
+		 Channel_code2 = ?CHANNEL2,
+		 Message1 = <<"Message1">>,
+		 Message2 = <<"Message2">>,
+		 timer:sleep(?DELAY),
+		 Mock1_pid = process_mock:make_message_receiver(self(), mock1),
+		 Mock2_pid = process_mock:make_message_receiver(self(), mock2),
+		 Mock3_pid = process_mock:make_message_receiver(self(), mock3),
+		 Mock4_pid = process_mock:make_message_receiver(self(), mock4),
+
+		 server:add_message_handler(Consumer_code1, Mock1_pid),
+		 server:add_message_handler(Consumer_code2, Mock2_pid),
+		 server:add_message_handler(Consumer_code2, Mock3_pid),
+		 server:add_message_handler(Consumer_code2, Mock4_pid),
+		 %% Add consumers to channels
+		 ?assertEqual(ok,
+			      server:subscribe(Consumer_code1, Channel_code, all)),
+		 ?assertEqual(ok,
+			      server:subscribe(Consumer_code2, Channel_code, all)),
+		 ?assertEqual(ok,
+			      server:subscribe(Consumer_code1, Channel_code2, all)),
+		 ?assertEqual(ok,
+			      server:subscribe(Consumer_code2, Channel_code2, all)),
+		 %% Receive add_subscribtion messages.
+		 Expected_add_subscribtion_msg1 = {add_subscribtion,
+						   Channel_code,
+						   Consumer_code2},
+		 Expected_add_subscribtion_msg2 = {add_subscribtion,
+						   Channel_code2,
+						   Consumer_code2},
+		 
+		 ?assertEqual(Expected_add_subscribtion_msg1,
+			      process_mock:receive_message(mock1)),
+		 
+		 ?assertEqual(Expected_add_subscribtion_msg2,
+			      process_mock:receive_message(mock1)),
+
+		 %% publish messages
+		 Expected_msg1 = {message,
+				  Channel_code,
+				  Message1},
+		 Expected_msg2 = {message,
+				  Channel_code2,
+				  Message2},
+
+		 s_consumer:publish(Consumer_pid1, Channel_code, Message1),
+		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2),
+		 timer:sleep(?DELAY),
+		 %% receive messages
+		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock2)),
+		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock3)),
+		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock4)),
+		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock1)),
+		 ?assertEqual(Expected_msg2, process_mock:receive_message(mock1)),
+
+
+		 %% Receive add_subscribtion messages.
+		 Expected_remove_subscribtion_msg1 = {remove_subscribtion,
+						   Channel_code,
+						   Consumer_code2},
+		 Expected_remove_subscribtion_msg2 = {remove_subscribtion,
+						   Channel_code2,
+						   Consumer_code2},
+
+		 
+		 ?assertEqual(ok,
+			      server:unsubscribe(Consumer_code2, Channel_code)),
+		 ?assertEqual(ok,
+			      server:unsubscribe(Consumer_code2, Channel_code2)),
+		 
+		 ?assertEqual(Expected_remove_subscribtion_msg1,
+			      process_mock:receive_message(mock1)),
+		 ?assertEqual(Expected_remove_subscribtion_msg2,
+			      process_mock:receive_message(mock1))
+		     
 	     end)}}.
