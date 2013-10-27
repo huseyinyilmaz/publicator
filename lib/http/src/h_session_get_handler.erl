@@ -11,7 +11,8 @@
 %% API
 -export([init/3, allowed_methods/2,
 	 content_types_provided/2]).
--export([get_json/2]).
+-export([get_session/2]).
+
 
 %%%===================================================================
 %%% API
@@ -27,17 +28,34 @@ allowed_methods(Req, State) ->
 %% GET
 content_types_provided(Req, State) ->
     {[
-      {{<<"text">>, <<"plain">>, '*'}, get_json},
-      {{<<"text">>, <<"html">>, '*'}, get_json},
-      {{<<"application">>, <<"json">>, '*'}, get_json},
-      {{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, get_json}
+      {{<<"text">>, <<"plain">>, '*'}, get_session},
+      {{<<"text">>, <<"html">>, '*'}, get_session},
+      {{<<"application">>, <<"json">>, '*'}, get_session},
+      {{<<"application">>, <<"javascript">>, '*'}, get_session},
+      {{<<"application">>, <<"x-www-form-urlencoded">>, '*'}, get_session}
      ], Req, State}.
+
+get_session(Req, State)->
+    {Callback, Req2} = cowboy_req:qs_val(<<"callback">>, Req),
+    lager:info("XXXXXXXXXXXXXXXXXXXXXAAAAAAAAAAAAAAA"),
+    {Body, Req3, State} = get_json(Req2, State),
+    lager:info("Value = ~p~n", [Callback]),
+    lager:info("Request = ~p~n", [Req2]),
+    case Callback of
+	undefined -> {Body, Req3, State};
+	_ -> {[Callback, <<"(">> , Body, <<");">>], Req3, State}
+    end.
+
 
 %% called for Get Request
 get_json(Req, State) ->
     {ok, Consumer_code, _Consumer_pid} = h_server_adapter:create_consumer(),
     Body = jiffy:encode({[{<<"session">>, Consumer_code}]}),
     {Body, Req, State}.
+
+get_jsonp(Req, State) ->
+    {ok, Value, Req2} = cowboy_req:body_qs(Req),
+    get_json(Req2, State).
 
 %%%===================================================================
 %%% Internal functions
