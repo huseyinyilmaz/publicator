@@ -47,7 +47,7 @@ websocket_init(_TransportName, Req, _Opts) ->
     end,
     {ok, Req1, State}.
 
-websocket_handle(Raw_data, Req, State) ->
+websocket_handle({text, Raw_data}, Req, State) ->
     log(State, "Got request raw request=~p~n", [Raw_data]),
     Request_data = jiffy:decode(Raw_data),
     log(State, "Processed request=~p~n", [Request_data]),
@@ -60,7 +60,7 @@ websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},
     log(State, "Consumer process died reason = ~p", [Reason]),
     Result = h_utils:make_response(<<"error">>, <<"Consumer_handler is died unexpectedly">>,
 			   [{<<"reason_for_dead_process">>, Reason}]),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
     
 
 websocket_info(Data, Req, State) ->
@@ -79,7 +79,7 @@ websocket_terminate(_Reason, _Req, State) ->
 %% Handle incoming requests
 handle_request(_Request_data, Req, #state{session_id=no_session}=State)->
     Result = h_utils:no_session_response(),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
 handle_request(Request_data, Req, State)->
     
     %% Make sure that message format is valid
@@ -94,7 +94,7 @@ handle_request(Request_data, Req, State)->
 	    Result = h_utils:make_response(<<"invalid_msg_format">>,
 				   <<"Data format must be as {'type': 'typ', 'data': 'dt'}">>,
 				   [{<<"invalid_data">>, Request_data}]),
-	    {reply, Result, Req, State}
+	    {reply, {text, Result}, Req, State}
     end.
 
 
@@ -119,12 +119,12 @@ handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State
     ok = h_server_adapter:remove_message_handler(Session_id, self()),
     Result = h_utils:make_response(<<"unsubscribed">>,
 			   Data),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
 
 handle_request(<<"get_subscribtions">>, _Data, Req, #state{session_id=Session_id}=State) ->
     {ok, Subscribtion_data} = h_server_adapter:get_subscribtions(Session_id),
     Result = h_utils:make_response(<<"subscribtions">>, Subscribtion_data),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
 
 handle_request(<<"publish">>,
 	       {[{<<"channel_code">>,Channel_code},
@@ -143,7 +143,7 @@ handle_request(<<"get_consumers">>,
 	       Req, State) ->
     {ok, Consumers_data} = h_server_adapter:get_consumers(Channel_code),
     Result = h_utils:make_response(<<"consumers">>,Consumers_data),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
     
 
 
@@ -151,26 +151,26 @@ handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
     Result = h_utils:make_response(<<"unhandled_msg">>, Data,
 			   [{<<"request_type">>, Type},
 			    {<<"session">>, Session_id}]),
-    {reply, Result, Req, State}.
+    {reply, {text, Result}, Req, State}.
 
 handle_info({message, Channel_code, Message}, Req, State)->
     Result = h_utils:make_response(<<"message">>, Message,
 			  [{<<"channel_code">>, Channel_code}]),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
 
 handle_info({add_subscribtion, Channel_code, Consumer_code}, Req, State)->
     Result = h_utils:make_response(<<"add_subscribtion">>, Consumer_code,
 			  [{<<"channel_code">>, Channel_code}]),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
 
 handle_info({remove_subscribtion, Channel_code, Consumer_code}, Req, State)->
     Result = h_utils:make_response(<<"remove_subscribtion">>, Consumer_code,
 			  [{<<"channel_code">>, Channel_code}]),
-    {reply, Result, Req, State};
+    {reply, {text, Result}, Req, State};
 
 handle_info(Msg,Req,State)->
     Result = h_utils:make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
-    {reply, Result, Req, State}.
+    {reply, {text, Result}, Req, State}.
 
 handle_terminate(#state{session_id=no_session})-> ok;
 handle_terminate(#state{session_id=Session_id}=State)->
@@ -200,7 +200,7 @@ handle_subscribe_request(Handler_type_bin, Channel_code, Req, #state{session_id=
 	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)
 	    
     end,
-    {reply, Result, Req, State}.
+    {reply, {text, Result}, Req, State}.
 
 
 log(State, String)->
