@@ -2,7 +2,6 @@
 
 window.enable_logging = true;
 
-
 window.publicator = {
     host: '',
     bullet_host: '',
@@ -68,15 +67,18 @@ window.publicator = {
             	data: {'channel_code': channel_code}});},
                 
             handlers: {
-                onopen_handler_list:[],
+                onconnect_handler_list:[],
                 ondisconnect_handler_list:[],
                 onmessage_handler_list:[],
-                onheartbeat_handler_list:[]
+		oninfo_handler_list:[],
+		onerror_handler_list:[]
             },
-            onopen:function(fun){this.handlers.onopen_handler_list.push(fun);},
+            onconnect:function(fun){this.handlers.onconnect_handler_list.push(fun);},
             ondisconnect:function(fun){this.handlers.ondisconnect_handler_list.push(fun);},
-            onheartbeat:function(fun){this.handlers.onheartbeat_handler_list.push(fun);},
-            onmessage:function(fun){this.handlers.onmessage_handler_list.push(fun);}
+            onmessage:function(fun){this.handlers.onmessage_handler_list.push(fun);},
+	    oninfo:function(fun){this.handlers.oninfo_handler_list.push(fun);},
+	    onerror:function(fun){this.handlers.oninfo_handler_list.push(fun);}
+
         };
 	//Make chatClient an event Handler
 	publicatorClient = _.extend(publicatorClient, Backbone.Events);
@@ -94,15 +96,35 @@ window.publicator = {
     
 	// Bind bullet events to chatClient events
 	bullet.onopen = function(){
-	    call_fun_list(publicatorClient.handlers.onopen_handler_list);};
+	    call_fun_list(publicatorClient.handlers.onconnect_handler_list);};
 	bullet.ondisconnect = function(){
 	    call_fun_list(publicatorClient.handlers.ondisconnect_handler_list);};
 	bullet.onhearthbeat = function(){
-	    call_fun_list(publicatorClient.handlers.onhearthbeat_handler_list);};
+	    var data = {type:'info',
+			info_class: 'hearthbeat',
+			data: ''};
+	    call_fun_list(publicatorClient.handlers.oninfo_handler_list(data));};
 	bullet.onmessage = function(e){
-	    publicatorClient.handlers.onmessage_handler_list.forEach(function(fun){
-		fun(JSON.parse(e.data));
-	    });};
+	    console.log('bullet_on_message_handler', e);
+	    if(e.type == 'message'){
+		publicatorClient.handlers.onmessage_handler_list.forEach(function(fun){
+		    // fun(JSON.parse(e.data));
+		    fun(e.data);
+		});
+	    }else if(e.type == 'error'){
+		publicatorClient.handlers.onerror_handler_list.forEach(function(fun){
+		    // fun(JSON.parse(e.data));
+		    fun(e.data);
+		});
+	    }else{
+		var info_class = e.type;
+		e.type = 'info';
+		e.info_class = info_class;
+		publicatorClient.handlers.oninfo_handler_list.forEach(function(fun){
+		    fun(e);
+		});
+	    }
+	};
     
 	return publicatorClient;
     

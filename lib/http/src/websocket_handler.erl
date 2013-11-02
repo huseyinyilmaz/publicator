@@ -7,12 +7,13 @@
 %%% Created : 15 Sep 2013 by Huseyin Yilmaz <huseyin@new-host.home>
 %%%-------------------------------------------------------------------
 -module(websocket_handler).
-
+-behaviour(cowboy_websocket_handler).
 %% API
--export([init/4]).
--export([stream/3]).
--export([info/3]).
--export([terminate/2]).
+-export([init/3]).
+-export([websocket_init/3]).
+-export([websocket_handle/3]).
+-export([websocket_info/3]).
+-export([websocket_terminate/3]).
 -record(state,{session_id, consumer_pid, consumer_monitor_ref}).
 
 
@@ -24,8 +25,11 @@
 %% @spec Initialize a new websocket connection
 %% @end
 %%--------------------------------------------------------------------
+init({tcp, http}, _Req, _Opts) ->
+    {upgrade, protocol, cowboy_websocket}.
+ 
 
-init(_Transport, Req, _Opts, _Active) ->
+websocket_init(_TransportName, Req, _Opts) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     case h_server_adapter:get_consumer(Session_id) of
 	{ok, Consumer_pid} ->
@@ -43,13 +47,13 @@ init(_Transport, Req, _Opts, _Active) ->
     end,
     {ok, Req1, State}.
 
-stream(Raw_data, Req, State) ->
+websocket_handle(Raw_data, Req, State) ->
     log(State, "Got request raw request=~p~n", [Raw_data]),
     Request_data = jiffy:decode(Raw_data),
     log(State, "Processed request=~p~n", [Request_data]),
     handle_request(Request_data, Req, State).
 
-info({'DOWN', Ref, process, Consumer_pid, Reason},
+websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},
      Req, #state{consumer_pid=Consumer_pid,
 		 consumer_monitor_ref=Ref}=State)->
     
@@ -59,11 +63,11 @@ info({'DOWN', Ref, process, Consumer_pid, Reason},
     {reply, Result, Req, State};
     
 
-info(Data, Req, State) ->
+websocket_info(Data, Req, State) ->
     log(State, "Got an info request=~p~n",[Data]),
     handle_info(Data, Req, State).
 
-terminate(_Req, State) ->
+websocket_terminate(_Reason, _Req, State) ->
     log(State, "Terminate bullet handler."),
     handle_terminate(State).
 
