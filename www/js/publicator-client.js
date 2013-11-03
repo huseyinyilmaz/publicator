@@ -96,14 +96,18 @@ window.publicator = {
 	
 	publicatorClient.websocket = websocket;
 
-	function call_fun_list(fun_list){
-	    fun_list.forEach(function(element){element();})};
+	function call_fun_list(fun_list, evt){
+	    fun_list.forEach(function(element){element(evt);})};
     
 	// Bind websocket events to chatClient events
 	websocket.onopen = function(evt){
-	    call_fun_list(publicatorClient.handlers.onopen_handler_list);};
+	    call_fun_list(publicatorClient.handlers.onopen_handler_list , evt);};
 	websocket.onclose = function(evt){
-	    call_fun_list(publicatorClient.handlers.onclose_handler_list);};
+	    call_fun_list(publicatorClient.handlers.onclose_handler_list, evt);};
+	websocket.onerror = function(evt){
+	    // trigger websocket error messages.
+	    call_fun_list(publicatorClient.handlers.onerror_handler_list, evt);};
+	
 	websocket.onmessage = function(evt){
 	    console.log('websocket_on_message_handler', evt);
 	    if(evt.type == 'message'){

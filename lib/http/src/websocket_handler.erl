@@ -187,7 +187,9 @@ handle_publish_request(Channel_code, Message, Req,
     ok = h_server_adapter:publish(Session_id, Channel_code, Message),
     {ok, Req, State}.
 
-handle_subscribe_request(Handler_type_bin, Channel_code, Req, #state{session_id=Session_id}=State) ->
+handle_subscribe_request(Handler_type_bin,
+			 Channel_code, Req,
+			 #state{session_id=Session_id}=State) ->
     Handler_type = case Handler_type_bin of
 		       <<"message_only">> -> message_only;
 		       <<"all">> -> all

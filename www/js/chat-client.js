@@ -33,10 +33,9 @@ $(function(){
     		    // create current user
     		    this.user = new create_user(session_id, session_id);
     		    this.user_list = [this.user];
-    		    this.client.onconnect(function(){chatClient.trigger('onconnect');});
-    		    this.client.ondisconnect(function(){chatClient.trigger('disconnect');});
+    		    this.client.onopen(function(evt){chatClient.trigger('onopen');});
+    		    this.client.ondisconnect(function(evt){chatClient.trigger('onclose');});
                     this.client.onmessage(function(msg){chatClient._receive_message(msg);});
-    		    // this.client.onheartbeat(function(){publicatorChatClient.trigger('onheartbeat');});
                     this.client.onerror(function(msg){console.log('AAAAA', msg);});
                     this.client.oninfo(function(msg){console.log('BBBBBB', msg)});
 		    
