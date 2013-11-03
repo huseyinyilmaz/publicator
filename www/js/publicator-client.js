@@ -4,7 +4,7 @@ window.enable_logging = true;
 
 window.publicator = {
     host: '',
-    bullet_host: '',
+    websocket_host: '',
 
     set_host: function(host){
 	if(!host){
@@ -35,7 +35,7 @@ window.publicator = {
 		if(enable_logging && console)
 		    console.log('request', obj);
 		var json_string = JSON.stringify(obj);
-		this.bullet.send(json_string);
+		this.websocket.send(json_string);
 	    },
 
             subscribe: function(channel_code, handler_type){
@@ -67,61 +67,61 @@ window.publicator = {
             	data: {'channel_code': channel_code}});},
                 
             handlers: {
-                onconnect_handler_list:[],
-                ondisconnect_handler_list:[],
+                onopen_handler_list:[],
+                onclose_handler_list:[],
                 onmessage_handler_list:[],
 		oninfo_handler_list:[],
 		onerror_handler_list:[]
             },
-            onconnect:function(fun){this.handlers.onconnect_handler_list.push(fun);},
-            ondisconnect:function(fun){this.handlers.ondisconnect_handler_list.push(fun);},
+            onopen:function(fun){this.handlers.onopen_handler_list.push(fun);},
+            onclose:function(fun){this.handlers.onclose_handler_list.push(fun);},
             onmessage:function(fun){this.handlers.onmessage_handler_list.push(fun);},
 	    oninfo:function(fun){this.handlers.oninfo_handler_list.push(fun);},
-	    onerror:function(fun){this.handlers.oninfo_handler_list.push(fun);}
-
+	    onerror:function(fun){this.handlers.onerror_handler_list.push(fun);}
         };
 	//Make chatClient an event Handler
 	publicatorClient = _.extend(publicatorClient, Backbone.Events);
-	var bullet_host = location.host;
+	var websocket_host = location.host;
 	if(this.host != ''){
-	    bullet_host = host
+	    websocket_host = host;
 	}
-	console.log('bullet host = ' + 'ws://' + bullet_host + '/' + session_id + '/ws/')
-	var bullet = $.bullet('ws://' + bullet_host + '/' + session_id + '/ws/');
+	var url = 'ws://' + websocket_host + '/' + session_id + '/ws/';
+	console.log('websocket host = ' + url);
+	var websocket = new WebSocket(url);
 	
-	publicatorClient.bullet = bullet;
+        websocket.onopen = function(evt) { onOpen(evt) }; 
+        websocket.onclose = function(evt) { onClose(evt) }; 
+        websocket.onmessage = function(evt) { onMessage(evt) }; 
+        websocket.onerror = function(evt) { onError(evt) }; 
+	
+	publicatorClient.websocket = websocket;
 
 	function call_fun_list(fun_list){
 	    fun_list.forEach(function(element){element();})};
     
-	// Bind bullet events to chatClient events
-	bullet.onopen = function(){
-	    call_fun_list(publicatorClient.handlers.onconnect_handler_list);};
-	bullet.ondisconnect = function(){
-	    call_fun_list(publicatorClient.handlers.ondisconnect_handler_list);};
-	bullet.onhearthbeat = function(){
-	    var data = {type:'info',
-			info_class: 'hearthbeat',
-			data: ''};
-	    call_fun_list(publicatorClient.handlers.oninfo_handler_list(data));};
-	bullet.onmessage = function(e){
-	    console.log('bullet_on_message_handler', e);
-	    if(e.type == 'message'){
+	// Bind websocket events to chatClient events
+	websocket.onopen = function(evt){
+	    call_fun_list(publicatorClient.handlers.onopen_handler_list);};
+	websocket.onclose = function(evt){
+	    call_fun_list(publicatorClient.handlers.onclose_handler_list);};
+	websocket.onmessage = function(evt){
+	    console.log('websocket_on_message_handler', evt);
+	    if(evt.type == 'message'){
 		publicatorClient.handlers.onmessage_handler_list.forEach(function(fun){
 		    // fun(JSON.parse(e.data));
-		    fun(e.data);
+		    fun(evt.data);
 		});
-	    }else if(e.type == 'error'){
+	    }else if(evt.type == 'error'){
 		publicatorClient.handlers.onerror_handler_list.forEach(function(fun){
 		    // fun(JSON.parse(e.data));
-		    fun(e.data);
+		    fun(evt.data);
 		});
 	    }else{
-		var info_class = e.type;
-		e.type = 'info';
-		e.info_class = info_class;
+		var info_class = evt.type;
+		evt.type = 'info';
+		evt.info_class = info_class;
 		publicatorClient.handlers.oninfo_handler_list.forEach(function(fun){
-		    fun(e);
+		    fun(evt);
 		});
 	    }
 	};
