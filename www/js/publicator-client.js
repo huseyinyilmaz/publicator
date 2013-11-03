@@ -27,7 +27,7 @@ window.publicator = {
 	$.getJSON(url, callback_fun);
     },
 
-    get_client: function(session_id, host){
+    get_client: function(callback, session_id, host){
 	// Create chat client 
 	var publicatorClient = {
 	    host: host,
@@ -67,14 +67,10 @@ window.publicator = {
             	data: {'channel_code': channel_code}});},
                 
             handlers: {
-                onopen_handler_list:[],
-                onclose_handler_list:[],
                 onmessage_handler_list:[],
 		oninfo_handler_list:[],
 		onerror_handler_list:[]
             },
-            onopen:function(fun){this.handlers.onopen_handler_list.push(fun);},
-            onclose:function(fun){this.handlers.onclose_handler_list.push(fun);},
             onmessage:function(fun){this.handlers.onmessage_handler_list.push(fun);},
 	    oninfo:function(fun){this.handlers.oninfo_handler_list.push(fun);},
 	    onerror:function(fun){this.handlers.onerror_handler_list.push(fun);}
@@ -89,11 +85,6 @@ window.publicator = {
 	console.log('websocket host = ' + url);
 	var websocket = new WebSocket(url);
 	
-        websocket.onopen = function(evt) { onOpen(evt) }; 
-        websocket.onclose = function(evt) { onClose(evt) }; 
-        websocket.onmessage = function(evt) { onMessage(evt) }; 
-        websocket.onerror = function(evt) { onError(evt) }; 
-	
 	publicatorClient.websocket = websocket;
 
 	function call_fun_list(fun_list, evt){
@@ -101,9 +92,11 @@ window.publicator = {
     
 	// Bind websocket events to chatClient events
 	websocket.onopen = function(evt){
-	    call_fun_list(publicatorClient.handlers.onopen_handler_list , evt);};
+	    callback(publicatorClient);};
 	websocket.onclose = function(evt){
-	    call_fun_list(publicatorClient.handlers.onclose_handler_list, evt);};
+	    // restart connection if necessary.
+	    console.log('connection closed');
+	};
 	websocket.onerror = function(evt){
 	    // trigger websocket error messages.
 	    call_fun_list(publicatorClient.handlers.onerror_handler_list, evt);};

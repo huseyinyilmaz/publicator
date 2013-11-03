@@ -21,24 +21,35 @@ $(function(){
     // Chat Client //
     /////////////////
     var publicatorChat = {
-	get_client: function(){
+	get_client: function(room_code){
 	    var chatClient = {
 		client: null,
-    		room_code: null,
+    		room_code: room_code,
     		user: null,
     		user_list: null,
     		connect_to_server: function(session_id){
-    		    this.client = publicator.get_client(session_id, 'localhost:8766');
-    		    console.log('Got Client', this.client);
-    		    // create current user
-    		    this.user = new create_user(session_id, session_id);
-    		    this.user_list = [this.user];
-    		    this.client.onopen(function(evt){chatClient.trigger('onopen');});
-    		    this.client.ondisconnect(function(evt){chatClient.trigger('onclose');});
-                    this.client.onmessage(function(msg){chatClient._receive_message(msg);});
-                    this.client.onerror(function(msg){console.log('AAAAA', msg);});
-                    this.client.oninfo(function(msg){console.log('BBBBBB', msg)});
-		    
+    		    publicator.get_client(
+			_.bind(function(client){
+			    var that = this;
+			    this.client = client;
+    			    console.log('Got Client', this.client);
+    			    // create current user
+    			    this.user = new create_user(session_id, session_id);
+    			    this.user_list = [this.user];
+			    this.client.onmessage(function(msg){that._receive_message(msg);});
+			    this.client.onerror(function(msg){console.log('AAAAA', msg);});
+			    this.client.oninfo(function(msg){console.log('BBBBBB', msg)});
+			    // subscribe to room
+			    this.client.subscribe(room_code, 'all');
+    			    this.client.publish(room_code,
+    						{'type': 'user_data',
+    						 'user_code': this.user.code,
+    						 'user_nick': this.user.nick});
+			    
+			},this),
+			session_id,
+			'localhost:8766');
+
     		},
 
 		_receive_message: function(data){
@@ -103,13 +114,7 @@ $(function(){
 		    
 
 		},
-    		connect_to_room: function(room_code){
-    		    this.client.subscribe(room_code, 'all');
-    		    this.client.publish(room_code,
-    					{'type': 'user_data',
-    					 'user_code': this.user.code,
-    					 'user_nick': this.user.nick});
-    		},
+
     		send_message: function(obj){
     		    if(enable_logging && console)
     			console.log('request', obj);
