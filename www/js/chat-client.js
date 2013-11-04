@@ -21,12 +21,26 @@ $(function(){
     // Chat Client //
     /////////////////
     var publicatorChat = {
-	get_client: function(room_code){
+	get_client: function(callback, room_code){
 	    var chatClient = {
 		client: null,
     		room_code: room_code,
     		user: null,
     		user_list: null,
+		handlers: {
+		    onopen_handler_list: [],
+		    onclose_handler_list: [],
+                    onmessage_handler_list:[],
+		    oninfo_handler_list:[],
+		    onerror_handler_list:[]
+		},
+
+		onopen: function(fun){this.handlers.onopen_handler_list.push(fun);},
+		onclose: function(fun){this.handlers.onclose_handler_list.push(fun);},
+		onmessage: function(fun){this.handlers.onmessage_handler_list.push(fun);},
+		oninfo: function(fun){this.handlers.oninfo_handler_list.push(fun);},
+		onerror: function(fun){this.handlers.onerror_handler_list.push(fun);}
+		
     		connect_to_server: function(session_id){
     		    publicator.get_client(
 			_.bind(function(client){
@@ -36,6 +50,12 @@ $(function(){
     			    // create current user
     			    this.user = new create_user(session_id, session_id);
     			    this.user_list = [this.user];
+			    this.client.onopen(function(msg){
+				console.log('onopen');
+			    });
+			    this.client.onclose(function(msg){
+				console.log('onclose');
+			    });
 			    this.client.onmessage(function(msg){that._receive_message(msg);});
 			    this.client.onerror(function(msg){console.log('AAAAA', msg);});
 			    this.client.oninfo(function(msg){console.log('BBBBBB', msg)});
@@ -45,6 +65,8 @@ $(function(){
     						{'type': 'user_data',
     						 'user_code': this.user.code,
     						 'user_nick': this.user.nick});
+			    // return initialized 
+			    callback(this);
 			    
 			},this),
 			session_id,
@@ -128,11 +150,10 @@ $(function(){
 	    chatClient = _.extend(chatClient, Backbone.Events);
 	    //XXX move this to main file
 	    publicator.set_host('http://localhost:8766');
-	    //Call session
+	    //Call session which starts initialization
 	    publicator.get_session_id(_.bind(chatClient.connect_to_server,
 					     chatClient));
 	    
-	    return chatClient;
 	}
     }
 

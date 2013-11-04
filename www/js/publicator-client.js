@@ -30,6 +30,11 @@ window.publicator = {
     get_client: function(callback, session_id, host){
 	// Create chat client 
 	var publicatorClient = {
+	    status_list:{
+		initializing: 'initializing',
+		opened: 'opened',
+		closed: 'closed'}
+	    status: status_list.initializing,
 	    host: host,
 	    send_message: function(obj){
 		if(enable_logging && console)
@@ -67,10 +72,14 @@ window.publicator = {
             	data: {'channel_code': channel_code}});},
                 
             handlers: {
+		onopen_handler_list: [],
+		onclose_handler_list: [],
                 onmessage_handler_list:[],
 		oninfo_handler_list:[],
 		onerror_handler_list:[]
             },
+            onopen:function(fun){this.handlers.onopen_handler_list.push(fun);},
+            onclose:function(fun){this.handlers.onclose_handler_list.push(fun);},
             onmessage:function(fun){this.handlers.onmessage_handler_list.push(fun);},
 	    oninfo:function(fun){this.handlers.oninfo_handler_list.push(fun);},
 	    onerror:function(fun){this.handlers.onerror_handler_list.push(fun);}
@@ -92,10 +101,16 @@ window.publicator = {
     
 	// Bind websocket events to chatClient events
 	websocket.onopen = function(evt){
-	    callback(publicatorClient);};
+	    // if chatClient is being initialized return chatClient to callback
+	    if(chatClient.status = chatClient.initializing){
+		callback(publicatorClient);
+	    }
+	    call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);};
+
+	    };
 	websocket.onclose = function(evt){
 	    // restart connection if necessary.
-	    console.log('connection closed');
+	    call_fun_list(publicatorClient.handlers.onclose_handler_list, evt);};
 	};
 	websocket.onerror = function(evt){
 	    // trigger websocket error messages.
