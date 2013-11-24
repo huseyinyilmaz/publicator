@@ -28,12 +28,14 @@ window.publicator = {
     },
 
     get_client: function(callback, session_id, host){
+	var status_list = {
+	    initializing: 'initializing',
+	    opened: 'opened',
+	    closed: 'closed'};
+
 	// Create chat client 
 	var publicatorClient = {
-	    status_list:{
-		initializing: 'initializing',
-		opened: 'opened',
-		closed: 'closed'}
+	    status_list: status_list,
 	    status: status_list.initializing,
 	    host: host,
 	    send_message: function(obj){
@@ -84,8 +86,6 @@ window.publicator = {
 	    oninfo:function(fun){this.handlers.oninfo_handler_list.push(fun);},
 	    onerror:function(fun){this.handlers.onerror_handler_list.push(fun);}
         };
-	//Make chatClient an event Handler
-	publicatorClient = _.extend(publicatorClient, Backbone.Events);
 	var websocket_host = location.host;
 	if(this.host != ''){
 	    websocket_host = host;
@@ -99,19 +99,18 @@ window.publicator = {
 	function call_fun_list(fun_list, evt){
 	    fun_list.forEach(function(element){element(evt);})};
     
-	// Bind websocket events to chatClient events
+	// Bind websocket events to publicatorClient events
 	websocket.onopen = function(evt){
-	    // if chatClient is being initialized return chatClient to callback
-	    if(chatClient.status = chatClient.initializing){
+	    // if publicatorClient is being initialized return putlicatorClient to callback
+	    if(publicatorClient.status = publicatorClient.status_list.initializing){
 		callback(publicatorClient);
 	    }
 	    call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);};
 
-	    };
 	websocket.onclose = function(evt){
 	    // restart connection if necessary.
 	    call_fun_list(publicatorClient.handlers.onclose_handler_list, evt);};
-	};
+
 	websocket.onerror = function(evt){
 	    // trigger websocket error messages.
 	    call_fun_list(publicatorClient.handlers.onerror_handler_list, evt);};
