@@ -24,14 +24,8 @@ start(_Type, _Args) ->
 		     {"/:session/messages/[:channel]", h_message_handler, []},
 		     {"/session/[...]" , h_session_get_handler, []},
 		     {"/:session/ws/", websocket_handler, []},
-		     {"/", cowboy_static,
-		      [{directory, <<"./www">>},
-		       {file, <<"index.html">>},
-		       {mimetypes, {fun mimetypes:path_to_mimes/2, default}}]},
-			 
-		     {"/[...]", cowboy_static,
-		      [{directory, <<"./www">>},
-		       {mimetypes, {fun mimetypes:path_to_mimes/2, default}}]}		     
+		     {"/", cowboy_static, {file, <<"./www/index.html">>}},
+		     {"/[...]", cowboy_static, {dir, <<"./www">>}}
 		    ]}
 		  ]),
     {ok, _} = cowboy:start_http(http, s_utils:get_env(http, pool_count, 100),

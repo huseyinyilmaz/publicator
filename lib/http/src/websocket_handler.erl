@@ -38,7 +38,7 @@ websocket_init(_TransportName, Req, _Opts) ->
             State = #state{session_id=Session_id,
         		   consumer_pid=Consumer_pid,
 			   consumer_monitor_ref=Consumer_monitor_ref},
-            log(State, "Initializing bullet handler State=~p", [State]);
+            log(State, "Initializing websocket handler State=~p", [State]);
 	{error, not_found}->
 	    State = #state{session_id=no_session, consumer_pid=undefined,
 			   consumer_monitor_ref=undefined},
@@ -68,7 +68,6 @@ websocket_info(Data, Req, State) ->
     handle_info(Data, Req, State).
 
 websocket_terminate(_Reason, _Req, State) ->
-    log(State, "Terminate bullet handler."),
     handle_terminate(State).
 
 
@@ -142,11 +141,10 @@ handle_request(<<"get_consumers">>,
 	       {[{<<"channel_code">>,Channel_code}]},
 	       Req, State) ->
     {ok, Consumers_data} = h_server_adapter:get_consumers(Channel_code),
-    Result = h_utils:make_response(<<"consumers">>,Consumers_data),
+    Result = h_utils:make_response(<<"consumers">>,Consumers_data,
+                                  [{<<"channel_code">>, Channel_code}]),
     {reply, {text, Result}, Req, State};
     
-
-
 handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
     Result = h_utils:make_response(<<"unhandled_msg">>, Data,
 			   [{<<"request_type">>, Type},
@@ -175,7 +173,8 @@ handle_info(Msg,Req,State)->
 handle_terminate(#state{session_id=no_session})-> ok;
 handle_terminate(#state{session_id=Session_id}=State)->
     log(State, "Terminate websocket handler"),
-    ok = h_server_adapter:remove_message_handler(Session_id, self()),
+    %% ok = h_server_adapter:remove_message_handler(Session_id, self()),
+    ok = h_server_adapter:stop_consumer(Session_id),
     ok.
 
 %%%===================================================================
@@ -210,5 +209,6 @@ log(State, String)->
 
 log(#state{session_id=Session_id}=_State, String, Args) ->
     Log_msg = lists:concat(["~p - ", String]),
-    M = io_lib:format(Log_msg,[Session_id|Args]),
-    lager:info(M).
+    %% M = io_lib:format(Log_msg,[Session_id|Args]),
+    %% lager:info(M).
+    lager:info(Log_msg, [Session_id|Args]).

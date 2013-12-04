@@ -26,13 +26,15 @@ content_types_accepted(Req, State)->
 post_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     {Channel_code, Req2} = cowboy_req:binding(channel, Req1),
-    case h_server_adapter:subscribe(Session_id, Channel_code) of
+    {ok, Qs, Req3} = cowboy_req:body_qs(Req2),
+    Message_type = proplists:get_value(<<"message_type">>,Qs, message_only),
+    case h_server_adapter:subscribe(Session_id, Channel_code, Message_type) of
 	ok -> Resp = true;
 	{error, consumer_not_found} ->
 	    %% will return 422
 	    Resp=false
     end,
-    {Resp, Req2, State}.
+    {Resp, Req3, State}.
 
 delete_resource(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),

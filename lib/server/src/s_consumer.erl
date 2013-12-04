@@ -29,11 +29,12 @@
 -define(SERVER, ?MODULE). 
 -define(TIMEOUT, 2 * 60 * 1000). % two minutes
 
--record(state, {code :: binary(),
-		channels :: dict(),
-		channels_cache ::dict(),
-		messages :: dict(),
-		handlers :: [pid()]}).
+-record(state, {code :: binary(), % consumer code
+		channels :: dict(), % consumer's channel list
+		channels_cache ::dict(), % channels cache that this consumer reached
+		messages :: dict(), % messages that this consumer got. (for rest interface)
+		handlers :: [pid()] % current listeners that will received messages
+               }).
 
 %%%===================================================================
 %%% API
@@ -286,8 +287,13 @@ handle_cast({publish, Channel_code, Message}, State) ->
     s_channel:publish(Channel_pid, Message),
     {noreply, State2, ?TIMEOUT};
 
-handle_cast(stop, State) ->
-    {stop, normal, State, ?TIMEOUT}.
+handle_cast(stop, #state{code=Code,
+                         channels=Channel_dict}=State) ->
+    dict:fold(fun(_Channel_code, Pid, ok)->
+                      s_channel:remove_consumer(Pid, Code),
+                      ok end, ok, Channel_dict),
+    lager:warning("----------------------------Consumer stoped", []),
+    {stop, normal, State}.
 
 
 %%--------------------------------------------------------------------

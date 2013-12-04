@@ -31,6 +31,9 @@ suite() ->
 %% @end
 %%--------------------------------------------------------------------
 init_per_suite(Config) ->
+    ibrowse:start(),
+    %% ok = server:start(),
+    %% ok = http:start(),
     Config.
 
 %%--------------------------------------------------------------------
@@ -39,6 +42,9 @@ init_per_suite(Config) ->
 %% @end
 %%--------------------------------------------------------------------
 end_per_suite(_Config) ->
+    ibrowse:stop(),
+    %% server:stop(),
+    %% http:stop(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -71,9 +77,6 @@ end_per_group(_GroupName, _Config) ->
 %% @end
 %%--------------------------------------------------------------------
 init_per_testcase(_TestCase, Config) ->
-    %% ok = server:start(),
-    %% ok = http:start(),
-    {ok, _Pid} = ibrowse:start(),
     Config.
 
 %%--------------------------------------------------------------------
@@ -85,9 +88,6 @@ init_per_testcase(_TestCase, Config) ->
 %% @end
 %%--------------------------------------------------------------------
 end_per_testcase(_TestCase, _Config) ->
-    %% ok = http:stop(),
-    %% ok = server:stop(),
-    ok = ibrowse:stop(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -134,8 +134,7 @@ test_1_room_1000_consumer() ->
 %% Comment = term()
 %% @end
 %%--------------------------------------------------------------------
-create_channel(Channel_count, Consumer_count) ->
-
+create_channel(Channel_count, Consumer_count, _Message_count) ->
     %% Create Channel_ids
     Channel_code_list = lists:map(fun(Num)->
 					  Bin = integer_to_binary(Num),
@@ -144,60 +143,71 @@ create_channel(Channel_count, Consumer_count) ->
 				  end, lists:seq(1,Channel_count)),
 
     %% Create_consumer_codes
-    Consumer_code_list = [h_rest_client:get_session() || _C <- lists:seq(1, Consumer_count)],
+    Consumer_pid_list = [begin
+                             {ok, Consumer_pid} = h_consumer:start_link(),
+                             Consumer_pid
+                         end
+                         || _C <- lists:seq(1, Consumer_count)],
 
-    
-    _Consumer_pids = [spawn(http_blackbox_SUITE, consumer_sender,[C,Channel_code_list]) and
-		      spawn(http_blackbox_SUITE, consumer_receiver,
-			    [C,
-			     Channel_code_list,
-			     [make_message(Consumer_code, Channel_code) ||
-				Consumer_code <- Consumer_code_list,
-				Channel_code <- Channel_code_list,
-				Consumer_code =/= C],			    
-			     self()])
-		     || C <- Consumer_code_list],
+    %% Subscribe to channels
+    lists:foreach(
+      fun(Pid)->
+              ct:pal("Subscribe_list"),
+              h_consumer:subscribe_list(Pid, Channel_code_list)
+      end,
+      Consumer_pid_list),
+
+    [Consumer_pid | _] = Consumer_pid_list,
+
+    lists:foreach(
+      fun(Channel_code)->
+              h_consumer:publish(Consumer_pid,
+                                 Channel_code,
+                                 <<"test_msg">>)
+      end,
+      Channel_code_list
+     ),
+
+    Expected_message_list = lists:keysort(1,
+                                          [{C, [{[{<<"message">>,<<"test_msg">>}]}]}
+                                           ||C <- Channel_code_list]),
+
+    lists:foreach(
+      fun(Pid)->
+              %% Result_structure =
+              %% [{[{<<"channel_1">>,[{[{<<"message">>,<<"test_msg">>}]}]},
+              %%    {<<"channel_5">>,[{[{<<"message">>,<<"test_msg">>}]}]},
+              %%    {<<"channel_4">>,[{[{<<"message">>,<<"test_msg">>}]}]},
+              %%    {<<"channel_3">>,[{[{<<"message">>,<<"test_msg">>}]}]},
+              %%    {<<"channel_2">>,[{[{<<"message">>,<<"test_msg">>}]}]}]}]
+              Result_text = h_consumer:get_messages(Pid),
+              Result_structure = jiffy:decode(Result_text),
+              [{Result_list}] = Result_structure,
+              Sorted_result_list = lists:keysort(1, Result_list),
+              ct:pal("Sorted_result_list=~p~nExpected_message_list=~p~n",
+                     [Sorted_result_list, Expected_message_list]),
+              Expected_message_list = Sorted_result_list
+
+      end,
+      Consumer_pid_list
+     ),
+
+    %% Create accepted message_list
+    %% Send message from channels
+    ct:pal("Create Channel").
     %get subscribtions complete messages
-    Res = lists:map(fun(Code)->
-			    receive
-				{finished, Code} -> ok
-			    end
-		    end,
-		    Consumer_code_list),
-    ct:pal("Subscribtions complete,~p~n", [Res]).
+    %% Res = lists:map(fun(Code)->
+    %%     		    receive
+    %%     			{finished, Code} -> ok
+    %%     		    end
+    %%     	    end,
+    %%     	    Consumer_code_list),
+    %% ct:pal("Subscribtions complete,~p~n", [Res]).
 
-    
+
 
 test_1_room_1000_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
-    create_channel(5,5),
+    create_channel(10, 10, 100),
     ok.
-
-
-    
-%% Code : Consumer_code
-%% Message_expected: Expected_message_list [{Channel_code, Consumer_code}]
-%% Send_channel_list: Channel list that will sent messages to
-%% message format will be {message, Channel_code, Consumer_code}
-%% Parent_pid: Pid of parent that will be send a consumer completed message
-%% once expected messages will be send and all expected messages will be received
-consumer_sender(Code, Channel_list) ->
-    %send messages
-    %send subscribtion complete message and wait for continue
-    lists:map(fun(X)->h_rest_client:publish(Code, X, Code) end,
-	     Channel_list).
-
-consumer_receiver(Code, Channel_list, Message_expected, Parent_pid) ->
-    %% Subscribe to all channels
-    lists:map(fun(Channel_code)->
-		      h_rest_client:subscribe(Code,Channel_code)
-	      end,
-	      Channel_list),
-    get_messages(Code, Message_expected),
-    Parent_pid ! {finished, Code}.
-
-get_messages(Code, Message_expected) ->
-    ok.
-
-make_message(Code, Channel_code) -> {Code, Channel_code}.

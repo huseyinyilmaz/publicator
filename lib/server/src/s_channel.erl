@@ -17,6 +17,7 @@
 -export([get_consumers/1]).
 -export([add_consumer/4]).
 -export([remove_consumer/2]).
+-export([remove_consumer_from_list/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -60,9 +61,11 @@ get_consumers(Channel_pid) ->
 add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type) ->
     gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type}).
 
-remove_consumer(Channel_pid, Consumer_pid) ->
-    gen_server:call(Channel_pid, {remove_consumer, Consumer_pid}).
+remove_consumer(Channel_pid, Consumer_code) ->
+    gen_server:call(Channel_pid, {remove_consumer, Consumer_code}).
 
+remove_consumer_from_list(Channel_pid, Consumer_code) ->
+    gen_server:call(Channel_pid, {remove_consumer_from_list, Consumer_code}).
 
     %% Key = make_channel_code(Channel_code).
     %% case gproc:get_or_locate({n, l, Key}) 
@@ -134,22 +137,25 @@ handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
     Reply = ok,
     {reply, Reply, State, ?TIMEOUT};
 
+%% Delete consumer from consumer_table
+handle_call({remove_consumer_from_list, Consumer_code}, _From,
+            #state{consumer_table=Consumer_table}) ->
+    ets:delete(Consumer_table, Consumer_code);
+
+%% remobe consumer handler consumer and tell consumer
+%% to remove table from its own list
 handle_call({remove_consumer, Consumer_code}, _From,
 	    #state{consumer_table=Consumer_table,
 		   code=Channel_code}=State)->
+
     ets:delete(Consumer_table, Consumer_code),
 
     Handler_list = ets:match(Consumer_table, {'$1', {'$2', all}}),
 
-    lists:foldl(fun([C_code, C_pid], Acc) ->
-			%% Do not sent message to new created message
-			case C_code of
-			    Consumer_code -> ok;
-			    _ ->s_consumer:push_remove_subscribtion(C_pid,
-								    Channel_code,
-								    Consumer_code),
-				Acc
-			end
+    lists:foldl(fun([C_code, C_pid], _Acc) ->
+                        s_consumer:push_remove_subscribtion(C_pid,
+                                                            Channel_code,
+                                                            C_code)
 		end, ok, Handler_list),
     
 

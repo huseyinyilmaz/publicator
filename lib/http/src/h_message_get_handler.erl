@@ -31,9 +31,8 @@ content_types_provided(Req, State) ->
 get_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     case h_server_adapter:get_messages(Session_id) of
-	{ok, Result_text} ->
-	    lager:info({jiffy,jiffy:encode({dict:to_list(Result_text)})}),
-	    Body = jiffy:encode({dict:to_list(Result_text)});
+	{ok, Result_dict} ->
+	    Body = msg_dict_to_json(Result_dict);
 	{error, consumer_not_found} ->
 	    Body = h_utils:no_session_response()
     end,
@@ -42,3 +41,18 @@ get_json(Req, State) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+normalize_channel({Channel_name, Message_list})->
+    {Channel_name, lists:map(fun(S)->{[S]} end, Message_list)}.
+
+
+msg_dict_to_json(Message_dict)->
+    %% Msg_list = [{<<"channel1">>, [{message, <<"msg">>}, ..]},
+    %%             {<<"channel2">>,..}]
+
+    %% Msg_json = [ {[{<<"channel1">>, [ {[{message, <<"meg">>}]},.. ]}]},
+    %%                {<<"channel2">>, ....  }]}]
+    Message_list = dict:to_list(Message_dict),
+    lager:info("Message_list = ~p~n", [Message_list]),
+    Result_list = [{lists:map(fun normalize_channel/1, Message_list)}],
+    jiffy:encode(Result_list).

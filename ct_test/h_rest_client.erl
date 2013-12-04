@@ -10,10 +10,12 @@
 
 %% API
 -export([get_session/0, get_subscribtions/1, subscribe/2, publish/3]).
-
+-export([get_messages/1]).
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+-define(HOST, "http://localhost:8766/").
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -21,23 +23,21 @@
 %% @end
 %%--------------------------------------------------------------------
 get_request(Uri) ->
-    Host = "http://localhost:8766/",
-    Url = Host ++ Uri,
+    Url = ?HOST ++ Uri,
     {ok, "200" , _Headers, Body} =
 	ibrowse:send_req(Url, [], get),
     Body.
 
 post_request(Uri, Data) ->
-    Host = "http://localhost:8766/",
-    Url = Host ++ Uri,
+    Url = ?HOST ++ Uri,
     {ok, "204", _Headers, Body} =
-	ibrowse:send_req(Url,[{"Content-Type", "text/html"}],post,Data),
+	ibrowse:send_req(Url, [{"Content-Type", "text/html"}], post, Data),
     Body.
 
 get_session()->
     Uri = "session/",
     Body = get_request(Uri),
-    {[{<<"session">>,Session_id}]} = jiffy:decode(Body),
+    {[{<<"session">>, Session_id}]} = jiffy:decode(Body),
     Session_id.
 
 get_subscribtions(Session_id) ->
@@ -49,15 +49,19 @@ get_subscribtions(Session_id) ->
 subscribe(Session_id, Channel_code) ->
     Uri = prefix_session_id(Session_id,
 			    "subscribtions/" ++ binary_to_list(Channel_code) ++ "/"),
-    io:format("XXXXX~p~n",[Uri]),
+    io:format("XXXXX~p~n", [Uri]),
     
     post_request(Uri, []).    
 
 publish(Session_id, Channel_code, Message) ->
     Uri = prefix_session_id(Session_id,
 			    "messages/" ++ binary_to_list(Channel_code) ++ "/"),
-    post_request(Uri, [{"message",Message}]).
+    post_request(Uri, "message=" ++ Message).
 
+get_messages(Session_id)->
+    Uri = prefix_session_id(Session_id, "messages/"),
+    get_request(Uri).
+    
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

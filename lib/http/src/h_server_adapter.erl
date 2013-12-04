@@ -13,7 +13,7 @@
 	 get_channels/0, get_subscribtions/1,
 	 get_messages/1, publish/3, create_consumer/0,
 	 get_consumer/1, get_consumers/1]).
-
+-export([stop_consumer/1]).
 -export([add_message_handler/2, remove_message_handler/2]).
 
 %%%===================================================================
@@ -39,7 +39,7 @@ get_subscribtions(Session_id) -> server:get_subscribtions(Session_id).
 get_messages(Session_id) -> server:get_messages(Session_id).
 publish(Session_id, Channel_code, Message) -> server:publish(Session_id, Channel_code, Message).
 create_consumer() -> server:create_consumer().
-
+stop_consumer(Consumer_code) -> server:stop_consumer(Consumer_code).
 get_consumers(Channel_code) -> server:get_consumers(Channel_code).
     
 add_message_handler(Session_id, Handler_pid) -> server:add_message_handler(Session_id,
