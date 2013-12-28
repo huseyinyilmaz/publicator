@@ -37,10 +37,7 @@ content_types_provided(Req, State) ->
 
 get_session(Req, State)->
     {Callback, Req2} = cowboy_req:qs_val(<<"callback">>, Req),
-    lager:info("XXXXXXXXXXXXXXXXXXXXXAAAAAAAAAAAAAAA"),
     {Body, Req3, State} = get_json(Req2, State),
-    lager:info("Value = ~p~n", [Callback]),
-    lager:info("Request = ~p~n", [Req2]),
     case Callback of
 	undefined -> {Body, Req3, State};
 	_ -> {[Callback, <<"(">> , Body, <<");">>], Req3, State}

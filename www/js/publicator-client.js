@@ -93,6 +93,10 @@
                 trigger_info: function(data){
                     publicatorClient.handlers.oninfo_handler_list.forEach(
                         function(fun){fun(data);});
+                },
+                trigger_error: function(data){
+                    publicatorClient.handlers.onerror_handler_list.forEach(
+                        function(fun){fun(data);});
                 }
                 
             };
@@ -137,26 +141,23 @@
                     case 'consumers':
                         publicatorClient.trigger_info(obj);
                         break;
+                    case 'add_subscribtion':
+                        publicatorClient.trigger_info(obj);
+                        break;
                     case 'remove_subscribtion':
                         publicatorClient.trigger_info(obj);
+                        break;
+                    case 'error':
+                        publicatorClient.trigger_error(obj);
                         break;
                     default:
                         publicatorClient.trigger_message(obj);
                         break;
                     }
                 }else if(evt.type == 'error'){
-                    publicatorClient.handlers.onerror_handler_list.forEach(function(fun){
-                        // fun(JSON.parse(e.data));
-                        fun(evt.data);
-                    });
+                    publicatorClient.trigger_error(evt.data);
                 }else{
-                    var info_class = evt.type;
-                    evt.type = 'info';
-                    evt.info_class = info_class;
-                    
-                    publicatorClient.handlers.oninfo_handler_list.forEach(function(fun){
-                        fun(evt);
-                    });
+                    publicatorClient.trigger_error(evt);
                 }
             };
             return publicatorClient;

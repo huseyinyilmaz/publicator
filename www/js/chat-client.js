@@ -104,7 +104,6 @@
                           {room_code: this.room_code,
                            user_code: this.user.code,
                            user_nick: this.user.nick});
-            console.log('ASDFASDFASDFSDF');
             this.client.get_consumers(this.room_code);
         },
 
@@ -117,6 +116,9 @@
         },
         trigger_info: function(data){
             call_fun_list(this.handlers.oninfo_handler_list, data);
+        },
+        trigger_error: function(data){
+            call_fun_list(this.handlers.onerror_handler_list, data);
         },
         
         trigger_user_change: function(){
@@ -158,13 +160,14 @@
                         // subscribe to room
                     });
                     
-                    this.client.onerror(function(msg){console.log('AAAAA', msg);});
+                    this.client.onerror(function(msg){
+                        that.trigger_error(msg);});
                     this.client.oninfo(function(msg){
                         if((that.roomcode == undefined && msg.type == 'subscribed')||
                            msg.channel_code == that.room_code){
                             that._receive_info(msg);
                         }else{
-                            console.error('Wrong channel code.');
+                            console.error('Wrong channel code.(info)');
                         }
                         
                     });
@@ -184,6 +187,12 @@
                 break;
             case 'consumers':
                 this.add_user_code_list(data.data);
+                break;
+            case 'add_subscribtion':
+                console.log('===========>>>>>>>>>>>>>>');
+                var user = create_user(data.data, data.data);
+                chatClient.update_user(user);
+                this.send_user_data(chatClient.user);
                 break;
             case 'remove_subscribtion':
                 this.remove_user(data.data);

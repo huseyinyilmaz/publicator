@@ -287,12 +287,7 @@ handle_cast({publish, Channel_code, Message}, State) ->
     s_channel:publish(Channel_pid, Message),
     {noreply, State2, ?TIMEOUT};
 
-handle_cast(stop, #state{code=Code,
-                         channels=Channel_dict}=State) ->
-    dict:fold(fun(_Channel_code, Pid, ok)->
-                      s_channel:remove_consumer(Pid, Code),
-                      ok end, ok, Channel_dict),
-    lager:warning("----------------------------Consumer stoped", []),
+handle_cast(stop, State) ->
     {stop, normal, State}.
 
 
@@ -306,9 +301,19 @@ handle_cast(stop, #state{code=Code,
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(timeout, #state{code=Code}=State)->
-    lager:warning("Consumer ~p has timeout", [Code]),
-    {stop,normal , State};
+handle_info(timeout, #state{code=Code,
+                            handlers=Handler_list}=State)->
+    lager:info("Consumer ~p has timeout", [Code]),
+    Alive_handler_list = lists:filter(fun is_process_alive/1, Handler_list),
+    case Alive_handler_list of
+	[] ->
+	    lager:info("~p - All handlers are dead. Consumer is dying.", [Code]),
+            {stop, normal , State};
+	_ ->
+            lager:info("~p - There is still alive handlers. Consumer will stay alive",
+                       [Code]),
+            {noreply, State, ?TIMEOUT}
+	end;
 
 handle_info(Info, #state{code=Code}=State) ->
     lager:warning("Unhandled info message in consumer ~p (~p)", [Code, Info]),
@@ -325,7 +330,12 @@ handle_info(Info, #state{code=Code}=State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(Reason, #state{code=Code}=_State) ->
+terminate(Reason, #state{code=Code,
+                         channels=Channel_dict}=_State) ->
+    dict:fold(fun(_Channel_code, Pid, ok)->
+                      s_channel:remove_consumer(Pid, Code),
+                      ok end, ok, Channel_dict),
+
     lager:info("=============================================================="),
     lager:info("Terminate consumer ~p (~p)", [Code, Reason]),
     ok.
