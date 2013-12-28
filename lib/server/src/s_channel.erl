@@ -152,10 +152,10 @@ handle_call({remove_consumer, Consumer_code}, _From,
 
     Handler_list = ets:match(Consumer_table, {'$1', {'$2', all}}),
 
-    lists:foldl(fun([C_code, C_pid], _Acc) ->
+    lists:foldl(fun([_C_code, C_pid], _Acc) ->
                         s_consumer:push_remove_subscribtion(C_pid,
                                                             Channel_code,
-                                                            C_code)
+                                                            Consumer_code)
 		end, ok, Handler_list),
     
 
