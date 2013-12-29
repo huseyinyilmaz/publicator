@@ -18,16 +18,16 @@
                 var session_id = e.session;
                 callback(session_id);}
 
-            var url = (this.host + '/session/' +
+            var url = ('http://' + this.host + '/session/' +
                        get_random_string());
-            // if host is external add callback param to acrivate jsonp
+            // if host is external add callback param to activate jsonp
             if(this.host)
                 url += '/?callback=?';
             //Add random string string to end of the url so it will not be cached from browser
             $.getJSON(url, callback_fun);
         },
 
-        get_client: function(callback, session_id, host){
+        get_client: function(callback, session_id){
             var status_list = {
                 initializing: 'initializing',
                 opened: 'opened',
@@ -37,7 +37,7 @@
             var publicatorClient = {
                 status_list: status_list,
                 status: status_list.initializing,
-                host: host,
+                host: publicator.host,
                 send_message: function(obj){
                     if(enable_logging && console)
                         console.log('request', obj);
@@ -100,10 +100,10 @@
                 }
                 
             };
-            var websocket_host = location.host;
-            if(this.host !== ''){
-                websocket_host = host;
-            }
+            // var websocket_host = location.host;
+            // if(this.host !== ''){
+            var websocket_host = publicator.host;
+            // }
             var url = 'ws://' + websocket_host + '/' + session_id + '/ws/';
             console.log('websocket host = ' + url);
             var websocket = new WebSocket(url);

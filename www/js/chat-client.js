@@ -1,7 +1,6 @@
 (function(){
     "use strict";
 
-    $(function(){
         ////////////////////
         // User structure //
         ////////////////////
@@ -173,9 +172,7 @@
                     });
 
                 },this),
-                    
-                    session_id,
-                    'www.talkybee.com:8766');
+                session_id);
 	},
     
         _receive_info: function(data){
@@ -253,9 +250,6 @@
             this.send_user_data(create_user(chatClient.user.code,nick));
         }
     }; //chatClient
-
-                //XXX move this to main file
-                publicator.set_host('http://www.talkybee.com:8766');
                 //Call session which starts initialization
                 publicator.get_session_id(_.bind(chatClient.connect_to_server,
                                                  chatClient));
@@ -263,10 +257,9 @@
             }
         };
 
-
-        ////////////////////
-        // Bootstrap code //
-        ////////////////////
-        window.publicatorChat = publicatorChat;
-    });
+    ////////////////////
+    // Bootstrap code //
+    ////////////////////
+    window.publicator.chat = publicatorChat;
+    
 }());
