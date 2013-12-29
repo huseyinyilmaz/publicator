@@ -1,11 +1,13 @@
 {application, http, [
 	{description, "Http interface implementation for publicator"},
 	{vsn, "1"},
-	{modules, []},
 	{registered, []},
 	{applications, [
 		kernel,
 		stdlib,
+                lager,
+                jiffy,
+                gproc,
 		cowboy,
 		server
 	]},

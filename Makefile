@@ -3,7 +3,7 @@ REBAR = ./rebar
 MNESIA_DIR = /tmp/mnesia
 NODE_NAME = publicator
 
-pack: compile
+build: clean compile
 	@$(REBAR) generate
 	cp -r www rel/publicator
 	cd rel; tar -czvf publicator.tar.gz publicator
@@ -11,6 +11,12 @@ pack: compile
 	mv rel/publicator.tar.gz .
 	echo "publicator.tar.gz is created in current directory."
 
+build2: clean compile
+	rm -rf rel/publicator
+	@$(REBAR) generate
+	rel/publicator/bin/publicator start
+	sleep 2
+	cat rel/publicator/log/erlang*
 # compile
 all: compile
 

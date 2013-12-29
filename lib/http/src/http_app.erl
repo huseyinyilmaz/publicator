@@ -36,4 +36,4 @@ start(_Type, _Args) ->
 
 -spec stop(_State::any()) -> ok.
 stop(_State) ->
-	ok.
+    ok.

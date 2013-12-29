@@ -26,6 +26,7 @@ start() ->
     ok = s_utils:ensure_started(ranch),
     ok = s_utils:ensure_started(cowlib),
     ok = s_utils:ensure_started(cowboy),
+    ok = s_utils:ensure_started(jiffy),
     ok = s_utils:ensure_started(http).
 
 %%--------------------------------------------------------------------
@@ -37,7 +38,9 @@ start() ->
 stop() ->
     ok = application:stop(http),
     ok = application:stop(cowboy),
+    ok = application:stop(cowlib),
     ok = application:stop(ranch),
+    ok = application:stop(jiffy),
     ok = application:stop(crypto).
 
 
