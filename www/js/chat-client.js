@@ -175,7 +175,7 @@
                 },this),
                     
                     session_id,
-                    'localhost:8766');
+                    'www.talkybee.com:8766');
 	},
     
         _receive_info: function(data){
@@ -255,7 +255,7 @@
     }; //chatClient
 
                 //XXX move this to main file
-                publicator.set_host('http://localhost:8766');
+                publicator.set_host('http://www.talkybee.com:8766');
                 //Call session which starts initialization
                 publicator.get_session_id(_.bind(chatClient.connect_to_server,
                                                  chatClient));
