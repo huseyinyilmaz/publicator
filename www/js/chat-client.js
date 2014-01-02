@@ -162,7 +162,7 @@
                     this.client.onerror(function(msg){
                         that.trigger_error(msg);});
                     this.client.oninfo(function(msg){
-                        if((that.roomcode == undefined && msg.type == 'subscribed')||
+                        if((that.roomcode === undefined && msg.type == 'subscribed')||
                            msg.channel_code == that.room_code){
                             that._receive_info(msg);
                         }else{
@@ -186,7 +186,6 @@
                 this.add_user_code_list(data.data);
                 break;
             case 'add_subscribtion':
-                console.log('===========>>>>>>>>>>>>>>');
                 var user = create_user(data.data, data.data);
                 chatClient.update_user(user);
                 this.send_user_data(chatClient.user);
@@ -211,13 +210,10 @@
                 var user = create_user(data.user_code, data.user_nick);
                 chatClient.update_user(user);
                 break;
-            case 'room_data':
-                chatApp.log('New room data: ' +
-                            data.code +
-                            ' Is room locked(' + data.is_locked + ')' );
-                chatApp.update_room(data.code, data.is_locked);
+            case 'start_writing':
                 break;
-
+            case 'stop_writing':
+                break;
             case 'user_removed':
                 chatApp.log('Remove user: ' + data.code);
                 chatApp.remove_user(data.code);
@@ -248,7 +244,14 @@
         },
         rename: function(nick){
             this.send_user_data(create_user(chatClient.user.code,nick));
+        },
+        start_writing: function(){
+            console.log('start_writing');
+        },
+        stop_writing: function(){
+            console.log('stop_writing');
         }
+        
     }; //chatClient
                 //Call session which starts initialization
                 publicator.get_session_id(_.bind(chatClient.connect_to_server,
