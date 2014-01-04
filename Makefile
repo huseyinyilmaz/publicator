@@ -62,8 +62,9 @@ build-plt:
 dialyze:
 	@$(DIALYZER) --src lib/*/src --plt .publicator_dialyzer.plt\
 		-Werror_handling \
-		-Wrace_conditions -Wunmatched_returns # -Wunderspecs
-
+		-Wrace_conditions -Wunmatched_returns \
+		| grep -v -f ./.dialyzer-ignore-warnings
+# -Wunderspecs
 docs:
 	@$(REBAR) doc skip_deps=true
 

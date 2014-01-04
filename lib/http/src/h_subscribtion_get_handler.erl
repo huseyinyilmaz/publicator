@@ -32,8 +32,8 @@ get_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     lager:info({get_json, sessin_id, Session_id}),
     case h_server_adapter:get_subscribtions(Session_id) of
-	{ok, Result_text} ->
-	    Body = jiffy:encode({dict:to_list(Result_text)}),
+	{ok, Result_dict} ->
+	    Body = jiffy:encode({dict:to_list(Result_dict)}),
 	    lager:info({subscribtions, get, Body});
 	{error, consumer_not_found} ->
 	    Body = h_utils:no_session_response(),

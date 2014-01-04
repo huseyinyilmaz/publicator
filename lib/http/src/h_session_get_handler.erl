@@ -50,10 +50,6 @@ get_json(Req, State) ->
     Body = jiffy:encode({[{<<"session">>, Consumer_code}]}),
     {Body, Req, State}.
 
-get_jsonp(Req, State) ->
-    {ok, Value, Req2} = cowboy_req:body_qs(Req),
-    get_json(Req2, State).
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

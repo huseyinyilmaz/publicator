@@ -104,7 +104,7 @@ unsubscribe(Consumer_code, Channel_code) ->
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
--spec get_subscribtions(binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
+-spec get_subscribtions(binary()) -> {ok, dict()} | {error, consumer_not_found}.
 get_subscribtions(Consumer_code) ->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
