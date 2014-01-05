@@ -109,10 +109,6 @@ handle_request(<<"subscribe">>,
 	       Req, State) ->
     handle_subscribe_request(Handler_type_bin, Channel_code, Req,State);
 
-
-handle_request(<<"full_subcribe">>, Data, Req, State) ->
-    handle_subscribe_request(all, Data, Req,State);
-
 handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
     ok = h_server_adapter:unsubscribe(Session_id, Data),
     ok = h_server_adapter:remove_message_handler(Session_id, self()),
@@ -196,6 +192,8 @@ handle_subscribe_request(Handler_type_bin,
     case h_server_adapter:subscribe(Session_id, Channel_code, Handler_type) of
 	{error, invalid_channel_code} ->
 	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
+        {error, consumer_not_found} ->
+            Result = h_utils:make_response(<<"error">>, <<"consumer_not_found">>);
 	ok->
 	    ok = h_server_adapter:add_message_handler(Session_id, self()),
 	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)

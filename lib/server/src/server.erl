@@ -67,7 +67,7 @@ get_messages(Consumer_code, Channel_code) ->
 	{error, not_found} -> {error, consumer_not_found}
     end.
  
--spec get_messages(binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
+-spec get_messages(binary()) -> {ok, dict()} | {error, consumer_not_found}.
 get_messages(Consumer_code) ->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
@@ -84,7 +84,9 @@ publish(Consumer_code, Channel_code, Message)->
     end.
 
 -spec subscribe(binary(), binary(), channel_handler_type()) ->
-		       ok | {error, consumer_not_found}.
+                       ok
+                     | {error, invalid_channel_code}
+                     | {error , consumer_not_found}.
 subscribe(Consumer_code, Channel_code, Handler_type) ->
     case is_channel_code_valid(Channel_code) of
 	false -> {error, invalid_channel_code};
@@ -129,7 +131,7 @@ remove_message_handler(Consumer_code, Handler_pid) ->
     end.
 
 
--spec create_consumer() -> {ok, Code::binary(), Pid::binary()}.
+-spec create_consumer() -> {ok, Code::binary(), Pid::binary()|undefined}.
 create_consumer() ->
     s_consumer_sup:start_child().
 
@@ -146,13 +148,11 @@ stop_consumer(Consumer_code) ->
 get_consumer(Consumer_code) ->
     s_consumer:get(Consumer_code).
 
--spec get_consumers(binary()) -> {ok, pid()} | {error, not_found}.
+-spec get_consumers(binary()) -> {ok, [pid()]}.
 get_consumers(Channel_code) ->
-    case s_channel:get_channel(Channel_code) of
-	{ok, Consumer_pid} ->
-	    s_channel:get_consumers(Consumer_pid);
-	{error, not_found} -> {error, channel_not_found}
-    end.
+    {ok, Consumer_pid} = s_channel:get_channel(Channel_code),
+    {ok, Consumer_list} = s_channel:get_consumers(Consumer_pid),
+    {ok, Consumer_list}.
 
 %%%===================================================================
 %%% Internal functions

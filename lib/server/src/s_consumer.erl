@@ -11,6 +11,8 @@
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
 
+-include("../include/server.hrl").
+
 %% API
 -export([start_link/1, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
@@ -95,7 +97,7 @@ stop(Pid) ->
 get_count() ->
     {ok, ets:info(consumer, size)}.
 
--spec subscribe(pid(), binary(), server:channel_handler_type()) -> ok.
+-spec subscribe(pid(), binary(), channel_handler_type()) -> ok.
 subscribe(Pid, Channel_code, Handler_type)->
     gen_server:call(Pid, {subscribe, Channel_code, Handler_type}).
 
@@ -106,7 +108,7 @@ unsubscribe(Pid, Channel_code)->
 publish(Pid, Channel_code, Message)->
     gen_server:cast(Pid, {publish, Channel_code, Message}).
 
--spec get_subscribtions(pid()) -> {ok, [binary()]}.
+-spec get_subscribtions(pid()) -> {ok, dict()}.
 get_subscribtions(Pid) ->
     gen_server:call(Pid, get_subscribtions).
 
@@ -127,10 +129,6 @@ remove_message_handler(Pid,Handler_pid) ->
 %% @doc
 %% Initializes the server
 %%
-%% @spec init(Args) -> {ok, State} |
-%%                     {ok, State, Timeout} |
-%%                     ignore |
-%%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
 init([Code]) ->
@@ -147,7 +145,7 @@ init([Code]) ->
 	     ?TIMEOUT
 	    };
 	{Pid, undefined} when is_pid(Pid) -> 
-	    {stop, {already_exists, Pid}}
+	    {error, {already_exists, Pid}}
     end.
     
 %%--------------------------------------------------------------------
@@ -355,7 +353,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec make_consumer_key(server:code()) -> server:consumer_hash_key().
+-spec make_consumer_key(code()) -> consumer_hash_key().
 make_consumer_key(Consumer_code) -> {consumer, Consumer_code}.
 
 %%% Gets Channel from subscribtions list or channels cache,

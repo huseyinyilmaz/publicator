@@ -29,14 +29,14 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-%% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
+-spec start_child() -> {ok, Code::binary(), Pid::binary() | undefined}.
 start_child() ->
     Code = s_utils:generate_code(),
     lager:info("~p~n", [{start_new_consumer, Code}]),
     Args_to_append = [Code],
     case supervisor:start_child(?SERVER, Args_to_append) of
 	{ok, Pid} -> {ok, Code, Pid};
-	{stop, {already_exists, _Pid}} -> start_child()
+	{error, {already_exists, _Pid}} -> start_child()
     end.
 	     
 

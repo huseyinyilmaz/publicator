@@ -30,11 +30,15 @@ content_types_provided(Req, State) ->
 %% called for Get Request
 get_json(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    case h_server_adapter:get_messages(Session_id) of
-	{ok, Result_dict} ->
-	    Body = msg_dict_to_json(Result_dict);
-	{error, consumer_not_found} ->
-	    Body = h_utils:no_session_response()
+    case Session_id of
+        undefined -> Body = h_utils:error_response(<<"There is no session provided">>);
+        Session_id ->
+            case server:get_messages(Session_id) of
+                {ok, Result_dict} ->
+                    Body = msg_dict_to_json(Result_dict);
+                {error, consumer_not_found} ->
+                    Body = h_utils:no_session_response()
+            end
     end,
     {Body, Req1, State}.
 

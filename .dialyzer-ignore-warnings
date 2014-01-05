@@ -1,2 +1,5 @@
 Call to missing or unexported function lager:info
+Call to missing or unexported function lager:warning
 Call to missing or unexported function lager:error
+erl_syntax:
+eprof:

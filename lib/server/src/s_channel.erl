@@ -29,6 +29,8 @@
 -record(state, {code :: binary(),
 		consumer_table :: ets:tid()}).
 
+-include("../include/server.hrl").
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -48,15 +50,17 @@ publish(Channel_pid, Message) ->
     gen_server:cast(Channel_pid, {publish, Message}).
 
 
+-spec get_channel(Channel_code::binary())->{ok, pid()}.
 get_channel(Channel_code)->
     Key = make_channel_key(Channel_code),
     case gproc:where({n, l, Key}) of
 	undefined -> s_channel_sup:start_child(Channel_code);
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
-
+%spec get_consumers(Channel_pid::binary()) -> {ok, [pid()]}.
 get_consumers(Channel_pid) ->
-    gen_server:call(Channel_pid, get_consumers).
+    {ok, Consumer_list} = gen_server:call(Channel_pid, get_consumers),
+    {ok, Consumer_list}.
 
 add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type) ->
     gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type}).
@@ -242,5 +246,5 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
--spec make_channel_key(binary()) -> server:channel_hash_key().
+-spec make_channel_key(binary()) -> channel_hash_key().
 make_channel_key(Channel_code) -> {channel, Channel_code}.

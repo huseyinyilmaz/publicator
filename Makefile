@@ -3,6 +3,11 @@ REBAR = ./rebar
 MNESIA_DIR = /tmp/mnesia
 NODE_NAME = publicator
 
+APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xmerl inets
+
+# kernel stdlib sasl erts ssl tools os_mon runtime_tools crypto inets \
+#        xmerl webtool snmp public_key mnesia eunit
+
 build: clean compile
 	@$(REBAR) generate
 	cp -r www rel/publicator
@@ -17,6 +22,9 @@ build2: clean compile
 	rel/publicator/bin/publicator start
 	sleep 2
 	cat rel/publicator/log/erlang*
+
+
+
 # compile
 all: compile
 
@@ -54,13 +62,18 @@ build-erlang-plt:
 	@$(DIALYZER) --build_plt --output_plt .erlang_dialyzer.plt \
 		--apps erts kernel stdlib ssl crypto
 
-build-plt:
-	@$(DIALYZER) --build_plt --add_to_plt --plt .erlang_dialyzer.plt \
-		--output_plt .publicator_dialyzer.plt \
-		--apps deps/*
+build-plt: compile
+	@$(DIALYZER) --build_plt  --add_to_plt --plt .erlang_dialyzer.plt\
+		--output_plt .deps_dialyzer.plt \
+		--apps deps/* $(APPS)
+
+# build-plt: compile
+# 	@$(DIALYZER) --build_plt --add_to_plt --plt .deps_dialyzer.plt\
+# 		--output_plt .publicator_dialyzer.plt \
+# 		--apps lib/* -I lib/*/include/
 
 dialyze:
-	@$(DIALYZER) --src lib/*/src --plt .publicator_dialyzer.plt\
+	@$(DIALYZER) --src lib/*/src --plt .deps_dialyzer.plt\
 		-Werror_handling \
 		-Wrace_conditions -Wunmatched_returns \
 		| grep -v -f ./.dialyzer-ignore-warnings
