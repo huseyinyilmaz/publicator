@@ -194,6 +194,7 @@ server_handler_message_only_mode_test_() ->
 				  Message2},
 
 		 s_consumer:publish(Consumer_pid1, Channel_code, Message1),
+		 timer:sleep(?DELAY),
 		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2),
 		 timer:sleep(?DELAY),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock2)),
