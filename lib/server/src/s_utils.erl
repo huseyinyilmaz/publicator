@@ -20,6 +20,7 @@
 %% Generates random code as binary
 %% @end
 %%--------------------------------------------------------------------
+-spec generate_code() -> binary().
 generate_code()->
     list_to_binary(
       string:to_lower(
@@ -49,7 +50,7 @@ set_env(AppName, Key, Value) ->
     application:set_env(AppName, Key, Value).
 
 
-
+-spec ensure_started(atom()) -> ok.
 ensure_started(App) ->
     case application:start(App) of
         ok ->

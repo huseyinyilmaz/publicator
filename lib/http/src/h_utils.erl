@@ -13,6 +13,7 @@
 -export([make_response/2, make_response/3]).
 -export([error_response/1, error_response/2]).
 -export([no_session_response/0]).
+-export([no_session_arg_response/0]).
 
 -define(COOKIE_NAME, <<"publicator-session-id">>).
 %%%===================================================================
@@ -53,7 +54,7 @@ drop_session(Req) ->
 	       <<"=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/">>/bitstring>>, Req),
     Req2.
 
-
+-spec get_or_create_session(cowboy_req:req()) -> {binary(), cowboy_req:req()}.
 get_or_create_session(Req) ->
     {Existed_session_id, Req1} = get_session(Req),
     case Existed_session_id of
@@ -69,17 +70,25 @@ get_or_create_session(Req) ->
 %%% Internal functions
 %%%===================================================================
 
+-spec make_response(Type::binary(), Data::term()) -> binary().
 make_response(Type, Data) ->
     make_response(Type,Data,[]).
 
+-spec make_response(Type::binary(), Data::term(), Extra_list::list()) -> binary().
 make_response(Type, Data, Extra_list) ->
     jiffy:encode({[{<<"type">>, Type},
 		   {<<"data">>, Data}| Extra_list]}).
 
+-spec error_response(term()) -> binary().
 error_response(Data) ->
     error_response(Data,[]).
 
+-spec error_response(term(),list()) -> binary().
 error_response(Data,Extra_list)->
     make_response(<<"error">>,Data,Extra_list).
 
+-spec no_session_response() -> binary().
 no_session_response()-> error_response(<<"No session found">>).
+
+-spec no_session_arg_response() -> binary().
+no_session_arg_response() -> h_utils:error_response(<<"There is no session provided">>).

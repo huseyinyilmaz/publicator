@@ -29,7 +29,7 @@
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
--spec start_child() -> {ok, Code::binary(), Pid::binary() | undefined}.
+-spec start_child() -> {ok, Code::binary(), Pid::pid()}.
 start_child() ->
     Code = s_utils:generate_code(),
     lager:info("~p~n", [{start_new_consumer, Code}]),

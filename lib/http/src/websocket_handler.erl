@@ -15,8 +15,6 @@
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
 -record(state,{session_id, consumer_pid, consumer_monitor_ref}).
-
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -31,9 +29,9 @@ init({tcp, http}, _Req, _Opts) ->
 
 websocket_init(_TransportName, Req, _Opts) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    case h_server_adapter:get_consumer(Session_id) of
+    case server:get_consumer(Session_id) of
 	{ok, Consumer_pid} ->
-            ok = h_server_adapter:add_message_handler(Session_id, self()),
+            ok = server:add_message_handler(Session_id, self()),
 	    Consumer_monitor_ref = monitor(process, Consumer_pid),
             State = #state{session_id=Session_id,
         		   consumer_pid=Consumer_pid,
@@ -110,14 +108,14 @@ handle_request(<<"subscribe">>,
     handle_subscribe_request(Handler_type_bin, Channel_code, Req,State);
 
 handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    ok = h_server_adapter:unsubscribe(Session_id, Data),
-    ok = h_server_adapter:remove_message_handler(Session_id, self()),
+    ok = server:unsubscribe(Session_id, Data),
+    ok = server:remove_message_handler(Session_id, self()),
     Result = h_utils:make_response(<<"unsubscribed">>,
 			   Data),
     {reply, {text, Result}, Req, State};
 
 handle_request(<<"get_subscribtions">>, _Data, Req, #state{session_id=Session_id}=State) ->
-    {ok, Subscribtion_data} = h_server_adapter:get_subscribtions(Session_id),
+    {ok, Subscribtion_data} = server:get_subscribtions(Session_id),
     Result = h_utils:make_response(<<"subscribtions">>, Subscribtion_data),
     {reply, {text, Result}, Req, State};
 
@@ -136,7 +134,7 @@ handle_request(<<"publish">>,
 handle_request(<<"get_consumers">>,
 	       {[{<<"channel_code">>,Channel_code}]},
 	       Req, State) ->
-    {ok, Consumers_data} = h_server_adapter:get_consumers(Channel_code),
+    {ok, Consumers_data} = server:get_consumers(Channel_code),
     Result = h_utils:make_response(<<"consumers">>,Consumers_data,
                                   [{<<"channel_code">>, Channel_code}]),
     {reply, {text, Result}, Req, State};
@@ -169,8 +167,7 @@ handle_info(Msg,Req,State)->
 handle_terminate(#state{session_id=no_session})-> ok;
 handle_terminate(#state{session_id=Session_id}=State)->
     log(State, "Terminate websocket handler"),
-    %% ok = h_server_adapter:remove_message_handler(Session_id, self()),
-    ok = h_server_adapter:stop_consumer(Session_id),
+    ok = server:stop_consumer(Session_id),
     ok.
 
 %%%===================================================================
@@ -179,7 +176,7 @@ handle_terminate(#state{session_id=Session_id}=State)->
     
 handle_publish_request(Channel_code, Message, Req,
 		    #state{session_id=Session_id}=State) ->
-    ok = h_server_adapter:publish(Session_id, Channel_code, Message),
+    ok = server:publish(Session_id, Channel_code, Message),
     {ok, Req, State}.
 
 handle_subscribe_request(Handler_type_bin,
@@ -189,13 +186,13 @@ handle_subscribe_request(Handler_type_bin,
 		       <<"message_only">> -> message_only;
 		       <<"all">> -> all
 		   end,
-    case h_server_adapter:subscribe(Session_id, Channel_code, Handler_type) of
+    case server:subscribe(Session_id, Channel_code, Handler_type) of
 	{error, invalid_channel_code} ->
 	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
         {error, consumer_not_found} ->
             Result = h_utils:make_response(<<"error">>, <<"consumer_not_found">>);
 	ok->
-	    ok = h_server_adapter:add_message_handler(Session_id, self()),
+	    ok = server:add_message_handler(Session_id, self()),
 	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)
 	    
     end,

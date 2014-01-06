@@ -131,11 +131,11 @@ remove_message_handler(Consumer_code, Handler_pid) ->
     end.
 
 
--spec create_consumer() -> {ok, Code::binary(), Pid::binary()|undefined}.
+-spec create_consumer() -> {ok, Code::binary(), Pid::pid()}.
 create_consumer() ->
     s_consumer_sup:start_child().
 
--spec stop_consumer(binary()) -> ok.
+-spec stop_consumer(binary()) -> ok|{error, consumer_not_found}.
 stop_consumer(Consumer_code) ->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
@@ -157,7 +157,7 @@ get_consumers(Channel_code) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
+-spec is_channel_code_valid(binary()) -> boolean().
 is_channel_code_valid(Channel_code) ->
     case re:run(Channel_code,"^[0-9a-z_]*$",[{capture, none}]) of
 	match -> true;
