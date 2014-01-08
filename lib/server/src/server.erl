@@ -49,7 +49,7 @@ stop() ->
 
 -spec get_channels() -> {ok, [code()]}.
 get_channels() ->
-    Q1 = qlc:q([Channel_code|| {{n,l,{channel, Channel_code}}, _, undefined }
+    Q1 = qlc:q([Channel_code|| {{n,g,{channel, Channel_code}}, _, undefined }
 				   <- gproc:table(names)]),
     Channel_code_list = qlc:e(Q1),
     {ok, Channel_code_list}.

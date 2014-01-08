@@ -30,7 +30,9 @@ all: compile
 
 # get dependencies
 get-deps:
-	@$(REBAR) get-deps
+	@(GPROC_DIST=true $(REBAR) get-deps)
+
+# @$(REBAR) get-deps
 
 # initialize development
 configure-dev:
@@ -90,7 +92,7 @@ start: compile
 	    -lager handlers '[{lager_console_backend, debug}]' \
 	    -mnesia dir $(MNESIA_DIR) \
 	    -sname $(NODE_NAME) \
-	    -eval "application:start(gproc),sync:go()." \
+	    -eval "application:set_env(gproc, gproc_dist, all),application:start(gproc),sync:go()." \
 	    -s lager \
 	    -s server \
 	    -s http\

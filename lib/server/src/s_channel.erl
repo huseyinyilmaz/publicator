@@ -53,7 +53,7 @@ publish(Channel_pid, Message) ->
 -spec get_channel(Channel_code::binary())->{ok, pid()}.
 get_channel(Channel_code)->
     Key = make_channel_key(Channel_code),
-    case gproc:where({n, l, Key}) of
+    case gproc:where({n, g, Key}) of
 	undefined -> s_channel_sup:start_child(Channel_code);
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
@@ -92,7 +92,7 @@ remove_consumer_from_list(Channel_pid, Consumer_code) ->
 init([Code]) ->
     Key = make_channel_key(Code),
     Self = self(),
-    case gproc:reg_or_locate({n,l,Key}) of
+    case gproc:reg_or_locate({n,g,Key}) of
 	{Self, undefined} ->
 	    {ok, #state{code=Code,
 			consumer_table=ets:new(consumer_table,[set, public])}};

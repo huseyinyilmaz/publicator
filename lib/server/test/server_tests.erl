@@ -12,6 +12,7 @@
 
 setup_server()->
     lager:info("Setup server"),
+    application:set_env(gproc, gproc_dist, all),
     ok = application:start(sasl),
     ok = application:start(gproc),
     ok = server:start().
