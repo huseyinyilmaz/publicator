@@ -15,8 +15,11 @@
 %%% API
 %%%===================================================================
 
--define(HOST, "http://localhost:8766/").
-
+-define(HOST, "http://127.0.0.1:8766/").
+-define(OPTS, [{connect_timeout, 1000000},
+               {socket_options, [%{keepalive, true},
+                                 {active, false}]}]).
+-define(TIMEOUT, infinity).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -25,13 +28,13 @@
 get_request(Uri) ->
     Url = ?HOST ++ Uri,
     {ok, "200" , _Headers, Body} =
-	ibrowse:send_req(Url, [], get),
+	ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
     Body.
 
 post_request(Uri, Data) ->
     Url = ?HOST ++ Uri,
     {ok, "204", _Headers, Body} =
-	ibrowse:send_req(Url, [{"Content-Type", "text/html"}], post, Data),
+	ibrowse:send_req(Url, [{"Content-Type", "text/html"}], post, Data, ?OPTS, ?TIMEOUT),
     Body.
 
 get_session()->

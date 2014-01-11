@@ -115,14 +115,32 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_1_room_1000_consumer].
+    [test_100_room_2_consumer,
+     test_10_room_20_consumer,
+     test_2_room_100_consumer].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
 %% Info = [tuple()]
 %% @end
 %%--------------------------------------------------------------------
-test_1_room_1000_consumer() -> 
+test_100_room_2_consumer() -> 
+    [].
+
+%%--------------------------------------------------------------------
+%% @spec TestCase() -> Info
+%% Info = [tuple()]
+%% @end
+%%--------------------------------------------------------------------
+test_2_room_100_consumer() -> 
+    [].
+
+%%--------------------------------------------------------------------
+%% @spec TestCase() -> Info
+%% Info = [tuple()]
+%% @end
+%%--------------------------------------------------------------------
+test_10_room_20_consumer() -> 
     [].
 
 %%--------------------------------------------------------------------
@@ -206,8 +224,21 @@ create_channel(Channel_count, Consumer_count, _Message_count) ->
 
 
 
-test_1_room_1000_consumer(_Config) ->
+test_100_room_2_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
-    create_channel(10, 10, 100),
+    create_channel(2, 10, 1),
+    ok.
+
+
+test_10_room_20_consumer(_Config) ->
+    ct:log("LOG test"),
+    ct:print("PRINT test"),
+    create_channel(10, 10, 1),
+    ok.
+
+test_2_room_100_consumer(_Config) ->
+    ct:log("LOG test"),
+    ct:print("PRINT test"),
+    create_channel(2, 10, 1),
     ok.
