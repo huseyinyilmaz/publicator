@@ -90,7 +90,7 @@ start: compile
 	    -boot start_sasl \
 	    -sync log all \
 	    -lager handlers '[{lager_console_backend, debug}]' \
-	    -mnesia dir $(MNESIA_DIR) \
+	    -mnesia dir '"$(MNESIA_DIR)"' \
 	    -sname $(NODE_NAME) \
 	    -eval "application:set_env(gproc, gproc_dist, all),application:start(gproc),sync:go()." \
 	    -s lager \
