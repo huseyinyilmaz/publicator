@@ -6,5 +6,4 @@
 
 -callback sync(Node :: node(), Timeout :: non_neg_integer()) -> 'ok'|tuple('error', Reason :: string()).
 
-
--callback insertMessage(Channel :: binary(), Msg)-> ok.
+-callback insertMessage(Channel :: binary(), Msg:: binary())-> ok.
