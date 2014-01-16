@@ -5,9 +5,7 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib,
-                  gproc
-                 ]},
+                  stdlib]},
   {mod, { server_app, []}},
   {env, []}
  ]}.

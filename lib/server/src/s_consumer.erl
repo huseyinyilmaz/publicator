@@ -55,8 +55,7 @@ get(Code) ->
     %% check if ets table has given Pid
     %% if it doesn't or value is a dead process
     %% set value to undefined.
-    Key = make_consumer_key(Code),
-    case gproc:where({n, l, Key}) of
+    case s_global:get_consumer(Code) of
 	undefined -> {error, not_found};
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
@@ -132,10 +131,9 @@ remove_message_handler(Pid,Handler_pid) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Code]) ->
-    Key = make_consumer_key(Code),
     Self = self(),
-    case gproc:reg_or_locate({n,l,Key}) of
-	{Self, undefined} ->
+    case s_global:get_or_register_consumer(Code) of
+	Self ->
 	    {ok,
 	     #state{code=Code,
 		    channels=dict:new(),
@@ -144,7 +142,7 @@ init([Code]) ->
 		    handlers=[]},
 	     ?TIMEOUT
 	    };
-	{Pid, undefined} when is_pid(Pid) -> 
+	Pid when is_pid(Pid) -> 
 	    {error, {already_exists, Pid}}
     end.
     
@@ -352,9 +350,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
--spec make_consumer_key(code()) -> consumer_hash_key().
-make_consumer_key(Consumer_code) -> {consumer, Consumer_code}.
 
 %%% Gets Channel from subscribtions list or channels cache,
 %%% If it cannot find it, function fill query the global channel list

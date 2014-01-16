@@ -39,7 +39,6 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link(Code) ->
@@ -52,8 +51,7 @@ publish(Channel_pid, Message) ->
 
 -spec get_channel(Channel_code::binary())->{ok, pid()}.
 get_channel(Channel_code)->
-    Key = make_channel_key(Channel_code),
-    case gproc:where({n, g, Key}) of
+    case s_global:get_channel(Channel_code) of
 	undefined -> s_channel_sup:start_child(Channel_code);
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
@@ -70,9 +68,6 @@ remove_consumer(Channel_pid, Consumer_code) ->
 
 remove_consumer_from_list(Channel_pid, Consumer_code) ->
     gen_server:call(Channel_pid, {remove_consumer_from_list, Consumer_code}).
-
-    %% Key = make_channel_code(Channel_code).
-    %% case gproc:get_or_locate({n, l, Key}) 
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -90,13 +85,12 @@ remove_consumer_from_list(Channel_pid, Consumer_code) ->
 %%--------------------------------------------------------------------
 %% if a channel with same name is already registered stop this server 
 init([Code]) ->
-    Key = make_channel_key(Code),
     Self = self(),
-    case gproc:reg_or_locate({n,g,Key}) of
-	{Self, undefined} ->
-	    {ok, #state{code=Code,
+    case s_global:get_or_register_channel(Code) of
+	Self ->
+            {ok, #state{code=Code,
 			consumer_table=ets:new(consumer_table,[set, public])}};
-	{Pid, undefined} when is_pid(Pid) -> 
+	Pid when is_pid(Pid) -> 
 	    {stop, {already_exists, Pid}}
     end.
 
@@ -245,6 +239,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
--spec make_channel_key(binary()) -> channel_hash_key().
-make_channel_key(Channel_code) -> {channel, Channel_code}.

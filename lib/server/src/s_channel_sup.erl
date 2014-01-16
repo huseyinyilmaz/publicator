@@ -25,11 +25,8 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts a new user
-%%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-%% -spec start_child(binary(), binary()) -> {ok, pid} | {error, any()}.
 start_child(Channel_code) ->
     lager:info("Start a new user"),
     Args_to_append = [Channel_code],
@@ -41,8 +38,6 @@ start_child(Channel_code) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the supervisor
-%%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->

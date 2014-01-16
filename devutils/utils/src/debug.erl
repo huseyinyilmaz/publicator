@@ -33,16 +33,11 @@ init() ->
     code:add_patha("deps/cowboy/ebin"),
     code:add_patha("deps/jiffy/ebin"),
     code:add_patha("deps/mimetypes/ebin"),
-    code:add_patha("deps/gen_leader/ebin"),
-    code:add_patha("deps/gproc/ebin"),
     code:add_patha("deps/ibrowse/ebin"),
 
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
     lager:start(),
-    %% start gproc in distributed mode
-    application:set_env(gproc, gproc_dist, all),
-    application:start(gproc),    
     sync:go(),
     ok.
 

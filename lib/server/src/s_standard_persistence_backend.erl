@@ -70,11 +70,11 @@ init(Init_type) ->
 %%     Result = ['$_'],
 %%     {ok, mnesia:dirty_select(message,[{Match, Guards,Result}])}.
 %%--------------------------------------------------------------------
-%% @doc
+%% --@doc
 %% initialize mnesia tables for given type
 %% Type can be production of development symbol
 %% Warning: Those codes might not be unique in multi node environment
-%% @end
+%% --@end
 %%--------------------------------------------------------------------
 %% get_next_room_code() ->
 %%     {ok, mnesia:dirty_update_counter(counter, room, 1)}.
