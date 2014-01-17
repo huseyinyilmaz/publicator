@@ -6,6 +6,8 @@
 Welcome to publicator's documentation!
 ======================================
 
+publish-subscribe server for web.
+
 Contents:
 
 .. toctree::

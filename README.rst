@@ -44,6 +44,7 @@ If you want to checkout the code you can configure the system for development.
 
 ::
 
+   $ make configure
    $ make configure-dev
 
 This will download development dependencies. After this you can start server in development mode with
