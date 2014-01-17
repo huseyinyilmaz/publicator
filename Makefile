@@ -1,7 +1,7 @@
 DIALYZER = dialyzer
 REBAR = ./rebar
 MNESIA_DIR = /tmp/mnesia
-NODE_NAME = publicator
+NODE_NAME = publicator@127.0.0.1
 
 APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xmerl inets
 
@@ -91,7 +91,7 @@ start: compile
 	    -sync log all \
 	    -lager handlers '[{lager_console_backend, debug}]' \
 	    -mnesia dir '"$(MNESIA_DIR)"' \
-	    -sname $(NODE_NAME) \
+	    -name $(NODE_NAME) \
 	    -eval "sync:go()." \
 	    -s lager \
 	    -s server \

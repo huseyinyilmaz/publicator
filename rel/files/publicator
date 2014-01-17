@@ -138,6 +138,16 @@ get_pid() {
 
 # Check the first argument for instructions
 case "$1" in
+    node)
+        $NODETOOL rpcterms erlang node ""
+        ;;
+    nodes)
+        $NODETOOL rpcterms erlang nodes ""
+        ;;
+    connect)
+        $NODETOOL rpc s_console connect $2
+        ;;
+
     start|start_boot)
         # Make sure there is not already a node running
         RES=`ping_node`
