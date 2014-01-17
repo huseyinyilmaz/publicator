@@ -1,0 +1,6 @@
+About Publicator
+================
+
+.. toctree::
+
+    what
