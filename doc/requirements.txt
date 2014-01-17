@@ -1,3 +1,2 @@
 Sphinx
-sphinxcontrib-erlangdomain
 sphinx-rtd-theme

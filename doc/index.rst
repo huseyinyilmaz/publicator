@@ -15,7 +15,8 @@ Contents:
    
    about/index
    installation/index
-
+   usage/index
+              
 Indices and tables
 ==================
 
