@@ -13,9 +13,10 @@ Contents:
 .. toctree::
    :maxdepth: 4
    
-   about/index
-   installation/index
-   usage/index
+   about/about_index
+   installation/installation_index
+   configuration/configuration_index
+   usage/usage_index
               
 Indices and tables
 ==================
