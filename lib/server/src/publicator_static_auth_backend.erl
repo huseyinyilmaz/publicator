@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 18 Jan 2014 by Huseyin Yilmaz <huseyin@huseyins-air.home>
 %%%-------------------------------------------------------------------
--module(s_static_auth_backend).
+-module(publicator_static_auth_backend).
 -behivour(s_auth_backend).
 %% API
 -export([init_auth/1, authenticate/3, get_permissions/2]).

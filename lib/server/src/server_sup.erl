@@ -27,13 +27,18 @@ start_permanent_child(Mod, Args) when is_atom(Mod),
                                       is_list(Args)->
     Shutdown = 10000,
     lager:debug("**************************************"),
+    lager:debug("******** module=~p args=~p~n", [Mod, Args]),
+    
     _Val = supervisor:start_child(?SERVER,
                            {Mod,
-                            {Mod, start_link, [Args]},
+                            {Mod, start_link, Args},
                             permanent,
                             Shutdown,
                             worker,
-                            [Mod]}).
+                            [s_auth_backend]}),
+    lager:debug("Val=~p~n", [_Val]),
+    _Val
+    .
 
 %%--------------------------------------------------------------------
 %% @doc

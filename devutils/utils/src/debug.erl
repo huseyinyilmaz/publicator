@@ -12,6 +12,10 @@
 %% API
 -export([init/0, start/0, stop/0, restart/0]).
 %% -compile([{parse_transform, lager_transform}]).
+-define(DEFAULT_AUTH_BACKEND, {publicator_static_auth_backend,
+                               [{consumer_code, all},
+                                {group, all},
+                                {auth_info, all}]}).
 
 %%%===================================================================
 %%% API
@@ -38,14 +42,7 @@ init() ->
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
     lager:start(),
-
-    s_utils:set_env(server, auth_backend, {s_static_auth_backend,
-                          [{room_code, all},
-                           {class, websocket},
-                           {can_publish, true},
-                           {can_subscribe, true},
-                           {can_create, true},
-                           {can_subscribe_all_events, true}]}),
+    s_utils:set_env(server, auth_backend, ?DEFAULT_AUTH_BACKEND),
     sync:go(),
     ok.
 

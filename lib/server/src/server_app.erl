@@ -14,13 +14,10 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
--define(DEFAULT_AUTH_BACKEND, {s_static_auth_backend,
-                               [{room_code, all},
-                                {class, websocket},
-                                {can_publish, true},
-                                {can_subscribe, true},
-                                {can_create, true},
-                                {can_subscribe_all_events, true}]}).
+-define(DEFAULT_AUTH_BACKEND, {publicator_static_auth_backend,
+                               [{consumer_code, all},
+                                {group, websocket},
+                                {auth_info, all}]}).
 %%%===================================================================
 %%% Application callbacks
 %%%===================================================================
@@ -50,8 +47,9 @@ start(_StartType, _StartArgs) ->
             {Module, Args} = s_utils:get_env(server,
                                              auth_backend,
                                              ?DEFAULT_AUTH_BACKEND),
+            
             lager:debug("Module=~p, Args=~p", [Module, Args]),
-            server_sup:start_permanent_child(Module, Args),
+            server_sup:start_permanent_child(s_auth_backend, [Module, Args]),
 	    {ok, Pid};
 	Error ->
 	    Error

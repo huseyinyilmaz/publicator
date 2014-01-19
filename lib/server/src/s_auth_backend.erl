@@ -12,7 +12,7 @@
 -include("../include/server.hrl").
 
 %% API
--export([start_link/1]).
+-export([start_link/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -20,8 +20,10 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
-
+-record(state, {module::atom(),
+                consumer_code::binary()|_,
+                group::atom(),
+                auth_info::binary()|_}).
 %%--------------------------------------------------------------------
 %% @doc
 %% Initializes backend
@@ -35,7 +37,6 @@
 %% @end
 %%--------------------------------------------------------------------
 -callback authenticate(Consumer_Code::binary(),
-                       Room_code::binary(),
                        Auth_info::binary()) -> not_allowed| ok.
 
 %%--------------------------------------------------------------------
@@ -57,10 +58,8 @@
 %% @spec start_link() ->
 %% @end
 %%--------------------------------------------------------------------
-start_link(Name, Mod, Args, Options) ->
-    %% lager:debug("///////////////////////////"),
-    %% lager:debug("call s_authbackend:start_link/1 "),
-    gen_server:start_link(Name, Mod, Args, Options).
+start_link(Module, Args) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Module|Args], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -77,10 +76,16 @@ start_link(Name, Mod, Args, Options) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([_Args]) ->
+init([Module| Args]) ->
     %% lager:debug("==================="),
     %% lager:debug("Start auth  backend"),
-    {ok, #state{}}.
+    lager:debug("///////////////////////////"),
+    lager:debug("call s_authbackend:start_link/1 "),
+    lager:debug("Module=~p, Args=~p~n", [Module, Args]),
+    {ok, #state{module=Module,
+                consumer_code=proplists:get_value(consumer_code, Args, all),
+                group=proplists:get_value(group, Args, all),
+                auth_info=proplists:get_value(consumer_code, Args, all)}}.
 
 %%--------------------------------------------------------------------
 %% @private
