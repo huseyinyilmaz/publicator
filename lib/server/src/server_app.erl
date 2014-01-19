@@ -14,6 +14,13 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+-define(DEFAULT_AUTH_BACKEND, {s_static_auth_backend,
+                               [{room_code, all},
+                                {class, websocket},
+                                {can_publish, true},
+                                {can_subscribe, true},
+                                {can_create, true},
+                                {can_subscribe_all_events, true}]}).
 %%%===================================================================
 %%% Application callbacks
 %%%===================================================================
@@ -35,11 +42,16 @@
 %% @end
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
-    lager:error("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
-    lager:warning("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
     %% Start main supervisor
     case server_sup:start_link() of
 	{ok, Pid} ->
+            lager:debug("Get Values from environment variables"),
+            
+            {Module, Args} = s_utils:get_env(server,
+                                             auth_backend,
+                                             ?DEFAULT_AUTH_BACKEND),
+            lager:debug("Module=~p, Args=~p", [Module, Args]),
+            server_sup:start_permanent_child(Module, Args),
 	    {ok, Pid};
 	Error ->
 	    Error

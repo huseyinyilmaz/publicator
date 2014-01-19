@@ -12,15 +12,28 @@
 
 %% API
 -export([start_link/0]).
+-export([start_permanent_child/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
 
+
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+start_permanent_child(Mod, Args) when is_atom(Mod),
+                                      is_list(Args)->
+    Shutdown = 10000,
+    lager:debug("**************************************"),
+    _Val = supervisor:start_child(?SERVER,
+                           {Mod,
+                            {Mod, start_link, [Args]},
+                            permanent,
+                            Shutdown,
+                            worker,
+                            [Mod]}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -57,8 +70,8 @@ init([]) ->
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
     Restart = permanent,
-    Shutdown = 2000,
-    Type = worker,
+    Shutdown = infinity,
+    Type = supervisor,
 
     Channel_sup = {s_channel_sup, {s_channel_sup, start_link, []},
 		    Restart, Shutdown, Type, [c_channel_sup]},

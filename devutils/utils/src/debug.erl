@@ -38,6 +38,14 @@ init() ->
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
     lager:start(),
+
+    s_utils:set_env(server, auth_backend, {s_static_auth_backend,
+                          [{room_code, all},
+                           {class, websocket},
+                           {can_publish, true},
+                           {can_subscribe, true},
+                           {can_create, true},
+                           {can_subscribe_all_events, true}]}),
     sync:go(),
     ok.
 
