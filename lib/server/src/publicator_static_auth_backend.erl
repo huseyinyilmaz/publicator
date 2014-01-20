@@ -47,7 +47,7 @@ handle_authenticate(_Consumer_code, _Auth_info, _Extra_data, _State) ->
 -spec handle_permissions(Consumer_Code::binary(),
                          Room_code::binary(),
                          Extra_data::term(),
-                        State::term()) -> permission_type().
+                         State::term()) -> permission_type().
 handle_permissions(_Consumer_code, _Room_code, _Extra_data, _State)->
     ok.
 %%%===================================================================

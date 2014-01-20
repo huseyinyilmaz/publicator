@@ -99,13 +99,20 @@ init([Module| Args]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({authenticate, Consumer_code, Auth_info, Extra_data}, _From,
-            #state{module=Module,
-                   inner_state=Inner_state}=State)
+            #state{module=Module, inner_state=Inner_state})
   when is_binary(Consumer_code), is_binary(Auth_info) ->
-    Reply = Module:handle_authenticate(Consumer_code, Auth_info,Extra_data, Inner_state),
-    {reply, Reply, State};
+    Reply = Module:handle_authenticate(Consumer_code, Auth_info, Extra_data, Inner_state),
+    {reply, Reply};
 
-handle_call(_Request, _From, State) ->
+handle_call({permission, Consumer_code, Room_code, Extra_data}, _From,
+            #state{module=Module, inner_state=Inner_state})
+  when is_binary(Consumer_code), is_binary(Room_code) ->
+    Reply = Module:handle_permission(Consumer_code, Room_code, Extra_data, Inner_state),
+    {reply, Reply};
+
+handle_call(Request, _From, State) ->
+    lager:warning("Illegal call request to s_auth_backend Request=~p, State=~p~n",
+                  [Request, State]),
     Reply = ok,
     {reply, Reply, State}.
 
@@ -171,25 +178,17 @@ build_response(Module, Response) ->
 %
     case Response of
         {ok, State} ->
-            {ok, #state{module=Module,
-                        inner_state=State}};
+            {ok, #state{module=Module, inner_state=State}};
         {ok, State, Timeout} ->
-            {ok, #state{module=Module,
-                        inner_state=State},
-             Timeout};
+            {ok, #state{module=Module, inner_state=State}, Timeout};
         {reply, Reply, State} ->
-            todo;
+            {reply, Reply, #state{module=Module, inner_state=State}};
         {reply, Reply, State, Timeout} ->
-            {reply, Reply, #state{module=Module,
-                                  inner_state=State},
-             Timeout};
-
-            todo;
+            {reply, Reply, #state{module=Module, inner_state=State}, Timeout};
         {noreply, State}->
-            todo;
+            {noreply, #state{module=Module, inner_state=State}};
         {noreply, State, Timeout}->
-            todo;
-
+            {noreply, #state{module=Module, inner_state=State}, Timeout};
         ignore ->
             ignore;
         {stop, Reason} ->
