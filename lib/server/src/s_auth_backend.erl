@@ -21,31 +21,37 @@
 -define(SERVER, ?MODULE).
 
 -record(state, {module::atom(),
-                consumer_code::binary()|_,
-                group::atom(),
-                auth_info::binary()|_}).
-%%--------------------------------------------------------------------
-%% @doc
-%% Initializes backend
-%% @end
-%%--------------------------------------------------------------------
--callback init_auth(Args::list(term())) -> 'ok'|tuple('error', Reason::string()).
+                inner_state::term()}).
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
--callback authenticate(Consumer_Code::binary(),
-                       Auth_info::binary()) -> not_allowed| ok.
+-callback init([Args::term()]) -> {ok, State::term()}|
+                                  {ok, State::term(), Timeout::integer()|infinity}|
+                                  ignore|
+                                  {stop, Reason::term()}.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
--callback get_permissions(Consumer_Code::binary(),
-                          Room_code::binary()) -> permission_type().
+-callback handle_authenticate(Consumer_Code::binary(),
+                              Auth_info::binary(),
+                              State::term()) -> not_allowed| ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+-callback handle_permissions(Consumer_Code::binary(),
+                             Room_code::binary(),
+                             State::term()) -> permission_type().
 
 %%%===================================================================
 %%% API
@@ -77,16 +83,7 @@ start_link(Module, Args) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Module| Args]) ->
-    %% lager:debug("==================="),
-    %% lager:debug("Start auth  backend"),
-    lager:debug("///////////////////////////"),
-    lager:debug("call s_authbackend:start_link/1 "),
-    lager:debug("Module=~p, Args=~p~n", [Module, Args]),
-    {ok, #state{module=Module,
-                consumer_code=proplists:get_value(consumer_code, Args, all),
-                group=proplists:get_value(group, Args, all),
-                auth_info=proplists:get_value(consumer_code, Args, all)}}.
-
+    build_response(Module, Module:init([Args])).
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -101,6 +98,13 @@ init([Module| Args]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call({authenticate, Consumer_code, Auth_info, Extra_data}, _From,
+            #state{module=Module,
+                   inner_state=Inner_state}=State)
+  when is_binary(Consumer_code), is_binary(Auth_info) ->
+    Reply = Module:handle_authenticate(Consumer_code, Auth_info,Extra_data, Inner_state),
+    {reply, Reply, State};
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -159,3 +163,35 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+build_response(Module, Response) ->
+%                                   {reply, Reply, State} |
+%%                                   {reply, Reply, State, Timeout} |
+%%                                   {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%
+    case Response of
+        {ok, State} ->
+            {ok, #state{module=Module,
+                        inner_state=State}};
+        {ok, State, Timeout} ->
+            {ok, #state{module=Module,
+                        inner_state=State},
+             Timeout};
+        {reply, Reply, State} ->
+            todo;
+        {reply, Reply, State, Timeout} ->
+            {reply, Reply, #state{module=Module,
+                                  inner_state=State},
+             Timeout};
+
+            todo;
+        {noreply, State}->
+            todo;
+        {noreply, State, Timeout}->
+            todo;
+
+        ignore ->
+            ignore;
+        {stop, Reason} ->
+            {stop, Reason}
+    end.

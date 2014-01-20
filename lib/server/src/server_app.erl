@@ -15,9 +15,9 @@
 -export([start/2, stop/1]).
 
 -define(DEFAULT_AUTH_BACKEND, {publicator_static_auth_backend,
-                               [{consumer_code, all},
-                                {group, websocket},
-                                {auth_info, all}]}).
+                               [[{consumer_code, all},
+                                 {group, all},
+                                 {auth_info, all}]]}).
 %%%===================================================================
 %%% Application callbacks
 %%%===================================================================
