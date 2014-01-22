@@ -43,7 +43,7 @@ delete_resource(Req, State) ->
 	ok -> Resp = true;
 	{error, consumer_not_found} ->
 	    %% this will return 500. it should return something else?
-	    lager:info({subscribtions,delete,consumer_not_found}),
+	    lager:info("{subscribtions,delete,consumer_not_found}"),
 	    Resp=false
     end,
     {Resp, Req2, State}.

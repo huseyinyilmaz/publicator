@@ -155,7 +155,7 @@ test_10_room_20_consumer() ->
 create_channel(Channel_count, Consumer_count, _Message_count) ->
     %% Create Channel_ids
     Channel_code_list = lists:map(fun(Num)->
-					  Bin = integer_to_binary(Num),
+					  Bin = list_to_binary(integer_to_list(Num)),
 					  << <<"channel_">>/binary,
 					     Bin/binary >>
 				  end, lists:seq(1,Channel_count)),
@@ -227,18 +227,18 @@ create_channel(Channel_count, Consumer_count, _Message_count) ->
 test_100_room_2_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
-    create_channel(2, 10, 1),
+    create_channel(100, 2, 1),
     ok.
 
 
 test_10_room_20_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
-    create_channel(10, 10, 1),
+    create_channel(10, 20, 1),
     ok.
 
 test_2_room_100_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
-    create_channel(2, 10, 1),
+    create_channel(2, 100, 1),
     ok.

@@ -20,7 +20,7 @@ allowed_methods(Req, State) ->
 
 %% GET
 content_types_provided(Req, State) ->
-    lager:info(content_types_provided),
+    lager:info("content_types_provided"),
 	{[
 	  {{<<"text">>, <<"plain">>, []}, get_json},
 	  {{<<"text">>, <<"html">>, []}, get_json},

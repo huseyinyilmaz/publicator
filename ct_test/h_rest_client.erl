@@ -16,7 +16,8 @@
 %%%===================================================================
 
 -define(HOST, "http://127.0.0.1:8766/").
--define(OPTS, [{connect_timeout, 1000000},
+%% -define(HOST, "http://www.talkybee.com:8766/").
+-define(OPTS, [{connect_timeout, 100000000},
                {socket_options, [%{keepalive, true},
                                  {active, false}]}]).
 -define(TIMEOUT, infinity).
@@ -33,9 +34,20 @@ get_request(Uri) ->
 
 post_request(Uri, Data) ->
     Url = ?HOST ++ Uri,
-    {ok, "204", _Headers, Body} =
-	ibrowse:send_req(Url, [{"Content-Type", "text/html"}], post, Data, ?OPTS, ?TIMEOUT),
-    Body.
+    case ibrowse:send_req(Url, [{"Content-Type", "text/html"}],
+                          post, Data, ?OPTS, ?TIMEOUT) of
+        {ok, "204", _Headers, Body} ->
+            Body;
+        {error, retry_later} ->
+            io:format("{error,retry_later} received. waiting for a second"),
+            timer:sleep(1000),
+            post_request(Uri, Data);
+        {error, einval} ->
+            io:format("{error,einval} received. waiting for a second"),
+            timer:sleep(1000),
+            post_request(Uri, Data)
+    end.
+
 
 get_session()->
     Uri = "session/",
