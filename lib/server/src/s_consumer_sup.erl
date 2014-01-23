@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_child/0]).
+-export([start_link/0, start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -27,14 +27,14 @@
 %% Starts a new consumer
 %% @end
 %%--------------------------------------------------------------------
--spec start_child() -> {ok, Code::binary(), Pid::pid()}.
-start_child() ->
+-spec start_child(Auth_info::binary()) -> {ok, Code::binary(), Pid::pid()}.
+start_child(Auth_info) ->
     Code = s_utils:generate_code(),
-    lager:info("~p~n", [{start_new_consumer, Code}]),
+    lager:info("~p~n", [{start_new_consumer, Code, Auth_info}]),
     Args_to_append = [Code],
     case supervisor:start_child(?SERVER, Args_to_append) of
 	{ok, Pid} -> {ok, Code, Pid};
-	{error, {already_exists, _Pid}} -> start_child()
+	{error, {already_exists, _Pid}} -> start_child(Auth_info)
     end.
 	     
 

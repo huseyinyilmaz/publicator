@@ -14,10 +14,6 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
--define(DEFAULT_AUTH_BACKEND, {publicator_static_auth_backend,
-                               [[{consumer_code, all},
-                                 {group, all},
-                                 {auth_info, all}]]}).
 %%%===================================================================
 %%% Application callbacks
 %%%===================================================================
@@ -42,14 +38,14 @@ start(_StartType, _StartArgs) ->
     %% Start main supervisor
     case server_sup:start_link() of
 	{ok, Pid} ->
-            lager:debug("Get Values from environment variables"),
+            %% lager:debug("Get Values from environment variables"),
             
-            {Module, Args} = s_utils:get_env(server,
-                                             auth_backend,
-                                             ?DEFAULT_AUTH_BACKEND),
+            %% {Module, Args} = s_utils:get_env(server,
+            %%                                  auth_backend,
+            %%                                  ?DEFAULT_AUTH_BACKEND),
             
-            lager:debug("Module=~p, Args=~p", [Module, Args]),
-            server_sup:start_permanent_child(s_auth_backend, [Module, Args]),
+            %% lager:debug("Module=~p, Args=~p", [Module, Args]),
+            %% server_sup:start_permanent_child(s_auth_backend, [Module, Args]),
 	    {ok, Pid};
 	Error ->
 	    Error

@@ -24,7 +24,13 @@
             if(this.host)
                 url += '/?callback=?';
             //Add random string string to end of the url so it will not be cached from browser
-            $.getJSON(url, callback_fun);
+            $.ajax({
+                dataType: "json",
+                url: url,
+                data: {auth_info: 'publicator_client.js_test_auth'},
+                success: callback_fun
+            });
+            
         },
 
         get_client: function(callback, session_id){
