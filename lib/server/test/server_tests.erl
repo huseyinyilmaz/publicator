@@ -8,6 +8,7 @@
 -define(CHANNEL2, <<"channelcode2">>).
 -define(MESSAGE1, <<"message1">>).
 -define(MESSAGE2, <<"message2">>).
+-define(AUTH_INFO, <<"test_auth_code">>).
 -define(DELAY, 100).
 
 setup_server()->
@@ -54,8 +55,8 @@ server_subscribtion_test_() ->
      {"Test subscribe unsubscribe functionality",
       ?_test(
 	 begin
-	     {ok, Consumer_code1, _} = server:create_consumer(),
-	     {ok, Consumer_code2, _} = server:create_consumer(),
+	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO),
+	     {ok, Consumer_code2, _} = server:create_consumer(?AUTH_INFO),
 	     Channel_code = ?CHANNEL1,
 	     Channel_code2 = ?CHANNEL2,
              %% tests subscribe
@@ -103,8 +104,8 @@ server_message_test_() ->
      {"Test publish get_message functionality",
       ?_test(
 	 begin
-	     {ok, Consumer_code1, _} = server:create_consumer(),
-	     {ok, Consumer_code2, _} = server:create_consumer(),
+	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO),
+	     {ok, Consumer_code2, _} = server:create_consumer(?AUTH_INFO),
 	     Channel_code = ?CHANNEL1,
 	     Channel_code2 = ?CHANNEL2,
 	     timer:sleep(?DELAY),
@@ -159,8 +160,8 @@ server_handler_message_only_mode_test_() ->
      {"Test consumers that has message_only handler processes",
       ?_test(begin
 		 %% Create consumers
-		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(),
-		 {ok, Consumer_code2, Consumer_pid2} = server:create_consumer(),
+		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(?AUTH_INFO),
+		 {ok, Consumer_code2, Consumer_pid2} = server:create_consumer(?AUTH_INFO),
 		 Channel_code = ?CHANNEL1,
 		 Channel_code2 = ?CHANNEL2,
 		 Message1 = <<"Message1">>,
@@ -213,8 +214,8 @@ server_all_handler_mode_test_() ->
      {"Test consumers that has all handler processes",
       ?_test(begin
 		 %% Create consumers
-		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(),
-		 {ok, Consumer_code2, Consumer_pid2} = server:create_consumer(),
+		 {ok, Consumer_code1, Consumer_pid1} = server:create_consumer(?AUTH_INFO),
+		 {ok, Consumer_code2, Consumer_pid2} = server:create_consumer(?AUTH_INFO),
 		 Channel_code = ?CHANNEL1,
 		 Channel_code2 = ?CHANNEL2,
 		 Message1 = <<"Message1">>,
