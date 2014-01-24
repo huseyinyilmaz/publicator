@@ -14,7 +14,7 @@
 -include("../include/server.hrl").
 
 %% API
--export([start_link/1, get/1, get_code/1,
+-export([start_link/3, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
 	 get_messages/2, get_messages/1, subscribe/3,
 	 publish/3, get_subscribtions/1, unsubscribe/2,
@@ -35,7 +35,9 @@
 		channels :: dict(), % consumer's channel list
 		channels_cache ::dict(), % channels cache that this consumer reached
 		messages :: dict(), % messages that this consumer got. (for rest interface)
-		handlers :: [pid()] % current listeners that will received messages
+		handlers :: [pid()], % current listeners that will received messages
+                auth_backend :: atom(), % authentication backend module
+                auth_state :: term() % authentication backend state
                }).
 
 %%%===================================================================
@@ -46,9 +48,9 @@
 %% Starts a new consumer server
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(binary()) -> {ok, pid()} | ignore | {error, any()}.
-start_link(Code) ->
-    gen_server:start_link(?MODULE, [Code], []).
+-spec start_link(binary(), atom(), term()) -> {ok, pid()} | ignore | {error, any()}.
+start_link(Code, Auth_backend, Auth_state) ->
+    gen_server:start_link(?MODULE, [Code, Auth_backend, Auth_state], []).
 
 -spec get(binary()) -> {ok, pid()} | {error, not_found}.
 get(Code) ->
@@ -130,7 +132,7 @@ remove_message_handler(Pid,Handler_pid) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
-init([Code]) ->
+init([Code, Auth_backend, Auth_state]) ->
     Self = self(),
     case s_global:get_or_register_consumer(Code) of
 	Self ->
@@ -139,7 +141,9 @@ init([Code]) ->
 		    channels=dict:new(),
 		    channels_cache=dict:new(),
 		    messages=dict:new(),
-		    handlers=[]},
+		    handlers=[],
+                    auth_backend=Auth_backend,
+                    auth_state=Auth_state},
 	     ?TIMEOUT
 	    };
 	Pid when is_pid(Pid) -> 

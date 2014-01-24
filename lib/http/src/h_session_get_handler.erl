@@ -47,14 +47,14 @@ get_session(Req, State)->
 %% called for Get Request
 get_json(Req, State) ->
     lager:debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
-    Val = cowboy_req:body_qs(Req),
-    lager:debug("XXXXXX=~p~n", [Val]),
-    {Auth_info, Req2} = cowboy_req:qs_val(<<"auth_info">>, Req),
+    {Headers, Req2} = cowboy_req:headers(Req),
+    lager:debug("XXXXXX=~p~n", [Headers]),
+    {Auth_info, Req3} = cowboy_req:qs_val(<<"auth_info">>, Req2),
     lager:debug("YYYYYYYYYYYYYYYYYYYYYYYYYYY"),
     
-    {ok, Consumer_code, _Consumer_pid} = server:create_consumer(Auth_info),
+    {ok, Consumer_code, _Consumer_pid} = server:create_consumer(Auth_info, Headers),
     Body = jiffy:encode({[{<<"session">>, Consumer_code}]}),
-    {Body, Req2, State}.
+    {Body, Req3, State}.
 
 %%%===================================================================
 %%% Internal functions

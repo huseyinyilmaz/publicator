@@ -9,6 +9,7 @@
 -define(MESSAGE1, <<"message1">>).
 -define(MESSAGE2, <<"message2">>).
 -define(AUTH_INFO, <<"test_auth_code">>).
+-define(EXTRA_DATA, []).
 
 -define(DELAY, 100).
 
@@ -45,7 +46,7 @@ server_opened_auth_test_() ->
      {"Test all permissions enabled.",
       ?_test(
          begin
-	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO),
+	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO, ?EXTRA_DATA),
              ?assertEqual(ok, server:subscribe(Consumer_code1, ?CHANNEL1, message_only)),
              ok = server:publish(Consumer_code1, ?CHANNEL1, ?MESSAGE1),
              timer:sleep(?DELAY),
@@ -61,7 +62,7 @@ server_closed_auth_test_() ->
      {"Test all permissions disabled.",
       ?_test(
          begin
-	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO),
+	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO, ?EXTRA_DATA),
              ?assertEqual(ok, server:subscribe(Consumer_code1, ?CHANNEL1, message_only)),
              ok = server:publish(Consumer_code1, ?CHANNEL1, ?MESSAGE1),
              timer:sleep(?DELAY),

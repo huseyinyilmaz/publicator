@@ -17,33 +17,33 @@
                                  {group, all},
                                  {auth_info, all}]]}).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
--callback init([Args::term()]) -> {ok, State::term()}|
-                                  {ok, State::term(), Timeout::integer()|infinity}|
-                                  ignore|
-                                  {stop, Reason::term()}.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
--callback handle_authenticate(Consumer_Code::binary(),
-                              Auth_info::binary(),
-                              State::term()) -> not_allowed| ok.
+-callback init_state(Auth_args::term()) -> New_state::term().
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
--callback handle_permissions(Consumer_Code::binary(),
-                             Room_code::binary(),
-                             State::term()) -> permission_type().
+-callback authenticate(Consumer_Code::binary(),
+                       Auth_info::binary(),
+                       State::term()) -> denied| ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+-callback permissions(Consumer_Code::binary(),
+                      Room_code::binary(),
+                      State::term()) -> permission_type().
 
 %%%===================================================================
 %%% API

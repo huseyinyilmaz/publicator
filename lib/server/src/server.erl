@@ -13,7 +13,7 @@
 -export([get_messages/2, get_messages/1, publish/3,
 	 subscribe/3, unsubscribe/2,
 	 get_subscribtions/1,
-	 create_consumer/1, get_consumer/1, get_channels/0]).
+	 create_consumer/2, get_consumer/1, get_channels/0]).
 -export([stop_consumer/1]).
 -export([get_consumers/1]).
 -export([add_message_handler/2, remove_message_handler/2]).
@@ -127,9 +127,10 @@ remove_message_handler(Consumer_code, Handler_pid) ->
     end.
 
 
--spec create_consumer(Auth_info::binary()) -> {ok, Code::binary(), Pid::pid()}.
-create_consumer(Auth_info) ->
-    s_consumer_sup:start_child(Auth_info).
+-spec create_consumer(Auth_info::binary(),
+                      Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
+create_consumer(Auth_info, Extra_data) ->
+    s_consumer_sup:start_child(Auth_info, Extra_data).
 
 -spec stop_consumer(binary()) -> ok|{error, consumer_not_found}.
 stop_consumer(Consumer_code) ->

@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_child/1]).
+-export([start_link/0, start_child/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -27,14 +27,21 @@
 %% Starts a new consumer
 %% @end
 %%--------------------------------------------------------------------
--spec start_child(Auth_info::binary()) -> {ok, Code::binary(), Pid::pid()}.
-start_child(Auth_info) ->
+-spec start_child(Auth_info::binary(),
+                 Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
+start_child(Auth_info, Extra_data) ->
+    {Auth_backend, Auth_args} = s_auth_backend:get_authentication_backend(),
     Code = s_utils:generate_code(),
     lager:info("~p~n", [{start_new_consumer, Code, Auth_info}]),
-    Args_to_append = [Code],
-    case supervisor:start_child(?SERVER, Args_to_append) of
-	{ok, Pid} -> {ok, Code, Pid};
-	{error, {already_exists, _Pid}} -> start_child(Auth_info)
+    Auth_state = Auth_backend:init_state(Auth_args),
+    case Auth_backend:authenticate(Code, Auth_info, Extra_data, Auth_state) of
+        denied -> {error, permission_denied};
+        ok ->
+            Args_to_append = [Code, Auth_backend, Auth_state],
+            case supervisor:start_child(?SERVER, Args_to_append) of
+                {ok, Pid} -> {ok, Code, Pid};
+                {error, {already_exists, _Pid}} -> start_child(Auth_info, Extra_data)
+            end
     end.
 	     
 
