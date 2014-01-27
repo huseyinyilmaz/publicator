@@ -17,9 +17,11 @@
 
 -define(HOST, "http://127.0.0.1:8766/").
 %% -define(HOST, "http://www.talkybee.com:8766/").
--define(OPTS, [{connect_timeout, 100000000},
-               {socket_options, [%{keepalive, true},
-                                 {active, false}]}]).
+-define(OPTS, [%% {connect_timeout, 100000000}
+               %% {socket_options, [%{keepalive, true},
+               %%                   {active, false}]}
+
+              ]).
 -define(TIMEOUT, infinity).
 %%--------------------------------------------------------------------
 %% @doc

@@ -32,6 +32,9 @@ suite() ->
 %%--------------------------------------------------------------------
 init_per_suite(Config) ->
     ibrowse:start(),
+    ibrowse:set_max_sessions("127.0.0.1", "8766", 1),
+    ibrowse:set_max_pipeline_size("127.0.0.1", "8766", 1),
+    %% ibrowse:set_max_sessions("www.talkybee.com", "8766", 30),
     %% ok = server:start(),
     %% ok = http:start(),
     Config.
@@ -117,7 +120,8 @@ groups() ->
 all() -> 
     [test_100_room_2_consumer,
      test_10_room_20_consumer,
-     test_2_room_100_consumer].
+     test_2_room_100_consumer,
+     test_2_room_1000_consumer].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
@@ -125,6 +129,14 @@ all() ->
 %% @end
 %%--------------------------------------------------------------------
 test_100_room_2_consumer() -> 
+    [].
+
+%%--------------------------------------------------------------------
+%% @spec TestCase() -> Info
+%% Info = [tuple()]
+%% @end
+%%--------------------------------------------------------------------
+test_10_room_20_consumer() -> 
     [].
 
 %%--------------------------------------------------------------------
@@ -140,7 +152,7 @@ test_2_room_100_consumer() ->
 %% Info = [tuple()]
 %% @end
 %%--------------------------------------------------------------------
-test_10_room_20_consumer() -> 
+test_2_room_1000_consumer() -> 
     [].
 
 %%--------------------------------------------------------------------
@@ -238,6 +250,12 @@ test_10_room_20_consumer(_Config) ->
     ok.
 
 test_2_room_100_consumer(_Config) ->
+    ct:log("LOG test"),
+    ct:print("PRINT test"),
+    create_channel(2, 100, 1),
+    ok.
+
+test_2_room_1000_consumer(_Config) ->
     ct:log("LOG test"),
     ct:print("PRINT test"),
     create_channel(2, 100, 1),
