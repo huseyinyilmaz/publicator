@@ -34,7 +34,7 @@
 %%--------------------------------------------------------------------
 -callback authenticate(Consumer_Code::binary(),
                        Auth_info::binary(),
-                       State::term()) -> denied| ok.
+                       State::term()) -> denied| granted.
 
 %%--------------------------------------------------------------------
 %% @doc

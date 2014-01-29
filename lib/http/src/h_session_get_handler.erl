@@ -51,9 +51,12 @@ get_json(Req, State) ->
     lager:debug("XXXXXX=~p~n", [Headers]),
     {Auth_info, Req3} = cowboy_req:qs_val(<<"auth_info">>, Req2),
     lager:debug("YYYYYYYYYYYYYYYYYYYYYYYYYYY"),
-    
-    {ok, Consumer_code, _Consumer_pid} = server:create_consumer(Auth_info, Headers),
-    Body = jiffy:encode({[{<<"session">>, Consumer_code}]}),
+    case server:create_consumer(Auth_info, Headers) of
+        {ok, Consumer_code, _Consumer_pid} ->
+            Body = jiffy:encode({[{<<"session">>, Consumer_code}]});
+        {error, permission_denied} ->
+            Body = jiffy:encode({[{<<"error">>, <<"permission_denied">>}]})
+    end,
     {Body, Req3, State}.
 
 %%%===================================================================

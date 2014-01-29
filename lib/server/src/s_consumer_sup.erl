@@ -35,8 +35,10 @@ start_child(Auth_info, Extra_data) ->
     lager:info("~p~n", [{start_new_consumer, Code, Auth_info}]),
     Auth_state = Auth_backend:init_state(Auth_args),
     case Auth_backend:authenticate(Code, Auth_info, Extra_data, Auth_state) of
-        denied -> {error, permission_denied};
-        ok ->
+        denied ->
+            lager:debug("Permission denied for code=~p", [Code]),
+            {error, permission_denied};
+        granted ->
             Args_to_append = [Code, Auth_backend, Auth_state],
             case supervisor:start_child(?SERVER, Args_to_append) of
                 {ok, Pid} -> {ok, Code, Pid};

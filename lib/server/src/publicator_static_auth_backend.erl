@@ -50,9 +50,11 @@ init_state(Auth_args) ->
                           Auth_info::binary(),
                           Extra_data::term(),
                           State::term()) -> denied| ok.
-authenticate(_Consumer_code, _Auth_info, _Extra_data, _State) ->
-    ok.
-
+authenticate(Consumer_code, Auth_info, Extra_data, State) ->
+    lager:debug("=============--------------================"),
+    lager:info("~p,~p,~p,~p", [Consumer_code, Auth_info, Extra_data, State]),
+    granted.
+    %% denied.
 
 -spec get_permissions(Consumer_Code::binary(),
                       Room_code::binary(),

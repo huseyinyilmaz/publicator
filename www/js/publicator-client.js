@@ -16,6 +16,11 @@
             function get_random_string(){return Math.random().toString(36).substring(7);}
             function callback_fun(e){
                 var session_id = e.session;
+                // if there is no session id throw given server error
+                // like permission denied.
+                if(!session_id){
+                    throw e.error;
+                }
                 callback(session_id);}
 
             var url = ('http://' + this.host + '/session/' +
