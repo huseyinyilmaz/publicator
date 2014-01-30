@@ -87,6 +87,7 @@ docs:
 start: compile
 	erl -pa lib/*/ebin deps/*/ebin devutils/*/ebin \
 	    -i  lib/*/include deps/*/include devutils/*/include \
+	    -config rel/files/sys.config \
 	    -boot start_sasl \
 	    -sync log all \
 	    -lager handlers '[{lager_console_backend, debug}]' \

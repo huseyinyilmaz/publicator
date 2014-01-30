@@ -12,12 +12,6 @@
 
 -export([get_authentication_backend/0]).
 
--define(DEFAULT_AUTH_BACKEND, {publicator_static_auth_backend,
-                               [[{consumer_code, all},
-                                 {group, all},
-                                 {auth_info, all}]]}).
-
-
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -50,6 +44,7 @@
 %%%===================================================================
 -spec get_authentication_backend()->{Module::atom(), Configuration::term()}.
 get_authentication_backend() ->
-    {_Module, _Args} = s_utils:get_env(server,
-                                     auth_backend,
-                                     ?DEFAULT_AUTH_BACKEND).
+    lager:debug("asdfasdfasdfasdf1234123412341324"),
+    lager:debug("~p~n", [application:get_env(server, auth_backend)]),
+    {ok, {Module, Args}} = application:get_env(server, auth_backend),
+    {Module, Args}.

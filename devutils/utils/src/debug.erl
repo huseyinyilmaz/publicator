@@ -42,7 +42,7 @@ init() ->
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
     lager:start(),
-    s_utils:set_env(server, auth_backend, ?DEFAULT_AUTH_BACKEND),
+    %% s_utils:set_env(server, auth_backend, ?DEFAULT_AUTH_BACKEND),
     sync:go(),
     ok.
 
