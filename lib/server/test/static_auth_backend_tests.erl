@@ -15,7 +15,6 @@
 
 setup_server() ->
     lager:debug("Setup server"),
-    ok = application:start(sasl),
     ok = server:start().
 
 setup_server_open_all_permissions() ->
@@ -36,8 +35,7 @@ setup_server_close_all_permissions() ->
 
 cleanup_server(_) ->
     lager:debug("Cleanup server"),
-    ok = server:stop(),
-    ok = application:stop(sasl).
+    ok = server:stop().
 
 server_opened_auth_test_() ->
     {setup,

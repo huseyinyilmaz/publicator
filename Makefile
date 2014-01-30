@@ -5,9 +5,6 @@ NODE_NAME = publicator@127.0.0.1
 
 APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xmerl inets
 
-# kernel stdlib sasl erts ssl tools os_mon runtime_tools crypto inets \
-#        xmerl webtool snmp public_key mnesia eunit
-
 build: clean compile
 	@$(REBAR) generate
 	cp -r www rel/publicator
@@ -88,7 +85,6 @@ start: compile
 	erl -pa lib/*/ebin deps/*/ebin devutils/*/ebin \
 	    -i  lib/*/include deps/*/include devutils/*/include \
 	    -config rel/files/sys.config \
-	    -boot start_sasl \
 	    -sync log all \
 	    -lager handlers '[{lager_console_backend, debug}]' \
 	    -mnesia dir '"$(MNESIA_DIR)"' \

@@ -19,15 +19,11 @@ setup_server()->
                       {group, all},
                       {auth_info, all}]]},
     s_utils:set_env(server, auth_backend, Configuration),
-    
-    ok = application:start(sasl),
     ok = server:start().
 
 cleanup_server(_)->
     lager:info("Cleanup server"),
-    ok = server:stop(),
-    ok = application:stop(sasl).
-
+    ok = server:stop().
 
 server_uninitialized_session_test_()->
     {setup,
