@@ -32,8 +32,8 @@
 start_child(Auth_info, Extra_data) ->
     {Auth_backend, Auth_args} = s_auth_backend:get_authentication_backend(),
     Code = s_utils:generate_code(),
-    lager:info("~p~n", [{start_new_consumer, Code, Auth_info}]),
     Auth_state = Auth_backend:init_state(Auth_args),
+    lager:info("~p~n", [{start_new_consumer, Code, Auth_info, Auth_state}]),
     case Auth_backend:authenticate(Code, Auth_info, Extra_data, Auth_state) of
         denied ->
             lager:debug("Permission denied for code=~p", [Code]),

@@ -25,11 +25,10 @@
 -callback init_state(Auth_args::term()) -> New_state::term().
 init_state(Auth_args) ->
     Auth_list = [#auth_filter{consumer_code=proplists:get_value(consumer_code, Auth_arg, all),
-                              auth_info=proplists:get_value(consumer_code, Auth_arg, all),
+                              auth_info=proplists:get_value(auth_info, Auth_arg, all),
                               extra_data=proplists:get_value(extra_data, Auth_arg, [])
                              }
-                || Auth_arg <- Auth_args],
-
+                 || Auth_arg <- Auth_args],
     #state{filter_list=Auth_list}.
 
 
@@ -52,9 +51,7 @@ init_state(Auth_args) ->
                    Auth_info::binary(),
                    Extra_data::term(),
                    State::term()) -> denied| granted.
-authenticate(Consumer_code, Auth_info, Extra_data, #state{filter_list=Filter_list}=State) ->
-    lager:debug("=============--------------================"),
-    lager:info("~p,~p,~p,~p", [Consumer_code, Auth_info, Extra_data, State]),
+authenticate(Consumer_code, Auth_info, Extra_data, #state{filter_list=Filter_list}=_State) ->
     case lists:any(fun(Filter)->
                            can_authenticate(Filter,
                                             Consumer_code,
