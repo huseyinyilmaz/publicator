@@ -14,6 +14,12 @@
 
 setup_server()->
     lager:info("Setup server"),
+    Configuration = {publicator_static_auth_backend,
+                     [[{consumer_code, all},
+                      {group, all},
+                      {auth_info, all}]]},
+    s_utils:set_env(server, auth_backend, Configuration),
+    
     ok = application:start(sasl),
     ok = server:start().
 

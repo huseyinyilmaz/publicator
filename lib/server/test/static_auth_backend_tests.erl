@@ -20,17 +20,17 @@ setup_server() ->
 
 setup_server_open_all_permissions() ->
     Configuration = {publicator_static_auth_backend,
-                     [{consumer_code, all},
+                     [[{consumer_code, all},
                       {group, all},
-                      {auth_info, all}]},
+                      {auth_info, all}]]},
     s_utils:set_env(server, auth_backend, Configuration),
     setup_server().
 
 setup_server_close_all_permissions() ->
     Configuration = {publicator_static_auth_backend,
-                     [{consumer_code, <<"closed">>},
+                     [[{consumer_code, <<"closed">>},
                       {group, group1},
-                      {auth_info, <<"closed">>}]},
+                      {auth_info, <<"closed">>}]]},
     s_utils:set_env(server, auth_backend, Configuration),
     setup_server().
 
@@ -62,11 +62,6 @@ server_closed_auth_test_() ->
      {"Test all permissions disabled.",
       ?_test(
          begin
-	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO, ?EXTRA_DATA),
-             ?assertEqual(ok, server:subscribe(Consumer_code1, ?CHANNEL1, message_only)),
-             ok = server:publish(Consumer_code1, ?CHANNEL1, ?MESSAGE1),
-             timer:sleep(?DELAY),
-	     {ok, Messages} = server:get_messages(Consumer_code1),
-	     ?assertEqual({ok,[{message, ?MESSAGE1}]}, dict:find(?CHANNEL1, Messages))
+	     {error,permission_denied} = server:create_consumer(?AUTH_INFO, ?EXTRA_DATA)
          end)
      }}.
