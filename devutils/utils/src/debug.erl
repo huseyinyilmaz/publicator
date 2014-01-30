@@ -13,9 +13,9 @@
 -export([init/0, start/0, stop/0, restart/0]).
 %% -compile([{parse_transform, lager_transform}]).
 -define(DEFAULT_AUTH_BACKEND, {publicator_static_auth_backend,
-                               [{consumer_code, all},
-                                {group, all},
-                                {auth_info, all}]}).
+                               [[{consumer_code, <<"123">>},
+                                 {auth_info, <<"deneme">>},
+                                 {extra_data, []}]]}).
 
 %%%===================================================================
 %%% API
