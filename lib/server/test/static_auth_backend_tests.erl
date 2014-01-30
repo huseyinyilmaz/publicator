@@ -14,6 +14,7 @@
 -define(DELAY, 100).
 
 setup_server() ->
+    lager:start(),
     lager:debug("Setup server"),
     ok = server:start().
 

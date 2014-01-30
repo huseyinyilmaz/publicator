@@ -13,6 +13,7 @@
 -define(DELAY, 100).
 
 setup_server()->
+    lager:start(),
     lager:info("Setup server"),
     Configuration = {publicator_static_auth_backend,
                      [[{consumer_code, all},
