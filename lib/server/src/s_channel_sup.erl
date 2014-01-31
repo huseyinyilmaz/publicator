@@ -11,7 +11,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_child/1]).
+-export([start_link/0, start_child/3]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -27,13 +27,24 @@
 %% Starts a new user
 %% @end
 %%--------------------------------------------------------------------
-start_child(Channel_code) ->
-    lager:info("Start a new user"),
-    Args_to_append = [Channel_code],
-    case supervisor:start_child(?SERVER, Args_to_append) of
-	{ok, Pid} -> {ok, Pid};
-	{error ,{already_exists, Pid}} -> {ok, Pid}
-    end.
+start_child(Consumer_code, Channel_code, Extra_data) ->
+    {Permission_module, Permission_args} = s_permission_backend:get_permission_backend(),
+    Permission_state = Permission_module:init_state(Permission_args),
+    Perms = Permission_module:get_permissions(Consumer_code,
+                                               Channel_code,
+                                               Extra_data,
+                                              Permission_state),
+    case s_permission_backend:has_permission(Perms, can_create_channel) of
+        true ->
+            lager:info("Start a channel"),
+            Args_to_append = [Channel_code],
+            case supervisor:start_child(?SERVER, Args_to_append) of
+                {ok, Pid} -> {ok, Pid};
+                {error ,{already_exists, Pid}} -> {ok, Pid}
+            end;
+        false ->
+            {error, permission_denied}
+        end.
 
 %%--------------------------------------------------------------------
 %% @doc

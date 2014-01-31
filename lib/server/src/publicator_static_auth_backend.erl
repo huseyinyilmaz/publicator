@@ -9,7 +9,7 @@
 -module(publicator_static_auth_backend).
 -behivour(s_auth_backend).
 %% API
--export([init_state/1, authenticate/4, get_permissions/4]).
+-export([init_state/1, authenticate/4]).
 
 -include("../include/server.hrl").
 
@@ -62,12 +62,6 @@ authenticate(Consumer_code, Auth_info, Extra_data, #state{filter_list=Filter_lis
         false-> denied
     end.
 
--spec get_permissions(Consumer_Code::binary(),
-                      Room_code::binary(),
-                      Extra_data::term(),
-                      State::term()) -> permission_type().
-get_permissions(_Consumer_code, _Room_code, _Extra_data, _State)->
-    ok.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

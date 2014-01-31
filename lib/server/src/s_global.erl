@@ -2,25 +2,17 @@
 %%% @author Huseyin Yilmaz <huseyin@huseyin-work>
 %%% @copyright (C) 2013, Huseyin Yilmaz
 %%% @doc
-%%% Chat store module provieds api for handling persistence for chat app
+%%% This module is wrapper over global registery
 %%% @end
 %%% Created :  6 Feb 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
 -module(s_global).
 
 %% API
-%% -export([init/0]).
 -export([get_channel/1, set_channel/2]).
 -export([get_or_register_channel/1]).
 -export([get_consumer/1, set_consumer/2]).
 -export([get_or_register_consumer/1]).
-
-%% -record(code_to_pid, {code :: binary(),
-%%                       pid :: pid()}).
-
-%% -record(counter, {code :: term(),
-%%                   pid :: number()}).
-
 
 %%%===================================================================
 %%% API

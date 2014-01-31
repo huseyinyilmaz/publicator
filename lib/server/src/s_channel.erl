@@ -13,7 +13,7 @@
 %% API
 -export([start_link/1]).
 -export([publish/2]).
--export([get_channel/1]).
+-export([get_channel/3]).
 -export([get_consumers/1]).
 -export([add_consumer/4]).
 -export([remove_consumer/2]).
@@ -49,10 +49,13 @@ publish(Channel_pid, Message) ->
     gen_server:cast(Channel_pid, {publish, Message}).
 
 
--spec get_channel(Channel_code::binary())->{ok, pid()}.
-get_channel(Channel_code)->
+-spec get_channel(Consumer_code::binary(),
+                  Channel_code::binary(),
+                  Extra_data::binary)->{ok, pid()}|
+                                       {error, permission_denied}.
+get_channel(Consumer_code, Channel_code, Extra_data)->
     case s_global:get_channel(Channel_code) of
-	undefined -> s_channel_sup:start_child(Channel_code);
+	undefined -> s_channel_sup:start_child(Consumer_code, Channel_code, Extra_data);
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
 %spec get_consumers(Channel_pid::binary()) -> {ok, [pid()]}.
