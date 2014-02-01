@@ -7,7 +7,29 @@ $ python backend.py # start server
 You can use this server to check your installation.
 change returned value from True to False to deny authentication.
 
-Here is a sample debug log:
+In order to connect your publicator installation to this sample server change
+publicator settings to following
+
+{server, [
+         {auth_backend, {publicator_http_auth_backend,
+                        [{url, "http://127.0.0.1:5000/auth/"}]}},
+         {permission_backend,{publicator_static_permission_backend,
+                              [[{consumer_code, all},
+                                {extra_data, []},
+                                {channel_code, all},
+                                {can_publish, true},
+                                {can_subscribe_messages, true},
+                                {can_subscribe_all_events, true},
+                                {can_create_channel, true}]]}}
+         ]}
+
+As you can see we have to set auth_backend to publicator_http_auth_backend
+and give it a connection url.
+
+since flask uses port 5000 as default port we will be using
+127.0.0.1:5000/auth/ as auth_backend_url
+
+Here is a sample debug log that this server will print:
 
 -------------------------------------------------------------------------------
 DEBUG in backend [backend.py:13]:
