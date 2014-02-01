@@ -23,6 +23,7 @@
 -export([push_add_subscribtion/3]).
 
 -export([push_remove_subscribtion/3]).
+-export([get_consumers/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -62,6 +63,12 @@ get(Code) ->
 	Pid when is_pid(Pid) -> {ok, Pid}
     end.
 
+-spec get_consumers(Pid::pid(),
+                   Channel_code::pid(),
+                   Extra_data::term())->
+                          list()|{error, permission_denied}.
+get_consumers(Pid, Channel_code, Extra_data)->
+    gen_server:call(Pid,{get_consumers, Channel_code, Extra_data}).
 
 -spec get_code(pid()) -> {ok, binary()}.
 get_code(Pid) ->
@@ -169,7 +176,6 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     {reply, Reply, State, ?TIMEOUT};
 
 handle_call({publish, Channel_code, Message, Extra_data}, _From, State) ->
-    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State, Extra_data),
     case get_cached_channel(Channel_code, State, Extra_data) of
         {{ok, Channel_pid}, State2} ->
             s_channel:publish(Channel_pid, Message),
@@ -189,7 +195,7 @@ handle_call({subscribe, Channel_code, Handler_type, Extra_data}, _From,
                 true ->
                     {reply, Reply, State, ?TIMEOUT};
                 false ->
-                    ok = s_channel:add_consumer(Channel_pid, self(), Code, Handler_type, Extra_data),
+                    ok = s_channel:add_consumer(Channel_pid, self(), Code, Handler_type),
                     {reply, Reply, State2#state{channels=dict:store(Channel_code,
                                                                     Channel_pid,
                                                                     Channels_dict)},
@@ -255,7 +261,20 @@ handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
 
 handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
     Reply = {ok, dict:fetch_keys(Channels_dict)},
-    {reply,Reply, State, ?TIMEOUT}.
+    {reply,Reply, State, ?TIMEOUT};
+
+
+handle_call({get_consumers,
+             Channel_code,
+             Extra_data}, _From, State)->
+    case get_cached_channel(Channel_code, State, Extra_data) of
+        {{ok, Channel_pid}, State2} ->
+            {ok, Consumer_list} = s_channel:get_consumers(Channel_pid),
+            {reply, {ok, Consumer_list}, State2, ?TIMEOUT};
+        {{error, permission_denied}, State2} ->
+            {reply, {error, permission_denied}, State2, ?TIMEOUT}
+    end.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -372,7 +391,7 @@ get_cached_channel(Channel_code,
                   Extra_data) ->
     case dict:find(Channel_code, Channels_dict) of
 	{ok, Channel_pid} -> Result = Channel_pid,
-			     {ok, Result, State};
+			     {{ok, Result}, State};
 	error ->
 	    case dict:find(Channel_code, Channels_cache_dict) of
 		{ok, Cached_channel_pid} -> Result = Cached_channel_pid,

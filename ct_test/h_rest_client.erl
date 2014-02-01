@@ -66,8 +66,6 @@ get_subscribtions(Session_id) ->
 subscribe(Session_id, Channel_code) ->
     Uri = prefix_session_id(Session_id,
 			    "subscribtions/" ++ binary_to_list(Channel_code) ++ "/"),
-    io:format("XXXXX~p~n", [Uri]),
-    
     post_request(Uri, []).    
 
 publish(Session_id, Channel_code, Message) ->

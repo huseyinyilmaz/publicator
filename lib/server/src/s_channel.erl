@@ -14,7 +14,7 @@
 -export([start_link/1]).
 -export([publish/2]).
 -export([get_consumers/1]).
--export([add_consumer/5]).
+-export([add_consumer/4]).
 -export([remove_consumer/2]).
 -export([remove_consumer_from_list/2]).
 
@@ -53,8 +53,8 @@ get_consumers(Channel_pid) ->
     {ok, Consumer_list} = gen_server:call(Channel_pid, get_consumers),
     {ok, Consumer_list}.
 
-add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type, Extra_data) ->
-    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type, Extra_data}).
+add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type) ->
+    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type}).
 
 remove_consumer(Channel_pid, Consumer_code) ->
     gen_server:call(Channel_pid, {remove_consumer, Consumer_code}).
@@ -164,8 +164,9 @@ handle_call(get_consumers, _From,
     
 
 
-handle_call(_Request, _From, State) ->
+handle_call(Request, _From, State) ->
     Reply = ok,
+    lager:warning("Unhandled data reached. ~p~n", [Request]),
     {reply, Reply, State}.
 
 %%--------------------------------------------------------------------

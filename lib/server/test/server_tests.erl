@@ -52,10 +52,12 @@ server_uninitialized_session_test_()->
              ?assertEqual({error, consumer_not_found},
 			  server:get_messages(Consumer_code)),
              ?assertEqual({error, consumer_not_found},
-			  server:publish(Consumer_code, Channel_code, ?MESSAGE1)),
+			  server:publish(Consumer_code, Channel_code, ?MESSAGE1, ?EXTRA_DATA)),
 	     ?assertEqual({error, consumer_not_found},
-			  server:subscribe(Consumer_code, Channel_code, message_only)),
-	     ?assertEqual({error, consumer_not_found}, server:unsubscribe(Consumer_code, Channel_code)),
+			  server:subscribe(Consumer_code, Channel_code,
+                                           message_only, ?EXTRA_DATA)),
+	     ?assertEqual({error, consumer_not_found},
+                          server:unsubscribe(Consumer_code, Channel_code)),
              ?assertEqual({error, consumer_not_found},
 			  server:get_subscribtions(Consumer_code)),
              ok
@@ -77,14 +79,25 @@ server_subscribtion_test_() ->
              %% tests subscribe
 	     %% multiple subscribtions to same Channel should not create multiple
 	     %% channel event handlers
-             ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code, message_only)),
-             ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code2, message_only)),
-             ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code, message_only)),
-	     {ok, Consumer_list1} = server:get_consumers(Channel_code),
+             ?assertEqual(ok,
+                          server:subscribe(Consumer_code1,
+                                           Channel_code,
+                                           message_only,
+                                           ?EXTRA_DATA)),
+             ?assertEqual(ok, server:subscribe(Consumer_code1,
+                                               Channel_code2,
+                                               message_only,
+                                               ?EXTRA_DATA)),
+             ?assertEqual(ok, server:subscribe(Consumer_code2,
+                                               Channel_code,
+                                               message_only,
+                                               ?EXTRA_DATA)),
+	     {ok, Consumer_list1} = server:get_consumers(Consumer_code1,
+                                                         Channel_code, ?EXTRA_DATA),
              ?assertEqual(lists:sort([Consumer_code1, Consumer_code2]),
 			  lists:sort(Consumer_list1)),
              ?assertEqual({ok, [Consumer_code1]},
-			  server:get_consumers(Channel_code2)),
+			  server:get_consumers(Consumer_code1, Channel_code2, ?EXTRA_DATA)),
 	     
 	     %% test get channels
 	     %% {ok, Channel_list} = server:get_channels(),
@@ -127,11 +140,11 @@ server_message_test_() ->
              %% tests subscribe
 	     %% multiple subscribtions to same Channel should not create multiple
 	     %% channel event handlers
-             ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code, message_only)),
-             ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code, message_only)),
+             ?assertEqual(ok, server:subscribe(Consumer_code1, Channel_code, message_only, ?EXTRA_DATA)),
+             ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code, message_only, ?EXTRA_DATA)),
 	     %% test send message
-             ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1),
-             ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE2),
+             ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1, ?EXTRA_DATA),
+             ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE2, ?EXTRA_DATA),
 	     timer:sleep(?DELAY),
 	     %% test get_messages
 	     {ok, Messages} = server:get_messages(Consumer_code2),
@@ -148,9 +161,9 @@ server_message_test_() ->
 	     {ok, Messages4} = server:get_messages(Consumer_code1),
 	     ?assertEqual(error, dict:find(Channel_code, Messages4)),
 	     %% make sure that channels are seperate
-             ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2, message_only)),
-             ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1),
-             ok = server:publish(Consumer_code1, Channel_code2, ?MESSAGE2),
+             ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2, message_only, ?EXTRA_DATA)),
+             ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1, ?EXTRA_DATA),
+             ok = server:publish(Consumer_code1, Channel_code2, ?MESSAGE2, ?EXTRA_DATA),
 	     timer:sleep(?DELAY),
 	     %% test get_messages single channel
 	     ?assertEqual({ok,[{message, ?MESSAGE1}]},
@@ -185,13 +198,13 @@ server_handler_message_only_mode_test_() ->
 		 %% Add consumers to channels
 
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code1, Channel_code, message_only)),
+			      server:subscribe(Consumer_code1, Channel_code, message_only, ?EXTRA_DATA)),
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code2, Channel_code, message_only)),
+			      server:subscribe(Consumer_code2, Channel_code, message_only, ?EXTRA_DATA)),
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code1, Channel_code2, message_only)),
+			      server:subscribe(Consumer_code1, Channel_code2, message_only, ?EXTRA_DATA)),
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code2, Channel_code2, message_only)),
+			      server:subscribe(Consumer_code2, Channel_code2, message_only, ?EXTRA_DATA)),
 
 		 Mock1_pid = process_mock:make_message_receiver(self(), mock1),
 		 Mock2_pid = process_mock:make_message_receiver(self(), mock2),
@@ -210,9 +223,9 @@ server_handler_message_only_mode_test_() ->
 				  Channel_code2,
 				  Message2},
 
-		 s_consumer:publish(Consumer_pid1, Channel_code, Message1),
+		 s_consumer:publish(Consumer_pid1, Channel_code, Message1, ?EXTRA_DATA),
 		 timer:sleep(?DELAY),
-		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2),
+		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2, ?EXTRA_DATA),
 		 timer:sleep(?DELAY),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock2)),
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock3)),
@@ -247,13 +260,13 @@ server_all_handler_mode_test_() ->
 		 server:add_message_handler(Consumer_code2, Mock4_pid),
 		 %% Add consumers to channels
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code1, Channel_code, all)),
+			      server:subscribe(Consumer_code1, Channel_code, all, ?EXTRA_DATA)),
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code2, Channel_code, all)),
+			      server:subscribe(Consumer_code2, Channel_code, all, ?EXTRA_DATA)),
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code1, Channel_code2, all)),
+			      server:subscribe(Consumer_code1, Channel_code2, all, ?EXTRA_DATA)),
 		 ?assertEqual(ok,
-			      server:subscribe(Consumer_code2, Channel_code2, all)),
+			      server:subscribe(Consumer_code2, Channel_code2, all, ?EXTRA_DATA)),
 		 %% Receive add_subscribtion messages.
 		 Expected_add_subscribtion_msg1 = {add_subscribtion,
 						   Channel_code,
@@ -276,8 +289,8 @@ server_all_handler_mode_test_() ->
 				  Channel_code2,
 				  Message2},
 
-		 s_consumer:publish(Consumer_pid1, Channel_code, Message1),
-		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2),
+		 s_consumer:publish(Consumer_pid1, Channel_code, Message1, ?EXTRA_DATA),
+		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2, ?EXTRA_DATA),
 		 timer:sleep(?DELAY),
 		 %% receive messages
 		 ?assertEqual(Expected_msg1, process_mock:receive_message(mock2)),

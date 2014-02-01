@@ -58,7 +58,7 @@ server_opened_auth_test_() ->
          begin
 	     {ok, Consumer_code1, _} = server:create_consumer(?AUTH_INFO, ?EXTRA_DATA),
              ?assertEqual(ok, server:subscribe(Consumer_code1, ?CHANNEL1, message_only,[])),
-             ok = server:publish(Consumer_code1, ?CHANNEL1, ?MESSAGE1),
+             ok = server:publish(Consumer_code1, ?CHANNEL1, ?MESSAGE1, ?EXTRA_DATA),
              timer:sleep(?DELAY),
 	     {ok, Messages} = server:get_messages(Consumer_code1),
 	     ?assertEqual({ok,[{message, ?MESSAGE1}]}, dict:find(?CHANNEL1, Messages))

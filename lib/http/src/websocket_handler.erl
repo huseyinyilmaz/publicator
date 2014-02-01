@@ -175,9 +175,10 @@ handle_terminate(#state{session_id=Session_id}=State)->
 %%%===================================================================
     
 handle_publish_request(Channel_code, Message, Req,
-		    #state{session_id=Session_id}=State) ->
-    ok = server:publish(Session_id, Channel_code, Message),
-    {ok, Req, State}.
+                       #state{session_id=Session_id}=State) ->
+    {Headers, Req2} = cowboy_req:headers(Req),
+    ok = server:publish(Session_id, Channel_code, Message, Headers),
+    {ok, Req2, State}.
 
 handle_subscribe_request(Handler_type_bin,
 			 Channel_code, Req,

@@ -10,12 +10,12 @@
 
 %% API
 -export([start/0, stop/0]).
--export([get_messages/2, get_messages/1, publish/3,
+-export([get_messages/2, get_messages/1, publish/4,
 	 subscribe/4, unsubscribe/2,
 	 get_subscribtions/1,
 	 create_consumer/2, get_consumer/1, get_channels/0]).
 -export([stop_consumer/1]).
--export([get_consumers/1]).
+-export([get_consumers/3]).
 -export([add_message_handler/2, remove_message_handler/2]).
 
 
@@ -71,11 +71,13 @@ get_messages(Consumer_code) ->
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
--spec publish(binary(), binary(), binary()) -> ok | {error, consumer_not_found}.
-publish(Consumer_code, Channel_code, Message)->
+-spec publish(binary(), binary(), binary(), list()) -> ok
+                                                           | {error, consumer_not_found}
+                                                           | {error, permission_denied}.
+publish(Consumer_code, Channel_code, Message, Extra_data)->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
-	    ok = s_consumer:publish(Consumer_pid, Channel_code, Message);
+	    ok = s_consumer:publish(Consumer_pid, Channel_code, Message, Extra_data);
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
@@ -89,12 +91,10 @@ subscribe(Consumer_code, Channel_code, Handler_type, Extra_data) ->
 	true ->
 	    case s_consumer:get(Consumer_code) of
                 {ok, Consumer_pid} ->
-                    Res = s_consumer:subscribe(Consumer_pid,
-                                               Channel_code,
-                                               Handler_type,
-                                               Extra_data),
-                    lager:info("QQQQQQQQQQQQQQQQQQ=~p~n", [Res]),
-                    Res;
+                    s_consumer:subscribe(Consumer_pid,
+                                         Channel_code,
+                                         Handler_type,
+                                         Extra_data);
 		{error, not_found} -> {error, consumer_not_found}
 	    end
     end.
@@ -135,7 +135,10 @@ remove_message_handler(Consumer_code, Handler_pid) ->
 -spec create_consumer(Auth_info::binary(),
                       Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
 create_consumer(Auth_info, Extra_data) ->
-    s_consumer_sup:start_child(Auth_info, Extra_data).
+    Result = s_consumer_sup:start_child(Auth_info, Extra_data),
+    lager:info
+      ("Result=~p",[Result]),
+    Result.
 
 -spec stop_consumer(binary()) -> ok|{error, consumer_not_found}.
 stop_consumer(Consumer_code) ->
@@ -150,11 +153,13 @@ stop_consumer(Consumer_code) ->
 get_consumer(Consumer_code) ->
     s_consumer:get(Consumer_code).
 
--spec get_consumers(binary()) -> {ok, [pid()]}.
-get_consumers(Channel_code) ->
-    {ok, Consumer_pid} = s_channel:get_channel(Channel_code),
-    {ok, Consumer_list} = s_channel:get_consumers(Consumer_pid),
-    {ok, Consumer_list}.
+-spec get_consumers(binary(), binary(), list()) -> {ok, [pid()]}.
+get_consumers(Consumer_code, Channel_code, Extra_data) ->
+    case s_consumer:get(Consumer_code) of
+	{ok, Consumer_pid} ->
+            s_consumer:get_consumers(Consumer_pid, Channel_code, Extra_data);
+	{error, not_found} -> {error, consumer_not_found}
+    end.
 
 %%%===================================================================
 %%% Internal functions
