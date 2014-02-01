@@ -16,8 +16,8 @@
 %% API
 -export([start_link/3, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
-	 get_messages/2, get_messages/1, subscribe/3,
-	 publish/3, get_subscribtions/1, unsubscribe/2,
+	 get_messages/2, get_messages/1, subscribe/4,
+	 publish/4, get_subscribtions/1, unsubscribe/2,
 	 add_message_handler/2, remove_message_handler/2]).
 
 -export([push_add_subscribtion/3]).
@@ -36,8 +36,8 @@
 		channels_cache ::dict(), % channels cache that this consumer reached
 		messages :: dict(), % messages that this consumer got. (for rest interface)
 		handlers :: [pid()], % current listeners that will received messages
-                auth_backend :: atom(), % authentication backend module
-                auth_state :: term() % authentication backend state
+                permission_module :: atom(), % permission_module
+                permission_state :: term() % permission_state
                }).
 
 %%%===================================================================
@@ -49,8 +49,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec start_link(binary(), atom(), term()) -> {ok, pid()} | ignore | {error, any()}.
-start_link(Code, Auth_backend, Auth_state) ->
-    gen_server:start_link(?MODULE, [Code, Auth_backend, Auth_state], []).
+start_link(Code, Permission_module, Permission_state) ->
+    gen_server:start_link(?MODULE, [Code, Permission_module, Permission_state], []).
 
 -spec get(binary()) -> {ok, pid()} | {error, not_found}.
 get(Code) ->
@@ -98,16 +98,16 @@ stop(Pid) ->
 get_count() ->
     {ok, ets:info(consumer, size)}.
 
--spec subscribe(pid(), binary(), channel_handler_type()) -> ok.
-subscribe(Pid, Channel_code, Handler_type)->
-    gen_server:call(Pid, {subscribe, Channel_code, Handler_type}).
+-spec subscribe(pid(), binary(), channel_handler_type(), term()) -> ok.
+subscribe(Pid, Channel_code, Handler_type, Extra_data)->
+    gen_server:call(Pid, {subscribe, Channel_code, Handler_type, Extra_data}).
 
 unsubscribe(Pid, Channel_code)->
     gen_server:call(Pid, {unsubscribe, Channel_code}).
 
--spec publish(pid(), binary(), binary()) -> ok.
-publish(Pid, Channel_code, Message)->
-    gen_server:cast(Pid, {publish, Channel_code, Message}).
+-spec publish(pid(), binary(), binary(), list()) -> ok.
+publish(Pid, Channel_code, Message, Extra_data)->
+    gen_server:call(Pid, {publish, Channel_code, Message, Extra_data}).
 
 -spec get_subscribtions(pid()) -> {ok, dict()}.
 get_subscribtions(Pid) ->
@@ -132,7 +132,7 @@ remove_message_handler(Pid,Handler_pid) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
-init([Code, Auth_backend, Auth_state]) ->
+init([Code, Permission_module, Permission_state]) ->
     Self = self(),
     case s_global:get_or_register_consumer(Code) of
 	Self ->
@@ -142,8 +142,8 @@ init([Code, Auth_backend, Auth_state]) ->
 		    channels_cache=dict:new(),
 		    messages=dict:new(),
 		    handlers=[],
-                    auth_backend=Auth_backend,
-                    auth_state=Auth_state},
+                    permission_module=Permission_module,
+                    permission_state=Permission_state},
 	     ?TIMEOUT
 	    };
 	Pid when is_pid(Pid) -> 
@@ -168,23 +168,37 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     Reply = {ok, Code},
     {reply, Reply, State, ?TIMEOUT};
 
-handle_call({subscribe, Channel_code, Handler_type}, _From,
+handle_call({publish, Channel_code, Message, Extra_data}, _From, State) ->
+    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State, Extra_data),
+    case get_cached_channel(Channel_code, State, Extra_data) of
+        {{ok, Channel_pid}, State2} ->
+            s_channel:publish(Channel_pid, Message),
+            {reply, ok, State2, ?TIMEOUT};
+        {{error, permission_denied}, State2} ->
+            {reply, {error, permission_denied}, State2, ?TIMEOUT}
+    end;
+
+handle_call({subscribe, Channel_code, Handler_type, Extra_data}, _From,
 	    #state{code=Code,
 		   channels=Channels_dict}=State) ->
-    
-    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    Reply = ok,
-    %% if value is already exist in the dictionary log a warning
-    case dict:is_key(Channel_code, Channels_dict) of
-	true ->
-	    {reply, Reply, State, ?TIMEOUT};
-	false ->
-	    ok = s_channel:add_consumer(Channel_pid, self(),Code, Handler_type),
-	    {reply, Reply, State2#state{channels=dict:store(Channel_code,
-							    Channel_pid,
-							    Channels_dict)},
-	     ?TIMEOUT}
+    case get_cached_channel(Channel_code, State, Extra_data) of
+        {{ok, Channel_pid}, State2} ->
+            Reply = ok,
+            %% if value is already exist in the dictionary log a warning
+            case dict:is_key(Channel_code, Channels_dict) of
+                true ->
+                    {reply, Reply, State, ?TIMEOUT};
+                false ->
+                    ok = s_channel:add_consumer(Channel_pid, self(), Code, Handler_type, Extra_data),
+                    {reply, Reply, State2#state{channels=dict:store(Channel_code,
+                                                                    Channel_pid,
+                                                                    Channels_dict)},
+                     ?TIMEOUT}
+            end;
+        {{error, permission_denied}, State2} ->
+            {reply, {error, permission_denied}, State2}
     end;
+
 
 handle_call({unsubscribe, Channel_code}, _From,
 	    #state{channels=Channels_dict,
@@ -282,11 +296,6 @@ handle_cast({push, Message_type, Channel_code, Message},
 	     {noreply, New_state, ?TIMEOUT}
 	end;
 
-handle_cast({publish, Channel_code, Message}, State) ->
-    {ok, Channel_pid, State2} = get_cached_channel(Channel_code, State),
-    s_channel:publish(Channel_pid, Message),
-    {noreply, State2, ?TIMEOUT};
-
 handle_cast(stop, State) ->
     {stop, normal, State}.
 
@@ -357,23 +366,56 @@ code_change(_OldVsn, State, _Extra) ->
 
 %%% Gets Channel from subscribtions list or channels cache,
 %%% If it cannot find it, function fill query the global channel list
-get_cached_channel(Channel_code, #state{channels=Channels_dict,
-					channels_cache=Channels_cache_dict}=State) ->
+get_cached_channel(Channel_code,
+                   #state{channels=Channels_dict,
+                          channels_cache=Channels_cache_dict}=State,
+                  Extra_data) ->
     case dict:find(Channel_code, Channels_dict) of
 	{ok, Channel_pid} -> Result = Channel_pid,
 			     {ok, Result, State};
 	error ->
 	    case dict:find(Channel_code, Channels_cache_dict) of
 		{ok, Cached_channel_pid} -> Result = Cached_channel_pid,
-					    {ok, Result, State};
+					    {{ok, Result}, State};
 		error ->
-		    %% result is not in Channel_dict nor Channel_cache_dict
-		    {ok, New_channel_pid}
-			= s_channel:get_channel(Channel_code),
-		    State2 = State#state{channels_cache=
-					     dict:store(Channel_code,
-							New_channel_pid,
-							Channels_cache_dict)},
-		    {ok, New_channel_pid, State2}
+                    %% result is not in Channel_dict nor Channel_cache_dict
+                    case get_or_create_channel(Channel_code,
+                                               State,
+                                               Extra_data) of
+                        {{ok, New_channel_pid}, State2} ->
+                            State3 = State2#state{channels_cache=
+                                                     dict:store(Channel_code,
+                                                                New_channel_pid,
+                                                                Channels_cache_dict)},
+                            {{ok, New_channel_pid}, State3};
+                        {{error, permission_denied}, State2} ->
+                            {{error, permission_denied}, State2}
+                    end
 	    end
     end.
+
+
+get_or_create_channel(Channel_code,
+                      #state{code=Code,
+                             permission_module=Permission_module,
+                             permission_state=Permission_state}=State,
+                     Extra_data)->
+    case s_global:get_channel(Channel_code) of
+        undefined ->
+            case Permission_module:has_permission(can_create_channel,
+                                                  Code,
+                                                  Channel_code,
+                                                  Extra_data,
+                                                  Permission_state) of
+                {true, Permission_state2} ->
+                    Result = s_channel_sup:start_child(Channel_code),
+                    State2 = State#state{permission_state=Permission_state2};
+                {false, Permission_state2} ->
+                    Result = {error, permission_denied},
+                    State2 = State#state{permission_state=Permission_state2}
+            end;
+        Pid when is_pid(Pid) ->
+            Result = {ok, Pid},
+            State2 = State
+    end,
+    {Result, State2}.

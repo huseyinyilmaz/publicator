@@ -12,14 +12,25 @@
 -define(EXTRA_DATA, []).
 -define(DELAY, 100).
 
+-define(PERMISSION_CONFIG,
+        {publicator_static_permission_backend,
+         [[{consumer_code, all},
+           {extra_data, []},
+           {channel_code, all},
+           {can_publish, true},
+           {can_subscribe, true},
+           {can_subscribe_all_events, true},
+           {can_create_channel, true}]]}).
+
 setup_server()->
     lager:start(),
     lager:info("Setup server"),
     Configuration = {publicator_static_auth_backend,
                      [[{consumer_code, all},
-                      {group, all},
-                      {auth_info, all}]]},
+                       {auth_info, all},
+                       {extra_data, []}]]},
     s_utils:set_env(server, auth_backend, Configuration),
+    s_utils:set_env(server, permission_backend, ?PERMISSION_CONFIG),
     ok = server:start().
 
 cleanup_server(_)->

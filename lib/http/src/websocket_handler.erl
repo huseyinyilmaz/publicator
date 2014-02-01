@@ -186,7 +186,8 @@ handle_subscribe_request(Handler_type_bin,
 		       <<"message_only">> -> message_only;
 		       <<"all">> -> all
 		   end,
-    case server:subscribe(Session_id, Channel_code, Handler_type) of
+    {Headers, Req2} = cowboy_req:headers(Req),
+    case server:subscribe(Session_id, Channel_code, Handler_type, Headers) of
 	{error, invalid_channel_code} ->
 	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
         {error, consumer_not_found} ->
@@ -196,7 +197,7 @@ handle_subscribe_request(Handler_type_bin,
 	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)
 	    
     end,
-    {reply, {text, Result}, Req, State}.
+    {reply, {text, Result}, Req2, State}.
 
 
 log(State, String)->

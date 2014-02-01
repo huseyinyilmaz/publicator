@@ -13,9 +13,8 @@
 %% API
 -export([start_link/1]).
 -export([publish/2]).
--export([get_channel/3]).
 -export([get_consumers/1]).
--export([add_consumer/4]).
+-export([add_consumer/5]).
 -export([remove_consumer/2]).
 -export([remove_consumer_from_list/2]).
 
@@ -49,22 +48,13 @@ publish(Channel_pid, Message) ->
     gen_server:cast(Channel_pid, {publish, Message}).
 
 
--spec get_channel(Consumer_code::binary(),
-                  Channel_code::binary(),
-                  Extra_data::binary)->{ok, pid()}|
-                                       {error, permission_denied}.
-get_channel(Consumer_code, Channel_code, Extra_data)->
-    case s_global:get_channel(Channel_code) of
-	undefined -> s_channel_sup:start_child(Consumer_code, Channel_code, Extra_data);
-	Pid when is_pid(Pid) -> {ok, Pid}
-    end.
 %spec get_consumers(Channel_pid::binary()) -> {ok, [pid()]}.
 get_consumers(Channel_pid) ->
     {ok, Consumer_list} = gen_server:call(Channel_pid, get_consumers),
     {ok, Consumer_list}.
 
-add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type) ->
-    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type}).
+add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type, Extra_data) ->
+    gen_server:call(Channel_pid, {add_consumer, Consumer_pid, Consumer_code, Handler_type, Extra_data}).
 
 remove_consumer(Channel_pid, Consumer_code) ->
     gen_server:call(Channel_pid, {remove_consumer, Consumer_code}).

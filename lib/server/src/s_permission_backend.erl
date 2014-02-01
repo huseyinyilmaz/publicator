@@ -25,9 +25,9 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
--callback permissions(Consumer_Code::binary(),
-                      Channel_code::binary(),
-                      State::term()) -> permission_type().
+-callback get_permissions(Consumer_Code::binary(),
+                          Channel_code::binary(),
+                          State::term()) -> permission_type().
 
 
 %%%===================================================================
@@ -36,4 +36,5 @@
 -spec get_permission_backend()->{Module::atom(), Configuration::term()}.
 get_permission_backend() ->
     {ok, {Module, Args}} = application:get_env(server, permission_backend),
-    {Module, Args}.
+    State = Module:init_state(Args),
+    {Module, State}.

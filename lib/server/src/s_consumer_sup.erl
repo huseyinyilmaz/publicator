@@ -30,16 +30,18 @@
 -spec start_child(Auth_info::binary(),
                  Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
 start_child(Auth_info, Extra_data) ->
-    {Auth_backend, Auth_args} = s_auth_backend:get_authentication_backend(),
+    {Auth_backend, Auth_state} = s_auth_backend:get_authentication_backend(),
     Code = s_utils:generate_code(),
-    Auth_state = Auth_backend:init_state(Auth_args),
-    lager:info("~p~n", [{start_new_consumer, Code, Auth_info, Auth_state}]),
     case Auth_backend:authenticate(Code, Auth_info, Extra_data, Auth_state) of
         denied ->
-            lager:debug("Permission denied for code=~p", [Code]),
+            lager:info("Permission denied for code=~p", [Code]),
             {error, permission_denied};
         granted ->
-            Args_to_append = [Code, Auth_backend, Auth_state],
+            lager:info("Starting new consumer ~nCode=~p~n~nAuth_info=~p~nAuth_state=~p~n",
+                       [Code, Auth_info, Auth_state]),
+            {Permission_module, Permission_state} =
+                s_permission_backend:get_permission_backend(),
+            Args_to_append = [Code, Permission_module, Permission_state],
             case supervisor:start_child(?SERVER, Args_to_append) of
                 {ok, Pid} -> {ok, Code, Pid};
                 {error, {already_exists, _Pid}} -> start_child(Auth_info, Extra_data)
