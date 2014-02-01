@@ -41,17 +41,41 @@ init_state(Args) ->
                      Channel_code::binary(),
                      Extra_data::term(),
                      State::term()) -> {Result::boolean(), New_State::term()}.
-has_permission(can_create_channel, _Consumer_code, _Chanel_code, _Extra_data, _State)->
-    lager:debug("permission backend can_create_channel"),
-    {true, _State};
-has_permission(can_publish, _Consumer_code, _Chanel_code, _Extra_data, _State)->
-    lager:debug("permission backend can_publish"),
-    {true, _State};
-has_permission(can_subscribe_messages, _Consumer_code, _Chanel_code, _Extra_data, _State)->
-    lager:debug("permission backend can_subscribe_messages"),
-    {true, _State};
-has_permission(can_subscribe_all_events, _Consumer_code, _Chanel_code, _Extra_data, _State)->
-    lager:debug("permission backend can_subscribe_all_events"),
-    {true, _State};
-has_permission(_Permission, _Consumer_code, _Chanel_code, _Extra_data, _State)->
-    {true, _State}.
+
+has_permission(Permission, Consumer_code, Channel_code, Extra_data,
+               #state{filter_list=Filter_list}=State)->
+    {lists:any(fun(Filter)->
+                       can_pass_filter(Filter,
+                                       Permission,
+                                       Consumer_code,
+                                       Channel_code,
+                                       Extra_data)
+                   end, Filter_list), State}.
+
+
+
+can_pass_filter(#filter{
+                   consumer_code=Filter_consumer_code,
+                   extra_data=Filter_extra_data,
+                   channel_code=Filter_channel_code,
+                   can_publish=Filter_can_publish,
+                   can_subscribe_messages=Filter_can_subscribe_messages,
+                   can_subscribe_all_events=Filter_can_subscribe_all_events,
+                   can_create_channel=Filter_can_create_channel
+                  }, Permission, Consumer_code, Channel_code, Extra_data)->
+
+    case lists:all(fun({Value,Filter_value})->
+                           s_backend_utils:is_equal_or_all(Value,Filter_value)end,
+                   [{Consumer_code,Filter_consumer_code},
+                    {Channel_code, Filter_channel_code}])
+        and s_backend_utils:is_extra_data_passes(Extra_data, Filter_extra_data) of
+
+        true->
+            case Permission of
+                can_publish-> Filter_can_publish;
+                can_subscribe_messages->Filter_can_subscribe_messages;
+                can_subscribe_all_events->Filter_can_subscribe_all_events;
+                can_create_channel->Filter_can_create_channel
+            end;
+        false -> false
+    end.

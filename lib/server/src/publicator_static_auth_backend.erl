@@ -73,22 +73,8 @@ can_authenticate(#auth_filter{consumer_code=Filter_consumer_code,
                  Auth_info,
                  Extra_data)->
 
-    lists:all(fun({Value,Filter_value})->is_equal_or_all(Value,Filter_value)end,
-                   [{Consumer_code,Filter_consumer_code},
-                    {Auth_info, Filter_auth_info}])
-        and is_extra_data_passes(Extra_data, Filter_extra_data).
-
-%% if Filter value is all or Value equals to filter value return true
-is_equal_or_all(_Value, all) -> true;
-is_equal_or_all(Value, Filter_value)-> Value ==Filter_value.
-
-%% check if all filter_extra_data exists in Extra_data.
-is_extra_data_passes(Extra_data, Filter_extra_data) ->
-    is_extra_data_passes(Extra_data, Filter_extra_data, true).
-
-is_extra_data_passes(_Extra_data, _Filter_extra_data, false) -> false;
-is_extra_data_passes(_Extra_data, [], true) -> true;
-is_extra_data_passes(Extra_data, [{Key, Value}| Filter_extra_data], true)->
-    is_extra_data_passes(Extra_data,
-                         Filter_extra_data,
-                         proplists:get_value(Key, Extra_data, all) == Value).
+    lists:all(fun({Value,Filter_value})->
+                      s_backend_utils:is_equal_or_all(Value,Filter_value)end,
+              [{Consumer_code,Filter_consumer_code},
+               {Auth_info, Filter_auth_info}])
+        and s_backend_utils:is_extra_data_passes(Extra_data, Filter_extra_data).
