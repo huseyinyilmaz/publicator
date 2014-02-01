@@ -47,7 +47,9 @@ setup_server_close_all_permissions() ->
 
 cleanup_server(_) ->
     lager:debug("Cleanup server"),
-    ok = server:stop().
+    ok = server:stop(),
+    application:stop(lager),
+    application:stop(goldrush).
 
 server_opened_auth_test_() ->
     {setup,

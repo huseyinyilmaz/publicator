@@ -175,18 +175,38 @@ handle_call(get_code, _From, #state{code=Code}=State) ->
     Reply = {ok, Code},
     {reply, Reply, State, ?TIMEOUT};
 
-handle_call({publish, Channel_code, Message, Extra_data}, _From, State) ->
+handle_call({publish, Channel_code, Message, Extra_data}, _From,
+            #state{code=Code,
+                   permission_module=Permission_module,
+                   permission_state=Permission_state}=State) ->
     case get_cached_channel(Channel_code, State, Extra_data) of
         {{ok, Channel_pid}, State2} ->
-            s_channel:publish(Channel_pid, Message),
-            {reply, ok, State2, ?TIMEOUT};
+            case Permission_module:has_permission(can_publish,
+                                                  Code,
+                                                  Channel_code,
+                                                  Extra_data,
+                                                  Permission_state) of
+                {true,Permission_state2} ->
+                    s_channel:publish(Channel_pid, Message),
+                    {reply,
+                     ok,
+                     State2#state{permission_state=Permission_state2},
+                     ?TIMEOUT};
+                {false,Permission_state2} ->
+                    {reply,
+                     {error, permission_denied},
+                     State2#state{permission_state=Permission_state2},
+                     ?TIMEOUT}
+            end;
         {{error, permission_denied}, State2} ->
             {reply, {error, permission_denied}, State2, ?TIMEOUT}
     end;
 
 handle_call({subscribe, Channel_code, Handler_type, Extra_data}, _From,
 	    #state{code=Code,
-		   channels=Channels_dict}=State) ->
+		   channels=Channels_dict,
+                   permission_module=Permission_module,
+                   permission_state=Permission_state}=State) ->
     case get_cached_channel(Channel_code, State, Extra_data) of
         {{ok, Channel_pid}, State2} ->
             Reply = ok,
@@ -195,16 +215,35 @@ handle_call({subscribe, Channel_code, Handler_type, Extra_data}, _From,
                 true ->
                     {reply, Reply, State, ?TIMEOUT};
                 false ->
-                    ok = s_channel:add_consumer(Channel_pid, self(), Code, Handler_type),
-                    {reply, Reply, State2#state{channels=dict:store(Channel_code,
-                                                                    Channel_pid,
-                                                                    Channels_dict)},
-                     ?TIMEOUT}
+                    case Permission_module:has_permission(
+                           case Handler_type of
+                               all -> can_subscribe_all_events;
+                               message_only -> can_subscribe_messages
+                           end,
+                           Code,
+                           Channel_code,
+                           Extra_data,
+                           Permission_state) of
+                        {true, Permission_state2} ->
+                            ok = s_channel:add_consumer(Channel_pid, self(), Code, Handler_type),
+                            {reply,
+                             Reply,
+                             State2#state{channels=dict:store(Channel_code,
+                                                              Channel_pid,
+                                                              Channels_dict),
+                                          permission_state=Permission_state2},
+                             ?TIMEOUT};
+
+                        {false, Permission_state2} ->
+                            {reply,
+                             {error, permission_denied},
+                             State2#state{permission_state=Permission_state2},
+                             ?TIMEOUT}
+                    end
             end;
         {{error, permission_denied}, State2} ->
             {reply, {error, permission_denied}, State2}
     end;
-
 
 handle_call({unsubscribe, Channel_code}, _From,
 	    #state{channels=Channels_dict,
@@ -403,9 +442,9 @@ get_cached_channel(Channel_code,
                                                Extra_data) of
                         {{ok, New_channel_pid}, State2} ->
                             State3 = State2#state{channels_cache=
-                                                     dict:store(Channel_code,
-                                                                New_channel_pid,
-                                                                Channels_cache_dict)},
+                                                      dict:store(Channel_code,
+                                                                 New_channel_pid,
+                                                                 Channels_cache_dict)},
                             {{ok, New_channel_pid}, State3};
                         {{error, permission_denied}, State2} ->
                             {{error, permission_denied}, State2}

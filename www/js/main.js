@@ -49,29 +49,31 @@ $(function(){
                                 alert("Given chanel name is invalid.");
                             }
                             else{
-			console.error('An Error ocurred on server. Starting a new connection');
-			console.error('error: ' + e.data);
-			publicatorApp.router.start_new_session();
-                    }
-                    break;
+			        console.error('An Error ocurred on server. Starting a new connection');
+			        console.error('error: ' + e.data);
+			        publicatorApp.router.start_new_session();
+                            }
+                            break;
 
-		}//end switch
-            }, this));
+		        }//end switch
+                    }, this));
 
-            client.onopen(_.bind(function(){
-		this.log('onopen');
-		this.render_connected();
-		// client.subscribe('channel_a');
-		client.get_subscribtions();
-		// client.get_subscribtions();
-		// client.publish('channel_a', 'sample message text');
-            },this));
+                    client.onopen(_.bind(function(){
+		        this.log('onopen');
+		        this.render_connected();
+		        // client.subscribe('channel_a');
+		        client.get_subscribtions();
+		        // client.get_subscribtions();
+		        // client.publish('channel_a', 'sample message text');
+                    },this));
 
-            client.onclose(_.bind(function(){
-		this.log('onclose');
-		this.render_disconnected();
-            },this));
-
+                    client.onclose(_.bind(function(){
+		        this.log('onclose');
+		        this.render_disconnected();
+                    },this));
+                    client.onerror(_.bind(function(error){
+                        console.error("error", error);
+                    },this));
                     
                 },this),
                 session_id);

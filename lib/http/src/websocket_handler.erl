@@ -177,8 +177,19 @@ handle_terminate(#state{session_id=Session_id}=State)->
 handle_publish_request(Channel_code, Message, Req,
                        #state{session_id=Session_id}=State) ->
     {Headers, Req2} = cowboy_req:headers(Req),
-    ok = server:publish(Session_id, Channel_code, Message, Headers),
-    {ok, Req2, State}.
+    case server:publish(Session_id, Channel_code, Message, Headers) of
+        ok -> {ok, Req2, State};
+        {error, consumer_not_found} ->
+            {reply,
+             {text, h_utils:make_response(<<"error">>, <<"consumer_not_found">>)},
+             Req2,
+             State};
+        {error, permission_denied} ->
+            {reply,
+             {text, h_utils:make_response(<<"error">>, <<"permission_denied">>)},
+             Req2,
+             State}
+    end.
 
 handle_subscribe_request(Handler_type_bin,
 			 Channel_code, Req,
@@ -193,6 +204,9 @@ handle_subscribe_request(Handler_type_bin,
 	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
         {error, consumer_not_found} ->
             Result = h_utils:make_response(<<"error">>, <<"consumer_not_found">>);
+        {error, permission_denied} ->
+            Result = h_utils:make_response(<<"error">>, <<"permission_denied">>);
+        
 	ok->
 	    ok = server:add_message_handler(Session_id, self()),
 	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)

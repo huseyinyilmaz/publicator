@@ -35,7 +35,8 @@ setup_server()->
 
 cleanup_server(_)->
     lager:info("Cleanup server"),
-    ok = server:stop().
+    ok = server:stop(),
+    application:stop(lager).
 
 server_uninitialized_session_test_()->
     {setup,

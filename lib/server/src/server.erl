@@ -77,7 +77,8 @@ get_messages(Consumer_code) ->
 publish(Consumer_code, Channel_code, Message, Extra_data)->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
-	    ok = s_consumer:publish(Consumer_pid, Channel_code, Message, Extra_data);
+            %% returns ok or permission denied
+	    s_consumer:publish(Consumer_pid, Channel_code, Message, Extra_data);
 	{error, not_found} -> {error, consumer_not_found}
     end.
 
