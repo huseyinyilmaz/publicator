@@ -18,7 +18,7 @@
            {extra_data, []},
            {channel_code, all},
            {can_publish, true},
-           {can_subscribe, true},
+           {can_subscribe_messages, true},
            {can_subscribe_all_events, true},
            {can_create_channel, true}]]}).
 
@@ -36,7 +36,8 @@ setup_server()->
 cleanup_server(_)->
     lager:info("Cleanup server"),
     ok = server:stop(),
-    application:stop(lager).
+    application:stop(lager),
+    application:stop(goldrush).
 
 server_uninitialized_session_test_()->
     {setup,

@@ -17,7 +17,7 @@
            {extra_data, []},
            {channel_code, all},
            {can_publish, true},
-           {can_subscribe, true},
+           {can_subscribe_messages, true},
            {can_subscribe_all_events, true},
            {can_create_channel, true}]]}).
 -define(DELAY, 100).
