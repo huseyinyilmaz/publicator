@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 18 Jan 2014 by Huseyin Yilmaz <huseyin@huseyins-air.home>
 %%%-------------------------------------------------------------------
--module(publicator_static_auth_backend).
+-module(publicator_http_auth_backend).
 -behivour(s_auth_backend).
 %% API
 -export([init_state/1, authenticate/4]).
@@ -17,19 +17,17 @@
                       auth_info::binary()|all,
                       extra_data::list()|all}).
 
--record(state, {filter_list::list()}).
+-record(state, {url::list()|binary()}).
 
+-define(OPTS, []).
+-define(TIMEOUT, 10000).
+-define(RETRY, 3).
 %%%===================================================================
 %%% API
 %%%===================================================================
 -callback init_state(Auth_args::term()) -> New_state::term().
 init_state(Auth_args) ->
-    Auth_list = [#auth_filter{consumer_code=proplists:get_value(consumer_code, Auth_arg, all),
-                              auth_info=proplists:get_value(auth_info, Auth_arg, all),
-                              extra_data=proplists:get_value(extra_data, Auth_arg, [])
-                             }
-                 || Auth_arg <- Auth_args],
-    #state{filter_list=Auth_list}.
+    #state{url=proplists:get_value(url, Auth_args)}.
 
 
 
@@ -49,29 +47,28 @@ init_state(Auth_args) ->
 
 -spec authenticate(Consumer_code::binary(),
                    Auth_info::binary(),
-                   Extra_data::term(),
+                   Extra_data::list(),
                    State::term()) -> boolean().
-authenticate(Consumer_code, Auth_info, Extra_data, #state{filter_list=Filter_list}=_State) ->
-    lists:any(fun(Filter)->
-                      can_authenticate(Filter,
-                                       Consumer_code,
-                                       Auth_info,
-                                       Extra_data)
-              end, Filter_list).
+authenticate(Consumer_code, Auth_info, Extra_data, State)->
+    authenticate(Consumer_code, Auth_info, Extra_data, State, ?RETRY).
+
+authenticate(_Consumer_code, _Auth_info, _Extra_data, _State, 0) ->
+    false;
+authenticate(Consumer_code, Auth_info, Extra_data, #state{url=Url}=State, Retry) ->
+    Data= jiffy:encode({[{<<"consumer_code">>, Consumer_code},
+                         {<<"auth_info">>, Auth_info},
+                         {<<"extra_data">>, {Extra_data}}]}),
+    case ibrowse:send_req(Url, [{"Content-Type", "text/html"}],
+                          post, Data, ?OPTS, ?TIMEOUT) of
+        {ok, "200", _Headers, Body} ->
+            lager:debug("Data returned from auth server=~p~n", [Body]),
+            {[{<<"authenticate">>,Result}]} = jiffy:decode(Body),
+            Result;
+        {error, req_timedout}->
+            lager:warning("Could not reach the auth server. retrying ~p more times", [Retry]),
+            authenticate(Consumer_code, Auth_info, Extra_data, State, Retry-1)
+    end.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
--spec can_authenticate(tuple(), binary(), term(), list()) -> boolean().
-can_authenticate(#auth_filter{consumer_code=Filter_consumer_code,
-                              auth_info=Filter_auth_info,
-                              extra_data=Filter_extra_data},
-                 Consumer_code,
-                 Auth_info,
-                 Extra_data)->
-
-    lists:all(fun({Value,Filter_value})->
-                      s_backend_utils:is_equal_or_all(Value,Filter_value)end,
-              [{Consumer_code,Filter_consumer_code},
-               {Auth_info, Filter_auth_info}])
-        and s_backend_utils:is_extra_data_passes(Extra_data, Filter_extra_data).

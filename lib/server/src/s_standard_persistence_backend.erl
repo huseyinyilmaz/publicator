@@ -37,7 +37,7 @@ init() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec init(development | production) -> ok.
-init(Init_type) ->
+init(_Init_type) ->
     % ensure that /tmp/mnesia directory is present
     ok = filelib:ensure_dir("/tmp/mnesia/ensure.txt"),
     stopped = mnesia:stop(),

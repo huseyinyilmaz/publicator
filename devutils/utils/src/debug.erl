@@ -38,7 +38,6 @@ init() ->
     code:add_patha("deps/jiffy/ebin"),
     code:add_patha("deps/mimetypes/ebin"),
     code:add_patha("deps/ibrowse/ebin"),
-
     code:add_patha("lib/http/ebin"),
     code:add_patha("lib/server/ebin"),
     lager:start(),
@@ -49,7 +48,9 @@ init() ->
 -spec start() -> ok.
 start() ->
     io:format("Starting apps", []),
+    {ok, _} = ibrowse:start(),
     ok = server:start(),
+    
     ok = http:start(),
     ok.
 
@@ -57,6 +58,7 @@ start() ->
 stop() ->
     http:stop(),
     server:stop(),
+    ibrowse:stop(),
     ok.
 
 -spec restart() -> ok.

@@ -32,6 +32,8 @@
 %%--------------------------------------------------------------------
 -spec start() -> ok.
 start() ->
+    ok = s_utils:ensure_started(lager),
+    ok = s_utils:ensure_started(ibrowse),
     ok = s_utils:ensure_started(server).
 
 

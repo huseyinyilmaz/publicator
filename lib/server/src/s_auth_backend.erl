@@ -12,13 +12,6 @@
 
 -export([get_authentication_backend/0]).
 
--record(auth_filter, {consumer_code::binary()|all,
-                      auth_info::binary()|all,
-                      extra_data::list()|all}).
-
--record(state, {filter_list::list()}).
-
-
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
