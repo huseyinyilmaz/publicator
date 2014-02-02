@@ -52,8 +52,7 @@
                 send_message: function(obj){
                     if(enable_logging && console)
                         console.log('request', obj);
-                    var json_string = JSON.stringify(obj);
-                    this.websocket.send(json_string);
+                    this.transport.send(obj);
                 },
 
                 subscribe: function(channel_code, handler_type){
@@ -115,63 +114,120 @@
             // if(this.host !== ''){
             var websocket_host = publicator.host;
             // }
-            var url = 'ws://' + websocket_host + '/' + session_id + '/ws/';
-            console.log('websocket host = ' + url);
-            var websocket = new WebSocket(url);
-
-            publicatorClient.websocket = websocket;
 
             function call_fun_list(fun_list, evt){
                 fun_list.forEach(function(element){element(evt);});}
 
-            // Bind websocket events to publicatorClient events
-            websocket.onopen = function(evt){
+            var Transport = publicator.transports.websocket;
+            var transport = Transport(publicator.host, session_id, false);
+            publicatorClient.transport = transport;
+
+            transport.onopen(function(evt){
                 // if publicatorClient is being initialized return
                 // putlicatorClient to callback
                 if(publicatorClient.status === publicatorClient.status_list.initializing){
                     callback(publicatorClient);
                 }
-                call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);};
+                call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);});
 
-            websocket.onclose = function(evt){
-                // restart connection if necessary.
-                call_fun_list(publicatorClient.handlers.onclose_handler_list, evt);};
 
+            transport.onmessage(function(obj){
+                switch(obj.type){
+                case 'subscribed':
+                    publicatorClient.trigger_info(obj);
+                    break;
+                case 'consumers':
+                    publicatorClient.trigger_info(obj);
+                    break;
+                case 'add_subscribtion':
+                    publicatorClient.trigger_info(obj);
+                    break;
+                case 'remove_subscribtion':
+                    publicatorClient.trigger_info(obj);
+                    break;
+                case 'error':
+                    publicatorClient.trigger_error(obj);
+                    break;
+                default:
+                    publicatorClient.trigger_message(obj);
+                    break;
+                }});
+            
+            return publicatorClient;
+        }//get_client
+    };//window.publicator
+
+
+    /////////////////////////////////////////////////////////////
+    ////////////////
+    // TRANSPORTS //
+    ////////////////
+    
+    publicator.transports = {};
+
+    /////////////////////////
+    // Websocket Transport //
+    /////////////////////////
+    publicator.transports.websocket =
+        function(host, session_id, is_secure){
+            var handlers = {
+                onopen_handler_list: [],
+                onclose_handler_list: [],
+                onmessage_handler_list:[],
+                onerror_handler_list:[]};
+
+            var transport = {
+
+                onopen:function(fun){handlers.onopen_handler_list.push(fun);},
+                onclose:function(fun){handlers.onclose_handler_list.push(fun);},
+                onmessage:function(fun){handlers.onmessage_handler_list.push(fun);},
+                onerror:function(fun){handlers.onerror_handler_list.push(fun);},
+
+                send: function(obj){
+                    var json_string = JSON.stringify(obj);
+                    transport.websocket.send(json_string);
+                },
+                trigger_message: function(data){
+                    handlers.onmessage_handler_list.forEach(
+                        function(fun){fun(data);});
+                },
+                trigger_onopen: function(){
+                    handlers.onopen_handler_list.forEach(
+                        function(fun){fun();});
+                },
+                trigger_onclose: function(){
+                    handlers.onclose_handler_list.forEach(
+                        function(fun){fun();});
+                },
+                trigger_error: function(data){
+                    handlers.onerror_handler_list.forEach(
+                        function(fun){fun(data);});
+                }};//transport
+            
+            var url = (is_secure?'wss://':'ws://') + host + '/' +
+                    session_id + '/ws/';
+            
+            var websocket = new WebSocket(url);
+            transport.websocket = websocket;
+            // Bind websocket events to publicatorClient events
+            
+            websocket.onopen = transport.trigger_onopen;
+            websocket.onclose = transport.trigger_on_close;
+    
             websocket.onerror = function(evt){
-                // trigger websocket error messages.
-                call_fun_list(publicatorClient.handlers.onerror_handler_list, evt);};
-
+                transport.trigger_on_error(evt);};
+    
             websocket.onmessage = function(evt){
                 console.log('Websocket_on_message_handler', evt);
                 if(evt.type == 'message'){
                     var obj = JSON.parse(evt.data);
-                    switch(obj.type){
-                    case 'subscribed':
-                        publicatorClient.trigger_info(obj);
-                        break;
-                    case 'consumers':
-                        publicatorClient.trigger_info(obj);
-                        break;
-                    case 'add_subscribtion':
-                        publicatorClient.trigger_info(obj);
-                        break;
-                    case 'remove_subscribtion':
-                        publicatorClient.trigger_info(obj);
-                        break;
-                    case 'error':
-                        publicatorClient.trigger_error(obj);
-                        break;
-                    default:
-                        publicatorClient.trigger_message(obj);
-                        break;
-                    }
+                    transport.trigger_message(obj);
                 }else if(evt.type == 'error'){
-                    publicatorClient.trigger_error(evt.data);
+                    transport.trigger_error(evt.data);
                 }else{
-                    publicatorClient.trigger_error(evt);
+                    transport.trigger_error(evt);
                 }
             };
-            return publicatorClient;
-        }
-    };
+            return transport;
+        };//websocket transport
 }());
