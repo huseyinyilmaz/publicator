@@ -23,6 +23,7 @@
 -export([push_add_subscribtion/3]).
 
 -export([push_remove_subscribtion/3]).
+-export([push_cached_message/3]).
 -export([get_consumers/3]).
 
 %% gen_server callbacks
@@ -87,6 +88,10 @@ get_messages(Pid, Channel_code) ->
 -spec push_message(pid(), binary(), binary())-> ok.
 push_message(Pid, Channel_code, Message) ->
     gen_server:cast(Pid, {push_message, Channel_code, Message}).
+
+-spec push_cached_message(pid(), binary(), binary())-> ok.
+push_cached_message(Pid, Channel_code, Message) ->
+    gen_server:cast(Pid, {push_cached_message, Channel_code, Message}).
 
 -spec push_add_subscribtion(pid(), binary(), binary())-> ok.
 push_add_subscribtion(Pid, Channel_code, Consumer_code) ->
@@ -327,6 +332,9 @@ handle_call({get_consumers,
 %%--------------------------------------------------------------------
 handle_cast({push_message, Channel_code, Message}, State) ->
     handle_cast({push, message, Channel_code, Message}, State);
+
+handle_cast({push_cached_message, Channel_code, Message}, State) ->
+    handle_cast({push, cached_message, Channel_code, Message}, State);
 
 handle_cast({push_add_subscribtion, Channel_code, Consumer_code}, State) ->
     handle_cast({push, add_subscribtion, Channel_code, Consumer_code}, State);

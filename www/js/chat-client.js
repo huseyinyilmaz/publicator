@@ -158,6 +158,9 @@
                                     case 'message':
                                         that._receive_message(data.data);
                                         break;
+                                    case 'cached_message':
+                                        that._receive_cached_message(data.data);
+                                        break;
                                     default:
                                         console.log("INVALID XXX data", data);
                                     }
@@ -223,18 +226,12 @@
                         break;
                     case 'start_writing':
                         this.update_user_writing_state(data.data, true);
-                        
                         this.trigger_writing_change();
                         break;
                     case 'stop_writing':
                         this.update_user_writing_state(data.data, false);
                         this.trigger_writing_change();
                         break;
-                    case 'user_removed':
-                        chatApp.log('Remove user: ' + data.code);
-                        chatApp.remove_user(data.code);
-                        break;
-        
                     case 'error':
                         chatApp.log('ERROR: ' + data.message );
                         alert(data.data);
@@ -242,12 +239,29 @@
                     }
         
                 },
+
+                _receive_cached_message: function(data){
+                    if(enable_logging && console)
+                        console.log('cached_response, chat-client', data);
+                    switch(data.type){
+                    case 'message':
+                        var user_code = data.code;
+                        this.trigger_message(data);
+                        break;
+                    default:
+                        // do nothing for other message types
+                        break;
+                    };
         
+                },
+
+                
                 send_message: function(msg){
                     if(enable_logging && console)
                         console.log('request, chat-client', msg);
                     this.client.publish(this.room_code,
                                         {code:this.user.code,
+                                         nick:this.user.nick,
                                          type: 'message',
                                          data: msg});
         

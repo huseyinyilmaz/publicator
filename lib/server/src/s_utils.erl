@@ -10,6 +10,7 @@
 
 %% API
 -export([generate_code/0, get_env/3, set_env/3, ensure_started/1]).
+-export([get_channel_cache_size/1]).
 
 %%%===================================================================
 %%% API
@@ -59,7 +60,22 @@ ensure_started(App) ->
             ok
     end.
 
+get_channel_cache_size(Channel_code)->
+    Channel_cache_list = get_env(server, channel_cache, [{all, 0}]),
+    Count = choose_channel_cache(Channel_code,Channel_cache_list),
+    lager:info("================================================="),
+    lager:info("Chosen count for ~p is ~p", [Channel_code, Count]),
+    Count.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
+
+choose_channel_cache(Channel_code,[{Name,Count}|Channel_cache_list]) ->
+    case Name of
+        Channel_code -> Count;
+        all -> Count;
+        _ ->
+            choose_channel_cache(Channel_code,Channel_cache_list)
+    end.
+            

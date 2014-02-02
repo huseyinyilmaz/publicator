@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1]).
+-export([start_link/2]).
 -export([publish/2]).
 -export([get_consumers/1]).
 -export([add_consumer/4]).
@@ -26,7 +26,10 @@
 -define(TIMEOUT, 1000).
 
 -record(state, {code :: binary(),
-		consumer_table :: ets:tid()}).
+		consumer_table :: ets:tid(),
+                cache_size :: number(),
+                current_cache_size :: number(),
+                cache :: queue()}).
 
 -include("../include/server.hrl").
 
@@ -40,8 +43,8 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
-start_link(Code) ->
-    gen_server:start_link(?MODULE, [Code], []).
+start_link(Code, Cache_size) ->
+    gen_server:start_link(?MODULE, [Code, Cache_size], []).
 
 
 publish(Channel_pid, Message) ->
@@ -77,12 +80,16 @@ remove_consumer_from_list(Channel_pid, Consumer_code) ->
 %% @end
 %%--------------------------------------------------------------------
 %% if a channel with same name is already registered stop this server 
-init([Code]) ->
+init([Code, Cache_size]) ->
     Self = self(),
     case s_global:get_or_register_channel(Code) of
 	Self ->
             {ok, #state{code=Code,
-			consumer_table=ets:new(consumer_table,[set, public])}};
+			consumer_table=ets:new(consumer_table,[set, public]),
+                        cache_size=Cache_size,
+                        current_cache_size=0,
+                        cache=queue:new()
+                       }};
 	Pid when is_pid(Pid) -> 
 	    {stop, {already_exists, Pid}}
     end.
@@ -104,15 +111,18 @@ init([Code]) ->
 handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
 	    #state{consumer_table=Consumer_table,
 		   code=Channel_code}=State)->
-    
+    %% Send cache to newly subscribed consumer
+    gen_server:cast(self(), {send_cache_to_consumer_pid, Consumer_pid}),
+    %% Add  Consumer to new channel
     ets:insert(Consumer_table,[{Consumer_code, {Consumer_pid, Handler_type}}]),
     lager:info("Consumer ~p was subscribed to channel ~p with type ~p",[Consumer_code,
 									Channel_code,
 									Handler_type]),
+    %% send subscribtio notification to consumers that subscribed with 'all'' option
     Handler_list = ets:match(Consumer_table, {'$1', {'$2', all}}),
 
     lists:foldl(fun([C_code, C_pid], Acc) ->
-			%% Do not sent message to new created message
+			%% Do not sent message to newly subscribed consumer
 			case C_code of
 			    Consumer_code -> ok;
 			    _ ->s_consumer:push_add_subscribtion(C_pid,
@@ -121,11 +131,9 @@ handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
 				Acc
 			end
 		end, ok, Handler_list),
-    
-    lager:warning("VALUE XXX"),
-    lager:warning("Handlers_list=~p~n", [Handler_list]),
 
     Reply = ok,
+    
     {reply, Reply, State, ?TIMEOUT};
 
 %% Delete consumer from consumer_table
@@ -166,8 +174,8 @@ handle_call(get_consumers, _From,
 
 handle_call(Request, _From, State) ->
     Reply = ok,
-    lager:warning("Unhandled data reached. ~p~n", [Request]),
-    {reply, Reply, State}.
+    lager:warning("Unhandled call data reached. ~p~n", [Request]),
+    {reply, Reply, State, ?TIMEOUT}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -181,15 +189,39 @@ handle_call(Request, _From, State) ->
 %%--------------------------------------------------------------------
 handle_cast({publish, Message},
 	    #state{code=Channel_code,
-		   consumer_table=Consumer_table}=State)->
+		   consumer_table=Consumer_table,
+                   cache_size=Cache_size,
+                   current_cache_size=Current_cache_size,
+                   cache=Cache}=State)->
     %% todo run this on another temprary process
     ets:foldl(fun({_Consumer_Code, {Consumer_pid, _Handler_type}}, Acc) ->
 		      s_consumer:push_message(Consumer_pid, Channel_code, Message),
 		      Acc
 	      end, ok, Consumer_table),
+    if
+        Cache_size =< Current_cache_size ->
+            Cache1 = queue:drop(queue:in(Message,Cache)),
+            Current_cache_size1 = Current_cache_size;
+        Cache_size > Current_cache_size ->
+            Cache1 = queue:in(Message,Cache),
+            Current_cache_size1 = Current_cache_size + 1
+    end,
+
+    {noreply, State#state{current_cache_size=Current_cache_size1,
+                          cache=Cache1}, ?TIMEOUT};
+
+
+handle_cast({send_cache_to_consumer_pid, Consumer_pid},
+            #state{code=Channel_code,
+                   cache=Cache}=State) ->
+    lists:foreach(fun(Message)->
+                          s_consumer:push_cached_message(Consumer_pid, Channel_code, Message)
+                  end, queue:to_list(Cache)),
+
     {noreply, State, ?TIMEOUT};
 
-handle_cast(_Msg, State) ->
+handle_cast(Msg, State) ->
+    lager:warning("Unhandled cast message=~p", [Msg]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------

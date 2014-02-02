@@ -133,11 +133,14 @@ handle_request(<<"publish">>,
 
 handle_request(<<"get_consumers">>,
 	       {[{<<"channel_code">>,Channel_code}]},
-	       Req, State) ->
-    {ok, Consumers_data} = server:get_consumers(Channel_code),
+	       Req, #state{session_id=Session_id}=State) ->
+    {Headers, Req2} = cowboy_req:headers(Req),
+    {ok, Consumers_data} = server:get_consumers(Session_id,
+                                                Channel_code,
+                                                Headers),
     Result = h_utils:make_response(<<"consumers">>,Consumers_data,
                                   [{<<"channel_code">>, Channel_code}]),
-    {reply, {text, Result}, Req, State};
+    {reply, {text, Result}, Req2, State};
     
 handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
     Result = h_utils:make_response(<<"unhandled_msg">>, Data,
@@ -148,6 +151,11 @@ handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
 handle_info({message, Channel_code, Message}, Req, State)->
     Result = h_utils:make_response(<<"message">>, Message,
 			  [{<<"channel_code">>, Channel_code}]),
+    {reply, {text, Result}, Req, State};
+
+handle_info({cached_message, Channel_code, Message}, Req, State)->
+    Result = h_utils:make_response(<<"cached_message">>, Message,
+                                   [{<<"channel_code">>, Channel_code}]),
     {reply, {text, Result}, Req, State};
 
 handle_info({add_subscribtion, Channel_code, Consumer_code}, Req, State)->
