@@ -13,10 +13,6 @@
 
 -include("../include/server.hrl").
 
--record(auth_filter, {consumer_code::binary()|all,
-                      auth_info::binary()|all,
-                      extra_data::list()|all}).
-
 -record(state, {url::list()|binary()}).
 
 -define(OPTS, []).
