@@ -31,15 +31,15 @@
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
--define(TIMEOUT, 2 * 60 * 1000). % two minutes
+-define(TIMEOUT, 1 * 60 * 1000).                % 1 minute
 
--record(state, {code :: binary(), % consumer code
-		channels :: dict(), % consumer's channel list
-		channels_cache ::dict(), % channels cache that this consumer reached
-		messages :: dict(), % messages that this consumer got. (for rest interface)
-		handlers :: [pid()], % current listeners that will received messages
+-record(state, {code :: binary(),            % consumer code
+		channels :: dict(),          % consumer's channel list
+		channels_cache ::dict(),     % channels cache that this consumer reached
+		messages :: dict(),          % messages dict (for rest interface)
+		handlers :: [pid()],         % current listeners that will received messages
                 permission_module :: atom(), % permission_module
-                permission_state :: term() % permission_state
+                permission_state :: term()   % permission_state
                }).
 
 %%%===================================================================
@@ -411,7 +411,7 @@ terminate(Reason, #state{code=Code,
                       s_channel:remove_consumer(Pid, Code),
                       ok end, ok, Channel_dict),
 
-    lager:info("=============================================================="),
+    lager:debug("=============================================================="),
     lager:info("Terminate consumer ~p (~p)", [Code, Reason]),
     ok.
 

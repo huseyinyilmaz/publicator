@@ -23,7 +23,7 @@
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
--define(TIMEOUT, 1000).
+-define(TIMEOUT, 10 * 60 * 1000).               % 10 minuttes
 
 -record(state, {code :: binary(),
 		consumer_table :: ets:tid(),
@@ -234,7 +234,22 @@ handle_cast(Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
+handle_info(timeout, #state{code=Code,
+                            consumer_table=Consumer_table}=State)->
+    lager:info("Channel ~p has timeout", [Code]),
+    Consumer_list = ets:match(Consumer_table, {'$1', {'$2', '_'}}),
+    case Consumer_list of
+	[] ->
+	    lager:info("~p - All consumers are dead. Channel is dying.", [Code]),
+            {stop, normal , State};
+	_ ->
+            lager:info("~p - There is still alive consumers. Channel will stay alive",
+                       [Code]),
+            {noreply, State, ?TIMEOUT}
+	end;
+
+handle_info(Info, #state{code=Code}=State) ->
+    lager:warning("Unhandled info message in channel ~p (~p)", [Code, Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------

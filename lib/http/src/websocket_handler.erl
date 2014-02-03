@@ -230,4 +230,4 @@ log(#state{session_id=Session_id}=_State, String, Args) ->
     Log_msg = lists:concat(["~p - ", String]),
     %% M = io_lib:format(Log_msg,[Session_id|Args]),
     %% lager:info(M).
-    lager:info(Log_msg, [Session_id|Args]).
+    lager:debug(Log_msg, [Session_id|Args]).

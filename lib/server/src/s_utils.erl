@@ -63,8 +63,7 @@ ensure_started(App) ->
 get_channel_cache_size(Channel_code)->
     Channel_cache_list = get_env(server, channel_cache, [{all, 0}]),
     Count = choose_channel_cache(Channel_code,Channel_cache_list),
-    lager:info("================================================="),
-    lager:info("Chosen count for ~p is ~p", [Channel_code, Count]),
+    lager:debug("Chosen cache count for channel ~p is ~p", [Channel_code, Count]),
     Count.
 %%%===================================================================
 %%% Internal functions
