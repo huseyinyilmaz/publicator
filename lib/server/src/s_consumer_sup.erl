@@ -37,7 +37,7 @@ start_child(Auth_info, Extra_data) ->
             lager:info("Permission denied for code=~p", [Code]),
             {error, permission_denied};
         true ->
-            lager:info("Starting new consumer ~nCode=~p~n~nAuth_info=~p~nAuth_state=~p~n",
+            lager:info("Starting a new consumer with code ~p, Auth_info ~p and Auth_state ~p~n",
                        [Code, Auth_info, Auth_state]),
             {Permission_module, Permission_state} =
                 s_permission_backend:get_permission_backend(),
