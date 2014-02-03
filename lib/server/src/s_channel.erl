@@ -11,25 +11,25 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2]).
+-export([start_link/3]).
 -export([publish/2]).
 -export([get_consumers/1]).
 -export([add_consumer/4]).
 -export([remove_consumer/2]).
--export([remove_consumer_from_list/2]).
+
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
--define(TIMEOUT, 10 * 60 * 1000).               % 10 minuttes
 
 -record(state, {code :: binary(),
 		consumer_table :: ets:tid(),
                 cache_size :: number(),
                 current_cache_size :: number(),
-                cache :: queue()}).
+                cache :: queue(),
+                timeout :: number()|infinity}).
 
 -include("../include/server.hrl").
 
@@ -43,8 +43,8 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
-start_link(Code, Cache_size) ->
-    gen_server:start_link(?MODULE, [Code, Cache_size], []).
+start_link(Code, Cache_size, Timeout) ->
+    gen_server:start_link(?MODULE, [Code, Cache_size, Timeout], []).
 
 
 publish(Channel_pid, Message) ->
@@ -62,8 +62,6 @@ add_consumer(Channel_pid, Consumer_pid, Consumer_code, Handler_type) ->
 remove_consumer(Channel_pid, Consumer_code) ->
     gen_server:call(Channel_pid, {remove_consumer, Consumer_code}).
 
-remove_consumer_from_list(Channel_pid, Consumer_code) ->
-    gen_server:call(Channel_pid, {remove_consumer_from_list, Consumer_code}).
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -80,7 +78,7 @@ remove_consumer_from_list(Channel_pid, Consumer_code) ->
 %% @end
 %%--------------------------------------------------------------------
 %% if a channel with same name is already registered stop this server 
-init([Code, Cache_size]) ->
+init([Code, Cache_size, Timeout]) ->
     Self = self(),
     case s_global:get_or_register_channel(Code) of
 	Self ->
@@ -88,7 +86,8 @@ init([Code, Cache_size]) ->
 			consumer_table=ets:new(consumer_table,[set, public]),
                         cache_size=Cache_size,
                         current_cache_size=0,
-                        cache=queue:new()
+                        cache=queue:new(),
+                        timeout=Timeout
                        }};
 	Pid when is_pid(Pid) -> 
 	    {stop, {already_exists, Pid}}
@@ -110,7 +109,8 @@ init([Code, Cache_size]) ->
 %%--------------------------------------------------------------------
 handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
 	    #state{consumer_table=Consumer_table,
-		   code=Channel_code}=State)->
+		   code=Channel_code,
+                   timeout=Timeout}=State)->
     %% Send cache to newly subscribed consumer
     gen_server:cast(self(), {send_cache_to_consumer_pid, Consumer_pid}),
     %% Add  Consumer to new channel
@@ -134,18 +134,14 @@ handle_call({add_consumer, Consumer_pid, Consumer_code, Handler_type}, _From,
 
     Reply = ok,
     
-    {reply, Reply, State, ?TIMEOUT};
+    {reply, Reply, State, Timeout};
 
-%% Delete consumer from consumer_table
-handle_call({remove_consumer_from_list, Consumer_code}, _From,
-            #state{consumer_table=Consumer_table}) ->
-    ets:delete(Consumer_table, Consumer_code);
-
-%% remobe consumer handler consumer and tell consumer
+%% remove consumer handler consumer and tell consumer
 %% to remove table from its own list
 handle_call({remove_consumer, Consumer_code}, _From,
 	    #state{consumer_table=Consumer_table,
-		   code=Channel_code}=State)->
+		   code=Channel_code,
+                   timeout=Timeout}=State)->
 
     ets:delete(Consumer_table, Consumer_code),
 
@@ -161,21 +157,22 @@ handle_call({remove_consumer, Consumer_code}, _From,
 
     
     Reply = ok,
-    {reply, Reply, State, ?TIMEOUT};
+    {reply, Reply, State, Timeout};
 
 
 handle_call(get_consumers, _From,
-	    #state{consumer_table=Consumer_table}=State)->
+	    #state{consumer_table=Consumer_table,
+                   timeout=Timeout}=State)->
     Reply ={ok,
 	    ets:foldl(fun({Key,_Value},Acc) -> [Key| Acc] end, [], Consumer_table)},
-    {reply, Reply, State, ?TIMEOUT};
+    {reply, Reply, State, Timeout};
     
 
 
-handle_call(Request, _From, State) ->
+handle_call(Request, _From, #state{timeout=Timeout}=State) ->
     Reply = ok,
     lager:warning("Unhandled call data reached. ~p~n", [Request]),
-    {reply, Reply, State, ?TIMEOUT}.
+    {reply, Reply, State, Timeout}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -192,7 +189,8 @@ handle_cast({publish, Message},
 		   consumer_table=Consumer_table,
                    cache_size=Cache_size,
                    current_cache_size=Current_cache_size,
-                   cache=Cache}=State)->
+                   cache=Cache,
+                   timeout=Timeout}=State)->
     %% todo run this on another temprary process
     ets:foldl(fun({_Consumer_Code, {Consumer_pid, _Handler_type}}, Acc) ->
 		      s_consumer:push_message(Consumer_pid, Channel_code, Message),
@@ -208,21 +206,22 @@ handle_cast({publish, Message},
     end,
 
     {noreply, State#state{current_cache_size=Current_cache_size1,
-                          cache=Cache1}, ?TIMEOUT};
+                          cache=Cache1}, Timeout};
 
 
 handle_cast({send_cache_to_consumer_pid, Consumer_pid},
             #state{code=Channel_code,
-                   cache=Cache}=State) ->
+                   cache=Cache,
+                   timeout=Timeout}=State) ->
     lists:foreach(fun(Message)->
                           s_consumer:push_cached_message(Consumer_pid, Channel_code, Message)
                   end, queue:to_list(Cache)),
 
-    {noreply, State, ?TIMEOUT};
+    {noreply, State, Timeout};
 
-handle_cast(Msg, State) ->
+handle_cast(Msg, #state{timeout=Timeout}=State) ->
     lager:warning("Unhandled cast message=~p", [Msg]),
-    {noreply, State}.
+    {noreply, State, Timeout}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -235,7 +234,8 @@ handle_cast(Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(timeout, #state{code=Code,
-                            consumer_table=Consumer_table}=State)->
+                            consumer_table=Consumer_table,
+                            timeout=Timeout}=State)->
     lager:info("Channel ~p has timeout", [Code]),
     Consumer_list = ets:match(Consumer_table, {'$1', {'$2', '_'}}),
     case Consumer_list of
@@ -245,12 +245,13 @@ handle_info(timeout, #state{code=Code,
 	_ ->
             lager:info("~p - There is still alive consumers. Channel will stay alive",
                        [Code]),
-            {noreply, State, ?TIMEOUT}
+            {noreply, State, Timeout}
 	end;
 
-handle_info(Info, #state{code=Code}=State) ->
+handle_info(Info, #state{code=Code,
+                         timeout=Timeout}=State) ->
     lager:warning("Unhandled info message in channel ~p (~p)", [Code, Info]),
-    {noreply, State}.
+    {noreply, State, Timeout}.
 
 %%--------------------------------------------------------------------
 %% @private

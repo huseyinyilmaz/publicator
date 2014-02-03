@@ -28,10 +28,10 @@
 %% @end
 %%--------------------------------------------------------------------
 start_child(Channel_code) ->
-    Cache_size = s_utils:get_channel_cache_size(Channel_code),
-    Args_to_append = [Channel_code, Cache_size],
-    lager:info("Starting a channel with code ~p and cache size ~p~n",
-               [Channel_code, Cache_size]),
+    {Cache_size, Timeout} = s_utils:get_channel_config(Channel_code),
+    Args_to_append = [Channel_code, Cache_size, Timeout],
+    lager:info("Starting a channel with code ~p , cache size ~p and timeout ~p~n",
+               [Channel_code, Cache_size, Timeout]),
     case supervisor:start_child(?SERVER, Args_to_append) of
         {ok, Pid} -> {ok, Pid};
         {error ,{already_exists, Pid}} -> {ok, Pid}

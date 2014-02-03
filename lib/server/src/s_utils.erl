@@ -10,8 +10,15 @@
 
 %% API
 -export([generate_code/0, get_env/3, set_env/3, ensure_started/1]).
--export([get_channel_cache_size/1]).
+-export([get_channel_config/1]).
 
+
+-define(DEFAULT_CACHE_SIZE, 20).
+-define(DEFAULT_TIMEOUT, 10 * 60 * 1000).       %10 minutes
+
+-define(DEFAULT_CHANNELS, [[{name, all},
+                            {cache_size, ?DEFAULT_CACHE_SIZE},
+                            {timeout, ?DEFAULT_TIMEOUT}]]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -60,21 +67,24 @@ ensure_started(App) ->
             ok
     end.
 
-get_channel_cache_size(Channel_code)->
-    Channel_cache_list = get_env(server, channel_cache, [{all, 0}]),
-    Count = choose_channel_cache(Channel_code,Channel_cache_list),
-    lager:debug("Chosen cache count for channel ~p is ~p", [Channel_code, Count]),
-    Count.
+get_channel_config(Channel_code)->
+    Channel_config_list = get_env(server, channels, ?DEFAULT_CHANNELS),
+    Config = choose_channel_config(Channel_code, Channel_config_list),
+    Config_cache_size = proplists:get_value(cache_size, Config, ?DEFAULT_CACHE_SIZE),
+    Config_timeout = proplists:get_value(timeout, Config, ?DEFAULT_TIMEOUT),
+    lager:debug("Choosen configuration for channel ~p is ~p", [Channel_code, Config]),
+    {Config_cache_size, Config_timeout}.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
 
-choose_channel_cache(Channel_code,[{Name,Count}|Channel_cache_list]) ->
-    case Name of
-        Channel_code -> Count;
-        all -> Count;
+choose_channel_config(Channel_code,[Config|Channel_config_list]) ->
+    Config_name = proplists:get_value(name, Config, all),
+    case Config_name of
+        Channel_code -> Config;
+        all -> Config;
         _ ->
-            choose_channel_cache(Channel_code,Channel_cache_list)
+            choose_channel_config(Channel_code, Channel_config_list)
     end.
             
