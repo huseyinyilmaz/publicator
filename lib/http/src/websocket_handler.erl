@@ -36,33 +36,41 @@ websocket_init(_TransportName, Req, _Opts) ->
             State = #state{session_id=Session_id,
         		   consumer_pid=Consumer_pid,
 			   consumer_monitor_ref=Consumer_monitor_ref},
-            log(State, "Initializing websocket handler State=~p", [State]);
+            lager:debug("Initializing websocket handler ~p", [Session_id]);
 	{error, not_found}->
 	    State = #state{session_id=no_session, consumer_pid=undefined,
 			   consumer_monitor_ref=undefined},
-	    log(State, "Given session id does not exist(~p)",[Session_id])
-		
+	    lager:info("Given session id ~p does not exist",[Session_id])
     end,
     {ok, Req1, State}.
 
-websocket_handle({text, Raw_data}, Req, State) ->
-    log(State, "Got request raw request=~p~n", [Raw_data]),
+
+websocket_handle({text, _Raw_data}, Req, #state{session_id=no_session}=State) ->
+    Result = h_utils:no_session_response(),
+    {reply, {text, Result}, Req, State};
+
+websocket_handle({text, Raw_data}, Req, #state{session_id=Session_id}=State) ->
+    {Session_id, Req1} = cowboy_req:binding(session, Req), % assert Session_id
     Request_data = jiffy:decode(Raw_data),
-    log(State, "Processed request=~p~n", [Request_data]),
-    handle_request(Request_data, Req, State).
+    {Request_plist} = Request_data,
+    Request_type = proplists:get_value(<<"type">>, Request_plist),
+    {Headers, Req2} = cowboy_req:headers(Req1),
+    Body = h_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
+    {reply, {text, Body}, Req2, State}.
 
 websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},
-     Req, #state{consumer_pid=Consumer_pid,
-		 consumer_monitor_ref=Ref}=State)->
+               Req, #state{session_id=Session_id,
+                           consumer_pid=Consumer_pid,
+                           consumer_monitor_ref=Ref}=State)->
     
-    log(State, "Consumer process died reason = ~p", [Reason]),
+    debug:warning("Consumer process ~p died for reason ~p", [Session_id, Reason]),
     Result = h_utils:make_response(<<"error">>, <<"Consumer_handler is died unexpectedly">>,
 			   [{<<"reason_for_dead_process">>, Reason}]),
     {reply, {text, Result}, Req, State};
     
 
-websocket_info(Data, Req, State) ->
-    log(State, "Got an info request=~p~n",[Data]),
+websocket_info(Data, Req, #state{session_id=Session_id}=State) ->
+    lager:warning("Unhandled info request on websocket session ~p [~p]",[Session_id, Data]),
     handle_info(Data, Req, State).
 
 websocket_terminate(_Reason, _Req, State) ->
@@ -72,81 +80,6 @@ websocket_terminate(_Reason, _Req, State) ->
 %%%===================================================================
 %%% WEBSOCKET HANDLERS
 %%%===================================================================
-
-%% Handle incoming requests
-handle_request(_Request_data, Req, #state{session_id=no_session}=State)->
-    Result = h_utils:no_session_response(),
-    {reply, {text, Result}, Req, State};
-handle_request(Request_data, Req, State)->
-    
-    %% Make sure that message format is valid
-    case Request_data of
-	{[{<<"type">>, Type},
-	  {<<"data">>, Data}]} -> 
-	    handle_request(Type, Data, Req, State);
-	{[{<<"data">>, Data},
-	  {<<"type">>, Type}]} -> 
-	    handle_request(Type, Data, Req, State);	
-	_ ->
-	    Result = h_utils:make_response(<<"invalid_msg_format">>,
-				   <<"Data format must be as {'type': 'typ', 'data': 'dt'}">>,
-				   [{<<"invalid_data">>, Request_data}]),
-	    {reply, {text, Result}, Req, State}
-    end.
-
-
-handle_request(<<"subscribe">>,
-	       {[{<<"channel_code">>, Channel_code},
-		 {<<"type">>, Handler_type_bin}]},
-	       Req, State) ->
-    handle_subscribe_request(Handler_type_bin, Channel_code, Req,State);
-
-handle_request(<<"subscribe">>,
-	       {[{<<"type">>, Handler_type_bin},
-		 {<<"channel_code">>, Channel_code}]},
-	       Req, State) ->
-    handle_subscribe_request(Handler_type_bin, Channel_code, Req,State);
-
-handle_request(<<"unsubscribe">>, Data, Req, #state{session_id=Session_id}=State) ->
-    ok = server:unsubscribe(Session_id, Data),
-    ok = server:remove_message_handler(Session_id, self()),
-    Result = h_utils:make_response(<<"unsubscribed">>,
-			   Data),
-    {reply, {text, Result}, Req, State};
-
-handle_request(<<"get_subscribtions">>, _Data, Req, #state{session_id=Session_id}=State) ->
-    {ok, Subscribtion_data} = server:get_subscribtions(Session_id),
-    Result = h_utils:make_response(<<"subscribtions">>, Subscribtion_data),
-    {reply, {text, Result}, Req, State};
-
-handle_request(<<"publish">>,
-	       {[{<<"channel_code">>,Channel_code},
-		 {<<"message">>,Message}]},
-	       Req, State) ->
-    handle_publish_request(Channel_code, Message, Req,State);
-
-handle_request(<<"publish">>,
-	       {[{<<"message">>,Message},
-		 {<<"channel_code">>,Channel_code}]},
-	       Req, State) ->
-    handle_publish_request(Channel_code, Message, Req,State);
-
-handle_request(<<"get_consumers">>,
-	       {[{<<"channel_code">>,Channel_code}]},
-	       Req, #state{session_id=Session_id}=State) ->
-    {Headers, Req2} = cowboy_req:headers(Req),
-    {ok, Consumers_data} = server:get_consumers(Session_id,
-                                                Channel_code,
-                                                Headers),
-    Result = h_utils:make_response(<<"consumers">>,Consumers_data,
-                                  [{<<"channel_code">>, Channel_code}]),
-    {reply, {text, Result}, Req2, State};
-    
-handle_request(Type, Data, Req, #state{session_id=Session_id}=State)->
-    Result = h_utils:make_response(<<"unhandled_msg">>, Data,
-			   [{<<"request_type">>, Type},
-			    {<<"session">>, Session_id}]),
-    {reply, {text, Result}, Req, State}.
 
 handle_info({message, Channel_code, Message}, Req, State)->
     Result = h_utils:make_response(<<"message">>, Message,
@@ -173,61 +106,12 @@ handle_info(Msg,Req,State)->
     {reply, {text, Result}, Req, State}.
 
 handle_terminate(#state{session_id=no_session})-> ok;
-handle_terminate(#state{session_id=Session_id}=State)->
-    log(State, "Terminate websocket handler"),
+handle_terminate(#state{session_id=Session_id})->
+    lager:debug("Terminate websocket handler for session ~p", [Session_id]),
+    %% XXX do not stop consumer?
     ok = server:stop_consumer(Session_id),
     ok.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-    
-handle_publish_request(Channel_code, Message, Req,
-                       #state{session_id=Session_id}=State) ->
-    {Headers, Req2} = cowboy_req:headers(Req),
-    case server:publish(Session_id, Channel_code, Message, Headers) of
-        ok -> {ok, Req2, State};
-        {error, consumer_not_found} ->
-            {reply,
-             {text, h_utils:make_response(<<"error">>, <<"consumer_not_found">>)},
-             Req2,
-             State};
-        {error, permission_denied} ->
-            {reply,
-             {text, h_utils:make_response(<<"error">>, <<"permission_denied">>)},
-             Req2,
-             State}
-    end.
-
-handle_subscribe_request(Handler_type_bin,
-			 Channel_code, Req,
-			 #state{session_id=Session_id}=State) ->
-    Handler_type = case Handler_type_bin of
-		       <<"message_only">> -> message_only;
-		       <<"all">> -> all
-		   end,
-    {Headers, Req2} = cowboy_req:headers(Req),
-    case server:subscribe(Session_id, Channel_code, Handler_type, Headers) of
-	{error, invalid_channel_code} ->
-	    Result = h_utils:make_response(<<"error">>, <<"invalid_channel_code">>);
-        {error, consumer_not_found} ->
-            Result = h_utils:make_response(<<"error">>, <<"consumer_not_found">>);
-        {error, permission_denied} ->
-            Result = h_utils:make_response(<<"error">>, <<"permission_denied">>);
-        
-	ok->
-	    ok = server:add_message_handler(Session_id, self()),
-	    Result = h_utils:make_response(<<"subscribed">>, Channel_code)
-	    
-    end,
-    {reply, {text, Result}, Req2, State}.
-
-
-log(State, String)->
-    log(State,String,[]).
-
-log(#state{session_id=Session_id}=_State, String, Args) ->
-    Log_msg = lists:concat(["~p - ", String]),
-    %% M = io_lib:format(Log_msg,[Session_id|Args]),
-    %% lager:info(M).
-    lager:debug(Log_msg, [Session_id|Args]).

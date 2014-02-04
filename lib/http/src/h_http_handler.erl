@@ -25,20 +25,15 @@ handle(Req, State) ->
     %{[{<<"type">>,<<"get_messages">>}, .....]}
     {Request_data} = jiffy:decode(Body),
     Request_type = proplists:get_value(<<"type">>, Request_data),
-    handle_request(Request_type,Session_id, Request_data, Req2, State).
+    {Headers, Req3} = cowboy_req:headers(Req2),
+    Body = h_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
+    {ok, Req4} = cowboy_req:reply(
+                   200,
+                   [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
+                   Body, Req3),
+    {ok, Req4, State}.
 
-handle_request(<<"get_messages">>, Session_id, Data, Req, State)->
-    ok;
-handle_request(<<"subscribe">>, Session_id, Data, Req, State)->
-    ok;
-handle_request(<<"unsubscribe">>, Session_id, Data, Req, State)->
-    ok;
-handle_request(<<"get_subscribtions">>, Session_id, Data, Req, State)->
-    ok;
-handle_request(<<"publish">>, Session_id, Data, Req, State)->
-    ok;
-handle_request(Type, Session_id, Data, Req, State)->
-    {ok, Req, State}.
+
 
 %% maybe_echo(<<"POST">>, true, Req) ->
 %%         {ok, PostVals, Req2} = cowboy_req:body_qs(Req),
@@ -73,7 +68,3 @@ terminate(_Reason, _Req, _State) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-
-handle_get_messages(_Session_id, Req) ->
-    Req.

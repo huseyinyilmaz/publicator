@@ -18,11 +18,12 @@ start(_Type, _Args) ->
 		 [
 		  {s_utils:get_env(http, host, '_'), % host match
 		    [
-		     {"/:session/subscribtions/", h_subscribtion_get_handler, []},
-		     {"/:session/subscribtions/[:channel/]", h_subscribtion_handler, []},
-		     {"/:session/messages/", h_message_get_handler, []},
-		     {"/:session/messages/[:channel]", h_message_handler, []},
+		     %% {"/:session/subscribtions/", h_subscribtion_get_handler, []},
+		     %% {"/:session/subscribtions/[:channel/]", h_subscribtion_handler, []},
+		     %% {"/:session/messages/", h_message_get_handler, []},
+		     %% {"/:session/messages/[:channel]", h_message_handler, []},
 		     {"/session/[...]" , h_session_get_handler, []},
+                     {"/:session/http/", h_http_handler,[]},
 		     {"/:session/ws/", websocket_handler, []},
 		     {"/", cowboy_static, {file, <<"./www/index.html">>}},
 		     {"/[...]", cowboy_static, {dir, <<"./www">>}}
