@@ -25,16 +25,20 @@ handle(Req, State) ->
     %{[{<<"type">>,<<"get_messages">>}, .....]}
     {Request_data} = jiffy:decode(Body),
     Request_type = proplists:get_value(<<"type">>, Request_data),
-    case Request_type of
-        <<"get_messages">> ->
-            Req3 = handle_get_messages(Session_id, Req2);
-        <<"subscribe">>->
-            Req3 = Req2
-        end,
-    %% {ok, Req3} = maybe_echo(Method, HasBody, Req2),
-    {ok, Req3, State}.
+    handle_request(Request_type,Session_id, Request_data, Req2, State).
 
-
+handle_request(<<"get_messages">>, Session_id, Data, Req, State)->
+    ok;
+handle_request(<<"subscribe">>, Session_id, Data, Req, State)->
+    ok;
+handle_request(<<"unsubscribe">>, Session_id, Data, Req, State)->
+    ok;
+handle_request(<<"get_subscribtions">>, Session_id, Data, Req, State)->
+    ok;
+handle_request(<<"publish">>, Session_id, Data, Req, State)->
+    ok;
+handle_request(Type, Session_id, Data, Req, State)->
+    {ok, Req, State}.
 
 %% maybe_echo(<<"POST">>, true, Req) ->
 %%         {ok, PostVals, Req2} = cowboy_req:body_qs(Req),
