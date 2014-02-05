@@ -21,11 +21,13 @@ init(_Transport, Req, []) ->
 handle(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     %% HasBody = cowboy_req:has_body(Req2),
-    {ok, Body, Req2} = cowboy_req:body(Req1),
-    %{[{<<"type">>,<<"get_messages">>}, .....]}
-    {Request_data} = jiffy:decode(Body),
-    Request_type = proplists:get_value(<<"type">>, Request_data),
+    {ok, Raw_data, Req2} = cowboy_req:body(Req1),
+    Request_data = jiffy:decode(Raw_data),
+    {Request_plist} = Request_data,
+    Request_type = proplists:get_value(<<"type">>, Request_plist),
+
     {Headers, Req3} = cowboy_req:headers(Req2),
+    lager:debug("Http interface got data ~p", [Request_data]),
     Body = h_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
     {ok, Req4} = cowboy_req:reply(
                    200,

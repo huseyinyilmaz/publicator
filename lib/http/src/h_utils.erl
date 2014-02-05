@@ -54,7 +54,7 @@ no_session_arg_response() -> h_utils:error_response(<<"There is no session provi
 
 -spec ok_response() -> binary().
 ok_response()->
-    make_response(<<"data">>,true).
+    make_response(<<"response">>,true).
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
