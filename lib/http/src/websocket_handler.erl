@@ -24,8 +24,10 @@
 %% @end
 %%--------------------------------------------------------------------
 init({tcp, http}, _Req, _Opts) ->
+    {upgrade, protocol, cowboy_websocket};
+
+init({ssl, http}, _Req, _Opts) ->
     {upgrade, protocol, cowboy_websocket}.
- 
 
 websocket_init(_TransportName, Req, _Opts) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),

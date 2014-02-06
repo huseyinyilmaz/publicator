@@ -12,6 +12,9 @@
                 host = '';}
             this.host = host;
         },
+        is_secure: function(){
+            return document.location.protocol == 'https:';
+        },
         get_session_id: function(callback){
             function get_random_string(){return Math.random().toString(36).substring(7);}
             function callback_fun(e){
@@ -23,7 +26,7 @@
                 }
                 callback(session_id);}
 
-            var url = ('http://' + this.host + '/session/' +
+            var url = ((publicator.is_secure()?'https://':'http://') + this.host + '/session/' +
                        get_random_string());
             // if host is external add callback param to activate jsonp
             if(this.host)
@@ -119,7 +122,7 @@
                 fun_list.forEach(function(element){element(evt);});}
 
             var Transport = publicator.transports.websocket;
-            var transport = Transport(publicator.host, session_id, false);
+            var transport = Transport(publicator.host, session_id);
             publicatorClient.transport = transport;
 
             transport.onopen(function(evt){
@@ -169,7 +172,7 @@
     // Websocket Transport //
     /////////////////////////
     publicator.transports.websocket =
-        function(host, session_id, is_secure){
+        function(host, session_id){
             var handlers = {
                 onopen_handler_list: [],
                 onclose_handler_list: [],
@@ -203,8 +206,8 @@
                     handlers.onerror_handler_list.forEach(
                         function(fun){fun(data);});
                 }};//transport
-            
-            var url = (is_secure?'wss://':'ws://') + host + '/' +
+
+            var url = (publicator.is_secure()?'wss://':'ws://') + host + '/' +
                     session_id + '/ws/';
             
             var websocket = new WebSocket(url);

@@ -28,11 +28,22 @@ start(_Type, _Args) ->
 		     {"/", cowboy_static, {file, <<"./www/index.html">>}},
 		     {"/[...]", cowboy_static, {dir, <<"./www">>}}
 		    ]}
-		  ]),
-    {ok, _} = cowboy:start_http(http, s_utils:get_env(http, pool_count, 100),
-				[{port, s_utils:get_env(http, port, 8766)}],
-				[{env, [{dispatch, Dispatch}]}
-	]),
+                 ]),
+    case s_utils:get_env(http, connection, http) of
+        http ->
+            {ok, _} = cowboy:start_http(http, s_utils:get_env(http, pool_count, 100),
+                                         [{port, s_utils:get_env(http, port, 8766)}],
+                                         [{env, [{dispatch, Dispatch}]}]) ;
+        ssl ->
+            Cert_file = s_utils:get_env(http, certfile, []),
+            Key_file =  s_utils:get_env(http, keyfile, []),
+            {ok, _} = cowboy:start_https(https, s_utils:get_env(http, pool_count, 100),
+                                         [{port, s_utils:get_env(http, port, 8766)},
+                                          {certfile, Cert_file},
+                                          {keyfile, Key_file}],
+                                         [{env, [{dispatch, Dispatch}]}
+                                         ])
+    end,
     http_sup:start_link().
 
 -spec stop(_State::any()) -> ok.
