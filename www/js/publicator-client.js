@@ -15,6 +15,35 @@
         is_secure: function(){
             return document.location.protocol == 'https:';
         },
+
+        send_ajax: function(method, url, data, cb){
+
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = readystatechange;
+    xhr.open(method, url);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(data && JSON.stringify(data));
+
+    function readystatechange(){
+        if(this.readyState === this.DONE) {
+
+            switch(this.status){
+                case 200:
+                if(this.getResponseHeader('Content-Type').split(';')[0] !== 'application/json'){
+                    return cb("unexpected Content-Type: '" + this.getResponseHeader('Content-Type') + "'", null);
+                }
+                return cb(null, JSON.parse(this.response));
+
+                case 401:
+                location.href = '/authentication/login';
+                return;
+
+                default:
+                return cb("unexpected status: " + this.status + "", null);
+            }
+        }
+    }//readystatechange
+}        
         get_session_id: function(callback){
             function get_random_string(){return Math.random().toString(36).substring(7);}
             function callback_fun(e){

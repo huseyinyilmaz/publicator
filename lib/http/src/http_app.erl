@@ -22,7 +22,7 @@ start(_Type, _Args) ->
 		     %% {"/:session/subscribtions/[:channel/]", h_subscribtion_handler, []},
 		     %% {"/:session/messages/", h_message_get_handler, []},
 		     %% {"/:session/messages/[:channel]", h_message_handler, []},
-		     {"/session/[...]" , h_session_get_handler, []},
+		     {"/session/" , h_session_handler, []},
                      {"/:session/http/", h_http_handler,[]},
 		     {"/:session/ws/", websocket_handler, []},
 		     {"/", cowboy_static, {file, <<"./www/index.html">>}},

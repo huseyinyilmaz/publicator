@@ -11,12 +11,17 @@
 -export([init/3]).
 -export([handle/2]).
 -export([terminate/3]).
-
+-export([options/2]).
 %% API
 
-%% @doc POST echo handler.
 init(_Transport, Req, []) ->
         {ok, Req, undefined}.
+
+%% disable same origin policy
+options(Req, State) ->
+    Req1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, OPTIONS">>, Req),
+    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req1),
+    {ok, Req2, State}.
 
 handle(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
@@ -55,7 +60,7 @@ handle(Req, State) ->
 %%         ], Echo, Req).
 
 terminate(_Reason, _Req, _State) ->
-        ok.
+    ok.
 
 %%%===================================================================
 %%% API
