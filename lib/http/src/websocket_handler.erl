@@ -71,8 +71,7 @@ websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},
     {reply, {text, Result}, Req, State};
     
 
-websocket_info(Data, Req, #state{session_id=Session_id}=State) ->
-    lager:warning("Unhandled info request on websocket session ~p [~p]",[Session_id, Data]),
+websocket_info(Data, Req, State) ->
     handle_info(Data, Req, State).
 
 websocket_terminate(_Reason, _Req, State) ->
@@ -103,7 +102,8 @@ handle_info({remove_subscribtion, Channel_code, Consumer_code}, Req, State)->
 			  [{<<"channel_code">>, Channel_code}]),
     {reply, {text, Result}, Req, State};
 
-handle_info(Msg,Req,State)->
+handle_info(Msg,Req,#state{session_id=Session_id}=State)->
+    lager:warning("Unhandled info request on websocket session ~p [~p]",[Session_id, Msg]),
     Result = h_utils:make_response(<<"unhandled_info">>, tuple_to_list(Msg)),
     {reply, {text, Result}, Req, State}.
 
