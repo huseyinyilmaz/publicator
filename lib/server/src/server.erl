@@ -138,10 +138,7 @@ remove_message_handler(Consumer_code, Handler_pid) ->
 -spec create_consumer(Auth_info::binary(),
                       Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
 create_consumer(Auth_info, Extra_data) ->
-    Result = s_consumer_sup:start_child(Auth_info, Extra_data),
-    lager:info
-      ("Result=~p",[Result]),
-    Result.
+    s_consumer_sup:start_child(Auth_info, Extra_data).
 
 -spec stop_consumer(binary()) -> ok|{error, consumer_not_found}.
 stop_consumer(Consumer_code) ->

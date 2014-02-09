@@ -15,8 +15,8 @@
 -export([no_session_arg_response/0]).
 -export([permission_denied_response/0]).
 -export([ok_response/0]).
+-export([wrap_with_callback_fun/2]).
 
--define(COOKIE_NAME, <<"publicator-session-id">>).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -55,6 +55,17 @@ no_session_arg_response() -> h_utils:error_response(<<"There is no session provi
 -spec ok_response() -> binary().
 ok_response()->
     make_response(<<"response">>,true).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% If callback is undefined returns body as it is.
+%% if callback is a binary returns returns <<"callbackname(body);">>
+%% @end
+%%--------------------------------------------------------------------
+wrap_with_callback_fun(undefined, Body) -> Body;
+wrap_with_callback_fun(Callback, Body) ->
+    [Callback, <<"(">> , Body, <<");">>].
+    
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================

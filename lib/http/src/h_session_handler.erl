@@ -9,7 +9,7 @@
 -module(h_session_handler).
 
 %% API
--export([init/3, options/2, handle/2, terminate/3]).
+-export([init/3, handle/2, terminate/3]).
 
 
 %%%===================================================================
@@ -20,25 +20,35 @@
 init(_Transport, Req, []) ->
         {ok, Req, undefined}.
 
-%% disable same origin policy
-options(Req, State) ->
-    Req1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, OPTIONS">>, Req),
-    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req1),
-    {ok, Req2, State}.
-
 handle(Req, State) ->
-    {ok, Raw_data, Req1} = cowboy_req:body(Req),
-    {Headers, Req2} = cowboy_req:headers(Req1),
+    {Callback, Req1} = cowboy_req:qs_val(<<"callback">>, Req),
+
+    case Callback of
+        undefined ->
+            {ok, Raw_data, Req2} = cowboy_req:body(Req1);
+        _ ->
+            {Raw_data, Req2} = cowboy_req:qs_val(<<"data">>, Req1)
+    end,
+    lager:debug("Session handler got request=~p", [Raw_data]),
+    {Headers, Req3} = cowboy_req:headers(Req2),
     Request_data = jiffy:decode(Raw_data),
     {Request_plist} = Request_data,
     Auth_info = proplists:get_value(<<"auth_info">>, Request_plist),
     case server:create_consumer(Auth_info, Headers) of
         {ok, Consumer_code, _Consumer_pid} ->
-            Body = jiffy:encode({[{<<"session">>, Consumer_code}]});
+            lager:info("Create consumer"),
+            Body = jiffy:encode({[{<<"type">>, <<"session_created">>},
+                                  {<<"data">>, Consumer_code}]});
         {error, permission_denied} ->
             Body = jiffy:encode({[{<<"error">>, <<"permission_denied">>}]})
     end,
-    {Body, Req2, State}.
+    {ok, Req4} = cowboy_req:reply(
+                   200,
+                   [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
+                   h_utils:wrap_with_callback_fun(Callback, Body),
+                   Req3),
+
+    {ok, Req4, State}.
 
 terminate(_Reason, _Req, _State) ->
         ok.

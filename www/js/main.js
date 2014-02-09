@@ -1,7 +1,7 @@
 $(function(){
     window.enable_logging = true;
-    publicator.set_host(document.location.host);
-    
+    // publicator.set_host(document.location.host);
+    publicator.set_host("localhost:8766");
     //////////////////////
     // Create namespace //
     //////////////////////

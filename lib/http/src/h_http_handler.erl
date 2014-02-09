@@ -11,53 +11,35 @@
 -export([init/3]).
 -export([handle/2]).
 -export([terminate/3]).
--export([options/2]).
 %% API
 
 init(_Transport, Req, []) ->
         {ok, Req, undefined}.
 
-%% disable same origin policy
-options(Req, State) ->
-    Req1 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"GET, OPTIONS">>, Req),
-    Req2 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"*">>, Req1),
-    {ok, Req2, State}.
-
 handle(Req, State) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    %% HasBody = cowboy_req:has_body(Req2),
-    {ok, Raw_data, Req2} = cowboy_req:body(Req1),
+
+    {Callback, Req2} = cowboy_req:qs_val(<<"callback">>, Req1),
+    case Callback of
+        undefined ->
+            {ok, Raw_data, Req3} = cowboy_req:body(Req2);
+        _ ->
+            {Raw_data, Req3} = cowboy_req:qs_val(<<"data">>, Req2)
+    end,
+
     Request_data = jiffy:decode(Raw_data),
     {Request_plist} = Request_data,
     Request_type = proplists:get_value(<<"type">>, Request_plist),
 
-    {Headers, Req3} = cowboy_req:headers(Req2),
+    {Headers, Req4} = cowboy_req:headers(Req3),
     lager:debug("Http interface got data ~p", [Request_data]),
     Body = h_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
-    {ok, Req4} = cowboy_req:reply(
+    {ok, Req5} = cowboy_req:reply(
                    200,
                    [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
-                   Body, Req3),
-    {ok, Req4, State}.
-
-
-
-%% maybe_echo(<<"POST">>, true, Req) ->
-%%         {ok, PostVals, Req2} = cowboy_req:body_qs(Req),
-%%         Echo = proplists:get_value(<<"echo">>, PostVals),
-%%         echo(Echo, Req2);
-%% maybe_echo(<<"POST">>, false, Req) ->
-%%         cowboy_req:reply(400, [], <<"Missing body.">>, Req);
-%% maybe_echo(_, _, Req) ->
-%%         %% Method not allowed.
-%%         cowboy_req:reply(405, Req).
-
-%% echo(undefined, Req) ->
-%%         cowboy_req:reply(400, [], <<"Missing echo parameter.">>, Req);
-%% echo(Echo, Req) ->
-%%         cowboy_req:reply(200, [
-%%                 {<<"content-type">>, <<"text/plain; charset=utf-8">>}
-%%         ], Echo, Req).
+                   h_utils:wrap_with_callback_fun(Callback, Body),
+                   Req4),
+    {ok, Req5, State}.
 
 terminate(_Reason, _Req, _State) ->
     ok.

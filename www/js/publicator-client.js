@@ -3,6 +3,21 @@
 
     window.enable_logging = true;
 
+    function get_random_string(){
+        return Math.random().toString(36).substring(7);
+    };
+
+    function uri_encode(obj) {
+        var str = [];
+        for(var p in obj)
+            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+        return str.join("&");
+    };        
+
+    function is_secure(){
+        return document.location.protocol == 'https:';
+    };
+    
     window.publicator = {
         host: '',
         websocket_host: '',
@@ -12,62 +27,85 @@
                 host = '';}
             this.host = host;
         },
-        is_secure: function(){
-            return document.location.protocol == 'https:';
+        send_ajax: function(url, data, callback){
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function(a,b,c){
+                if(this.readyState === this.DONE) {
+                    if(this.status == 200){
+                        callback(JSON.parse(this.response));
+                    }else{
+                        callback({type:'error', data: "Unexpected status: " + this.status + ""});
+                    }
+                };
+            };//readystatechange
+            xhr.open('POST', url);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(data));
         },
 
-        send_ajax: function(method, url, data, cb){
+        // sends jsonp request to client
+        send_jsonp: function(url, data, callback){
+            var func_name = 'publicator_callback_' + get_random_string();
+            var uri_data = {data: JSON.stringify(data),
+                            callback: func_name};
+            data.callback = func_name;
+            var head = document.getElementsByTagName('head')[0];
 
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = readystatechange;
-    xhr.open(method, url);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(data && JSON.stringify(data));
+            var script = document.createElement('script');
+            script.src = url + '?' + uri_encode(uri_data);
+            script.setAttribute('id', func_name);            
+            window[func_name] = function(result){
+                callback(result);
+                head.removeChild(script);
+            };
 
-    function readystatechange(){
-        if(this.readyState === this.DONE) {
+            head.appendChild(script);
 
-            switch(this.status){
-                case 200:
-                if(this.getResponseHeader('Content-Type').split(';')[0] !== 'application/json'){
-                    return cb("unexpected Content-Type: '" + this.getResponseHeader('Content-Type') + "'", null);
-                }
-                return cb(null, JSON.parse(this.response));
-
-                case 401:
-                location.href = '/authentication/login';
-                return;
-
-                default:
-                return cb("unexpected status: " + this.status + "", null);
-            }
-        }
-    }//readystatechange
-}        
+        },
+        
         get_session_id: function(callback){
-            function get_random_string(){return Math.random().toString(36).substring(7);}
-            function callback_fun(e){
-                var session_id = e.session;
-                // if there is no session id throw given server error
-                // like permission denied.
-                if(!session_id){
-                    throw e.error;
+            function callback_fun(data){
+                if(data.type == 'error'){
+                    throw data.data;
+                }else{
+                    callback(data.data);
                 }
-                callback(session_id);}
+            }
 
-            var url = ((publicator.is_secure()?'https://':'http://') + this.host + '/session/' +
-                       get_random_string());
+            // function callback_fun(e){
+            //     var session_id = e.session;
+            //     // if there is no session id throw given server error
+            //     // like permission denied.
+            //     if(!session_id){
+            //         throw e.error;
+            //     }
+            //     callback(session_id);}
+
+            var url = ((is_secure()?'https://':'http://') + this.host + '/session/');
+
             // if host is external add callback param to activate jsonp
-            if(this.host)
-                url += '/?callback=?';
+            // if(this.host)
+            //     url += '/?callback=?';
             //Add random string string to end of the url so it will not be cached from browser
-            $.ajax({
-                dataType: "json",
-                url: url,
-                data: {auth_info: 'publicator_client.js_test_auth'},
-                success: callback_fun
-            });
+            // $.ajax({
+            //     dataType: "json",
+            //     url: url,
+            //     data: {auth_info: 'publicator_client.js_test_auth'},
+            //     success: callback_fun
+            // });
             
+            //Add random string string to end of the url so it will not be cached from browser
+            // publicator.send_ajax('POST',
+            //                      url,
+            //                      {auth_info: 'publicator_client.js_test_auth'},
+            //                      callback_fun);
+            var session_transport = publicator.send_jsonp;
+            if(document.location.host == this.host)
+                session_transport = publicator.send_ajax;
+            session_transport(url,
+                              {auth_info: 'publicator_client.js_test_auth'},
+                              callback_fun);
+
         },
 
         get_client: function(callback, session_id){
@@ -236,7 +274,7 @@
                         function(fun){fun(data);});
                 }};//transport
 
-            var url = (publicator.is_secure()?'wss://':'ws://') + host + '/' +
+            var url = (is_secure()?'wss://':'ws://') + host + '/' +
                     session_id + '/ws/';
             
             var websocket = new WebSocket(url);
