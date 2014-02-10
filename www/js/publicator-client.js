@@ -5,18 +5,18 @@
 
     function get_random_string(){
         return Math.random().toString(36).substring(7);
-    };
+    }
 
     function uri_encode(obj) {
         var str = [];
         for(var p in obj)
             str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
         return str.join("&");
-    };        
+    }
 
     function is_secure(){
         return document.location.protocol == 'https:';
-    };
+    }
     
     window.publicator = {
         host: '',
@@ -62,7 +62,7 @@
             head.appendChild(script);
 
         },
-        
+
         get_session_id: function(callback){
             function callback_fun(data){
                 if(data.type == 'error'){
@@ -188,6 +188,7 @@
             function call_fun_list(fun_list, evt){
                 fun_list.forEach(function(element){element(evt);});}
 
+            // var Transport = publicator.transports.http;
             var Transport = publicator.transports.websocket;
             var transport = Transport(publicator.host, session_id);
             publicatorClient.transport = transport;
@@ -235,45 +236,77 @@
     
     publicator.transports = {};
 
+    function make_transport(obj){
+        var handlers = {
+            onopen_handler_list: [],
+            onclose_handler_list: [],
+            onmessage_handler_list:[],
+            onerror_handler_list:[]};
+
+        obj.onopen = function(fun){handlers.onopen_handler_list.push(fun);};
+        obj.onclose = function(fun){handlers.onclose_handler_list.push(fun);};
+        obj.onmessage = function(fun){handlers.onmessage_handler_list.push(fun);};
+        obj.onerror = function(fun){handlers.onerror_handler_list.push(fun);};
+
+        obj.trigger_message = function(data){
+            handlers.onmessage_handler_list.forEach(
+                function(fun){fun(data);});
+        };
+        obj.trigger_onopen = function(){
+            handlers.onopen_handler_list.forEach(
+                function(fun){fun();});
+        };
+        obj.trigger_onclose = function(){
+            handlers.onclose_handler_list.forEach(
+                function(fun){fun();});
+        };
+        obj.trigger_error = function(data){
+            handlers.onerror_handler_list.forEach(
+                function(fun){fun(data);});
+        };
+    }
+
+    ////////////////////
+    // Http Transport //
+    ////////////////////
+    publicator.transports.http =
+        function(host, session_id){
+            // if host is same, send with ajax
+            // otherwise send with jsonp
+            var http_send = publicator.send_jsonp;
+            if(document.location.host == host)
+                http_send = publicator.send_ajax;
+
+            var url = (is_secure()?'https://':'http://') + host + '/' +
+                    session_id + '/http/';
+
+            var transport = {
+                send: function(obj){
+                    var callback = function(result){
+                        console.log('Http_on_message_handler', result);
+                        transport.trigger_message(result);
+                    };
+                    http_send(url, obj, callback);
+                }
+            };//transport
+            make_transport(transport);
+            // better way?
+            setTimeout(function(){transport.trigger_onopen();}, 100);
+            return transport;
+        };
     /////////////////////////
     // Websocket Transport //
     /////////////////////////
     publicator.transports.websocket =
         function(host, session_id){
-            var handlers = {
-                onopen_handler_list: [],
-                onclose_handler_list: [],
-                onmessage_handler_list:[],
-                onerror_handler_list:[]};
-
             var transport = {
-
-                onopen:function(fun){handlers.onopen_handler_list.push(fun);},
-                onclose:function(fun){handlers.onclose_handler_list.push(fun);},
-                onmessage:function(fun){handlers.onmessage_handler_list.push(fun);},
-                onerror:function(fun){handlers.onerror_handler_list.push(fun);},
-
                 send: function(obj){
                     var json_string = JSON.stringify(obj);
                     transport.websocket.send(json_string);
-                },
-                trigger_message: function(data){
-                    handlers.onmessage_handler_list.forEach(
-                        function(fun){fun(data);});
-                },
-                trigger_onopen: function(){
-                    handlers.onopen_handler_list.forEach(
-                        function(fun){fun();});
-                },
-                trigger_onclose: function(){
-                    handlers.onclose_handler_list.forEach(
-                        function(fun){fun();});
-                },
-                trigger_error: function(data){
-                    handlers.onerror_handler_list.forEach(
-                        function(fun){fun(data);});
-                }};//transport
+                }
+            };//transport
 
+            make_transport(transport);
             var url = (is_secure()?'wss://':'ws://') + host + '/' +
                     session_id + '/ws/';
             
