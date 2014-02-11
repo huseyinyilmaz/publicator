@@ -187,44 +187,76 @@
             function call_fun_list(fun_list, evt){
                 fun_list.forEach(function(element){element(evt);});}
 
-            var create_transport = publicator.transports.http;
-            if(window.WebSocket){
-                create_transport = publicator.transports.websocket;
-            }
-            // var Transport = publicator.transports.websocket;
-            var transport = create_transport(publicator.host, session_id);
-            publicatorClient.transport = transport;
-
-            transport.onopen(function(evt){
-                // if publicatorClient is being initialized return
-                // putlicatorClient to callback
-                if(publicatorClient.status === publicatorClient.status_list.initializing){
-                    callback(publicatorClient);
+            var websocket_reconnect_count = 5;
+            
+            function init_transport(){
+                if(!window.WebSocket){
+                    websocket_reconnect_count = 0;
                 }
-                call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);});
+                var create_transport = null;
+                if(window.WebSocket && (websocket_reconnect_count > 0)){
+                    websocket_reconnect_count -= 1;
+                    console.warn('creating a new websocket connection retry left',
+                                    websocket_reconnect_count);
+                    create_transport = publicator.transports.websocket;
+                    
+                }else{
+                    console.warn('creating a new http transport');
+                    create_transport = publicator.transports.http;
+                }
+
+                var old_handlers = null;
+                if(publicatorClient.transport){
+                    var default_handlers= {onopen_handler_list: [],
+                                           onclose_handler_list: [],
+                                           onmessage_handler_list:[],
+                                           oninfo_handler_list:[],
+                                           onerror_handler_list:[]};
+                    // remove handlers from old transport
+                    old_handlers = publicatorClient.transport.handlers;
+                    publicatorClient.transport.handlers = default_handlers;
+                }
+                var transport = create_transport(publicator.host, session_id);
+                publicatorClient.transport = transport;
+                // if there is already created handlers add them to new handler.
+                if(old_handlers){
+                    transport.handlers = old_handlers;
+                }else{
+                    //add transport event handlers
+                    transport.onopen(function(evt){
+                        // if publicatorClient is being initialized return
+                        // putlicatorClient to callback
+                        if(publicatorClient.status ===
+                           publicatorClient.status_list.initializing){
+                            callback(publicatorClient);
+                        }
+                        call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);});
 
 
-            transport.onmessage(function(obj){
-                switch(obj.type){
-                case 'subscribed':
-                    publicatorClient.trigger_info(obj);
-                    break;
-                case 'consumers':
-                    publicatorClient.trigger_info(obj);
-                    break;
-                case 'add_subscribtion':
-                    publicatorClient.trigger_info(obj);
-                    break;
-                case 'remove_subscribtion':
-                    publicatorClient.trigger_info(obj);
-                    break;
-                case 'error':
-                    publicatorClient.trigger_error(obj);
-                    break;
-                default:
-                    publicatorClient.trigger_message(obj);
-                    break;
-                }});
+                    transport.onmessage(function(obj){
+                        switch(obj.type){
+                        case 'subscribed':
+                            publicatorClient.trigger_info(obj);
+                            break;
+                        case 'consumers':
+                            publicatorClient.trigger_info(obj);
+                            break;
+                        case 'add_subscribtion':
+                            publicatorClient.trigger_info(obj);
+                            break;
+                        case 'remove_subscribtion':
+                            publicatorClient.trigger_info(obj);
+                            break;
+                        case 'error':
+                            publicatorClient.trigger_error(obj);
+                            break;
+                        default:
+                            publicatorClient.trigger_message(obj);
+                            break;
+                        }});
+                }
+            }
+            init_transport();
             
             return publicatorClient;
         }//get_client
@@ -237,7 +269,6 @@
     ////////////////
     
     publicator.transports = {};
-
     function make_transport(obj){
         var handlers = {
             onopen_handler_list: [],
@@ -331,10 +362,12 @@
             // Bind websocket events to publicatorClient events
             
             websocket.onopen = transport.trigger_onopen;
-            websocket.onclose = transport.trigger_on_close;
+            websocket.onclose = transport.trigger_onclose;
     
             websocket.onerror = function(evt){
-                transport.trigger_on_error(evt);};
+                // transport.trigger_error(evt);
+                init_transport();
+            };
     
             websocket.onmessage = function(evt){
                 console.log('Websocket_on_message_handler', evt);
