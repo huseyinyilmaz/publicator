@@ -23,19 +23,8 @@
 
 handle_request(<<"get_messages">>, Session_id, _Data, _Extra_data)->
     case server:get_messages(Session_id) of
-        {ok, Result_dict} ->
-            %% Msg_list = [{<<"channel1">>, [{message, <<"msg">>}, ..]},
-            %%             {<<"channel2">>,..}]
-
-            %% Msg_json = [ {[{<<"channel1">>, [ {[{message, <<"meg">>}]},.. ]}]},
-            %%                {<<"channel2">>, ....  }]}]
-            Message_list = dict:to_list(Result_dict),
-            Result_list = [{lists:map(
-                              fun({Channel_name, Msg_list})->
-                                      {Channel_name, lists:map(fun(S)->{[S]} end, Msg_list)}
-                              end,
-                              Message_list)}],
-            jiffy:encode(Result_list);
+        {ok, Messages_list} ->
+            h_utils:message_list_response(Messages_list);
         {error, consumer_not_found} ->
             h_utils:no_session_response()
     end;
@@ -65,8 +54,10 @@ handle_request(<<"unsubscribe">>, Session_id, Data, _Extra_data)->
     h_utils:make_response(<<"unsubscribed">>, Data);
 
 handle_request(<<"get_subscribtions">>, Session_id, _Data, _Extra_data)->
-    {ok, Subscribtion_data} = server:get_subscribtions(Session_id),
-    h_utils:make_response(<<"subscribtions">>, Subscribtion_data);
+    case server:get_subscribtions(Session_id) of
+        {ok, Subscribtion_data} -> h_utils:make_response(<<"subscribtions">>, Subscribtion_data);
+        {error, consumer_not_found} -> h_utils:no_session_response()
+    end;
 
 handle_request(<<"publish">>, Session_id, Data, Extra_data)->
     {Data_plist} = Data,

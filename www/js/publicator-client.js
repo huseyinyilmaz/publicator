@@ -1,6 +1,6 @@
 (function(){
     "use strict";
-
+    // window.WebSocket = undefined;
     window.enable_logging = true;
 
     function get_random_string(){
@@ -21,7 +21,6 @@
     window.publicator = {
         host: '',
         websocket_host: '',
-
         set_host: function(host){
             if(!host){
                 host = '';}
@@ -36,7 +35,7 @@
                     }else{
                         callback({type:'error', data: "Unexpected status: " + this.status + ""});
                     }
-                };
+                }
             };//readystatechange
             xhr.open('POST', url);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -188,9 +187,12 @@
             function call_fun_list(fun_list, evt){
                 fun_list.forEach(function(element){element(evt);});}
 
-            // var Transport = publicator.transports.http;
-            var Transport = publicator.transports.websocket;
-            var transport = Transport(publicator.host, session_id);
+            var create_transport = publicator.transports.http;
+            if(window.WebSocket){
+                create_transport = publicator.transports.websocket;
+            }
+            // var Transport = publicator.transports.websocket;
+            var transport = create_transport(publicator.host, session_id);
             publicatorClient.transport = transport;
 
             transport.onopen(function(evt){
@@ -226,7 +228,7 @@
             
             return publicatorClient;
         }//get_client
-    };//window.publicator
+    };//window.publiactor
 
 
     /////////////////////////////////////////////////////////////
@@ -281,6 +283,7 @@
                     session_id + '/http/';
 
             var transport = {
+                hearthbeat: 1000,
                 send: function(obj){
                     var callback = function(result){
                         console.log('Http_on_message_handler', result);
@@ -290,8 +293,21 @@
                 }
             };//transport
             make_transport(transport);
-            // better way?
-            setTimeout(function(){transport.trigger_onopen();}, 100);
+            var first_run = true;
+            function poll_messages(){
+                if(first_run){
+                    transport.trigger_onopen();
+                }
+                first_run = false;
+                http_send(url, {type:'get_messages'},function(data){
+                    data.forEach(function(msg){transport.trigger_message(msg);});
+                    setTimeout(poll_messages, transport.hearthbeat);    
+                });
+                
+            }
+
+            setTimeout(poll_messages, transport.hearthbeat);
+            
             return transport;
         };
     /////////////////////////

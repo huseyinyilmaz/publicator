@@ -10,7 +10,7 @@
 
 %% API
 -export([start/0, stop/0]).
--export([get_messages/2, get_messages/1, publish/4,
+-export([get_messages/1, publish/4,
 	 subscribe/4, unsubscribe/2,
 	 get_subscribtions/1,
 	 create_consumer/2, get_consumer/1, get_channels/0]).
@@ -57,14 +57,6 @@ get_channels() ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
--spec get_messages(binary(), binary()) -> {ok, [binary()]} | {error, consumer_not_found}.
-get_messages(Consumer_code, Channel_code) ->
-    case s_consumer:get(Consumer_code) of
-	{ok, Consumer_pid} ->
-	    s_consumer:get_messages(Consumer_pid, Channel_code);
-	{error, not_found} -> {error, consumer_not_found}
-    end.
- 
 -spec get_messages(binary()) -> {ok, dict()} | {error, consumer_not_found}.
 get_messages(Consumer_code) ->
     case s_consumer:get(Consumer_code) of

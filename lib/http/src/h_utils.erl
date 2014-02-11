@@ -10,12 +10,16 @@
 
 %% API
 -export([make_response/2, make_response/3]).
+-export([message_response/1]).
+-export([message_list_response/1]).
+-export([serialize_response/1]).
 -export([error_response/1, error_response/2]).
 -export([no_session_response/0]).
 -export([no_session_arg_response/0]).
 -export([permission_denied_response/0]).
 -export([ok_response/0]).
 -export([wrap_with_callback_fun/2]).
+-include("../../server/include/server.hrl").
 
 %%%===================================================================
 %%% API
@@ -56,6 +60,47 @@ no_session_arg_response() -> h_utils:error_response(<<"There is no session provi
 ok_response()->
     make_response(<<"response">>,true).
 
+
+serialize_response(#message{type=message,
+                            channel_code=Channel_code,
+                            data=Message})->
+    {[{<<"type">>, <<"message">>},
+      {<<"data">>, Message},
+      {<<"channel_code">>, Channel_code}]};
+
+serialize_response(#message{type=cached_message,
+                            channel_code=Channel_code,
+                            data=Message})->
+    {[{<<"type">>, <<"cached_message">>},
+      {<<"data">>, Message},
+      {<<"channel_code">>, Channel_code}]};
+
+serialize_response(#message{type=add_subscribtion,
+                            channel_code=Channel_code,
+                            data=Consumer_code})->
+    {[{<<"type">>, <<"add_subscribtion">>},
+      {<<"data">>, Consumer_code},
+      {<<"channel_code">>, Channel_code}]};
+
+serialize_response(#message{type=remove_subscribtion,
+                            channel_code=Channel_code,
+                            data=Consumer_code})->
+    {[{<<"type">>, <<"remove_subscribtion">>},
+      {<<"data">>, Consumer_code},
+      {<<"channel_code">>, Channel_code}]};
+
+serialize_response(Msg)->
+    lager:warning("Unhandled messagetype ~p",[Msg]),
+    {[{<<"type">>, <<"unhandled_info">>},
+      {<<"data">>, tuple_to_list(Msg)}]}.
+
+
+message_response(Msg)->
+    jiffy:encode(serialize_response(Msg)).
+
+message_list_response(Msg_list)->
+    jiffy:encode(lists:map(fun serialize_response/1,
+                           Msg_list)).
 %%--------------------------------------------------------------------
 %% @doc
 %% If callback is undefined returns body as it is.

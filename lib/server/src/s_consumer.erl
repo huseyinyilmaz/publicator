@@ -16,7 +16,7 @@
 %% API
 -export([start_link/3, get/1, get_code/1,
 	 get_count/0, stop/1, push_message/3,
-	 get_messages/2, get_messages/1, subscribe/4,
+	 get_messages/1, subscribe/4,
 	 publish/4, get_subscribtions/1, unsubscribe/2,
 	 add_message_handler/2, remove_message_handler/2]).
 
@@ -36,7 +36,9 @@
 -record(state, {code :: binary(),            % consumer code
 		channels :: dict(),          % consumer's channel list
 		channels_cache ::dict(),     % channels cache that this consumer reached
-		messages :: dict(),          % messages dict (for rest interface)
+		messages :: queue(),          % messages dict (for rest interface)
+                max_message_count :: number(),
+                current_message_count :: number(),
 		handlers :: [pid()],         % current listeners that will received messages
                 permission_module :: atom(), % permission_module
                 permission_state :: term()   % permission_state
@@ -78,12 +80,6 @@ get_code(Pid) ->
 -spec get_messages(pid()) -> {ok, dict()}.
 get_messages(Pid) ->
     gen_server:call(Pid, get_messages).
-
-
--spec get_messages(pid(), binary()) -> {ok, [binary()]}.
-get_messages(Pid, Channel_code) ->
-    gen_server:call(Pid, {get_messages, Channel_code}).
-
 
 -spec push_message(pid(), binary(), binary())-> ok.
 push_message(Pid, Channel_code, Message) ->
@@ -152,7 +148,9 @@ init([Code, Permission_module, Permission_state]) ->
 	     #state{code=Code,
 		    channels=dict:new(),
 		    channels_cache=dict:new(),
-		    messages=dict:new(),
+		    messages=queue:new(),
+                    max_message_count=20,
+                    current_message_count=0,
 		    handlers=[],
                     permission_module=Permission_module,
                     permission_state=Permission_state},
@@ -281,27 +279,10 @@ handle_call({remove_message_handler, Handler_pid}, _From,
     {reply, Reply, State#state{handlers=lists:delete(Handler_pid, Handler_list)}, ?TIMEOUT};
 
 
-
-
-%% Gets all messages for this user
-handle_call({get_messages, Channel_code}, _From, #state{messages=Messages_dict}=State) ->
-    Messages = case dict:find(Channel_code, Messages_dict) of
-		   error -> [];
-		   {ok, Result} -> Result
-	       end,
-    Messages_dict2 = dict:erase(Channel_code, Messages_dict),
-    %% Messages is type of {Type, Message} we should return this properly
-    Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=Messages_dict2},
-    ?TIMEOUT};
-
 %% Gets all messages for this user and returns them
-handle_call(get_messages, _From, #state{messages=Messages_dict}=State) ->
-    %% Messages = lists:map(fun({_Key, Value}) -> Value end,
-    %% 			 dict:to_list(Messages_dict)),
-    Messages = Messages_dict,
-    Reply = {ok, Messages},
-    {reply, Reply, State#state{messages=dict:new()}, ?TIMEOUT};
+handle_call(get_messages, _From, #state{messages=Messages_queue}=State) ->
+    Reply = {ok, queue:to_list(Messages_queue)},
+    {reply, Reply, State#state{messages=queue:new()}, ?TIMEOUT};
 
 handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
     Reply = {ok, dict:fetch_keys(Channels_dict)},
@@ -342,23 +323,45 @@ handle_cast({push_add_subscribtion, Channel_code, Consumer_code}, State) ->
 handle_cast({push_remove_subscribtion, Channel_code, Consumer_code}, State) ->
     handle_cast({push, remove_subscribtion, Channel_code, Consumer_code}, State);
 
-handle_cast({push, Message_type, Channel_code, Message},
-	    #state{messages=Messages_dict, handlers=[]}=State) ->
-    {noreply, State#state{messages=dict:append(Channel_code, {Message_type, Message},
-					       Messages_dict)},
+handle_cast({push, Message_type, Channel_code, Msg},
+	    #state{messages=Message_queue,
+                   max_message_count=Max_message_count,
+                   current_message_count=Current_message_count,
+                   handlers=[]}=State) ->
+    
+    Message = #message{type=Message_type,
+                       data=Msg,
+                       channel_code=Channel_code},
+
+    if
+        Max_message_count =< Current_message_count ->
+            Message_queue1 = queue:drop(queue:in(Message,Message_queue)),
+            Current_message_count1 = Current_message_count;
+        Max_message_count > Current_message_count ->
+            Message_queue1 = queue:in(Message,Message_queue),
+            Current_message_count1 = Current_message_count + 1
+    end,
+    
+    {noreply, State#state{messages=Message_queue1,
+                          current_message_count=Current_message_count1},
      ?TIMEOUT};
 
-handle_cast({push, Message_type, Channel_code, Message},
+handle_cast({push, Message_type, Channel_code, Msg},
 	    #state{handlers=Handler_list}=State) ->
     Alive_handler_list = lists:filter(fun is_process_alive/1, Handler_list),
     New_state = State#state{handlers=Alive_handler_list},
     case Alive_handler_list of
 	[] ->
 	    lager:info("All hadlers are dead, Switch to buffer mode"),
-	    handle_cast({push, Message_type, Channel_code, Message}, New_state);
-	_ -> lists:foreach(fun(Pid)->
-				   Pid ! {Message_type, Channel_code, Message}
-			   end, Handler_list),
+	    handle_cast({push, Message_type, Channel_code, Msg}, New_state);
+	_ ->
+            Message = #message{type=Message_type,
+                               data=Msg,
+                               channel_code=Channel_code},
+
+            lists:foreach(fun(Pid)->
+				   Pid ! Message
+                          end, Handler_list),
 	     {noreply, New_state, ?TIMEOUT}
 	end;
 
