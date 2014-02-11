@@ -189,7 +189,7 @@
 
             var websocket_reconnect_count = 5;
             
-            function init_transport(){
+            publicator.init_transport = function(){
                 if(!window.WebSocket){
                     websocket_reconnect_count = 0;
                 }
@@ -255,8 +255,8 @@
                             break;
                         }});
                 }
-            }
-            init_transport();
+            };
+            publicator.init_transport();
             
             return publicatorClient;
         }//get_client
@@ -366,7 +366,7 @@
     
             websocket.onerror = function(evt){
                 // transport.trigger_error(evt);
-                init_transport();
+                publicator.init_transport();
             };
     
             websocket.onmessage = function(evt){
