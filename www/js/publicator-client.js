@@ -17,7 +17,10 @@
     function is_secure(){
         return document.location.protocol == 'https:';
     }
-    
+
+    function call_fun_list(fun_list, evt){
+        fun_list.forEach(function(element){element(evt);});}
+
     window.publicator = {
         host: '',
         websocket_host: '',
@@ -71,33 +74,8 @@
                 }
             }
 
-            // function callback_fun(e){
-            //     var session_id = e.session;
-            //     // if there is no session id throw given server error
-            //     // like permission denied.
-            //     if(!session_id){
-            //         throw e.error;
-            //     }
-            //     callback(session_id);}
-
             var url = ((is_secure()?'https://':'http://') + this.host + '/session/');
 
-            // if host is external add callback param to activate jsonp
-            // if(this.host)
-            //     url += '/?callback=?';
-            //Add random string string to end of the url so it will not be cached from browser
-            // $.ajax({
-            //     dataType: "json",
-            //     url: url,
-            //     data: {auth_info: 'publicator_client.js_test_auth'},
-            //     success: callback_fun
-            // });
-            
-            //Add random string string to end of the url so it will not be cached from browser
-            // publicator.send_ajax('POST',
-            //                      url,
-            //                      {auth_info: 'publicator_client.js_test_auth'},
-            //                      callback_fun);
             var session_transport = publicator.send_jsonp;
             if(document.location.host == this.host)
                 session_transport = publicator.send_ajax;
@@ -115,6 +93,8 @@
 
             // Create chat client 
             var publicatorClient = {
+                session_id: session_id,
+                websocket_reconnect_count: 5,
                 status_list: status_list,
                 status: status_list.initializing,
                 host: publicator.host,
@@ -176,87 +156,87 @@
                 trigger_error: function(data){
                     publicatorClient.handlers.onerror_handler_list.forEach(
                         function(fun){fun(data);});
-                }
+                },
+
+                attach_transport: function(transport){
+                    if(this.transport){
+                        var default_handlers= {onopen_handler_list: [],
+                                               onclose_handler_list: [],
+                                               onmessage_handler_list:[],
+                                               oninfo_handler_list:[],
+                                               onerror_handler_list:[]};
+                        // remove handlers from old transport
+                        transport.handlers = this.transport.handlers;
+                        this.transport.close();
+                        this.transport.handlers = default_handlers;
+                    }else{
+                        transport.onopen(function(evt){
+                            // if publicatorClient is being initialized return
+                            // putlicatorClient to callback
+                            if(publicatorClient.status ===
+                               publicatorClient.status_list.initializing){
+                                callback(publicatorClient);
+                            }
+                            call_fun_list(publicatorClient.handlers.onopen_handler_list,
+                                          evt);});
+
+                        transport.onmessage(function(obj){
+                            switch(obj.type){
+                            case 'subscribed':
+                                publicatorClient.trigger_info(obj);
+                                break;
+                            case 'consumers':
+                                publicatorClient.trigger_info(obj);
+                                break;
+                            case 'add_subscribtion':
+                                publicatorClient.trigger_info(obj);
+                                break;
+                            case 'remove_subscribtion':
+                                publicatorClient.trigger_info(obj);
+                                break;
+                            case 'error':
+                                publicatorClient.trigger_error(obj);
+                                break;
+                            default:
+                                publicatorClient.trigger_message(obj);
+                                break;
+                            }});
+
+                        transport.onerror(function(error){
+                            //XXX close old transport
+                            //XXX create a new session_id
+                            publicatorClient.init_transport();
+                        });
+                    }
+                    this.transport = transport;
+                },//attach_transport
                 
+                // initializes new transport for current client
+                // make sure that pucliatorClient.session_id is assigned before
+                // calling this function
+                init_transport: function(){
+                    if(!window.WebSocket){
+                        this.websocket_reconnect_count = 0;
+                    }
+                    var create_transport = null;
+                    if(window.WebSocket && (this.websocket_reconnect_count > 0)){
+                        this.websocket_reconnect_count -= 1;
+                        console.warn('creating a new websocket connection retry left',
+                                        this.websocket_reconnect_count);
+                        create_transport = publicator.transports.websocket;
+                        
+                    }else{
+                        console.warn('creating a new http transport');
+                        create_transport = publicator.transports.http;
+                    }
+    
+                    var transport = create_transport(publicator.host,
+                                                     publicatorClient.session_id);
+                    this.attach_transport(transport);
+                }//init_transport
             };
-            // var websocket_host = location.host;
-            // if(this.host !== ''){
-            var websocket_host = publicator.host;
-            // }
-
-            function call_fun_list(fun_list, evt){
-                fun_list.forEach(function(element){element(evt);});}
-
-            var websocket_reconnect_count = 5;
             
-            publicator.init_transport = function(){
-                if(!window.WebSocket){
-                    websocket_reconnect_count = 0;
-                }
-                var create_transport = null;
-                if(window.WebSocket && (websocket_reconnect_count > 0)){
-                    websocket_reconnect_count -= 1;
-                    console.warn('creating a new websocket connection retry left',
-                                    websocket_reconnect_count);
-                    create_transport = publicator.transports.websocket;
-                    
-                }else{
-                    console.warn('creating a new http transport');
-                    create_transport = publicator.transports.http;
-                }
-
-                var old_handlers = null;
-                if(publicatorClient.transport){
-                    var default_handlers= {onopen_handler_list: [],
-                                           onclose_handler_list: [],
-                                           onmessage_handler_list:[],
-                                           oninfo_handler_list:[],
-                                           onerror_handler_list:[]};
-                    // remove handlers from old transport
-                    old_handlers = publicatorClient.transport.handlers;
-                    publicatorClient.transport.handlers = default_handlers;
-                }
-                var transport = create_transport(publicator.host, session_id);
-                publicatorClient.transport = transport;
-                // if there is already created handlers add them to new handler.
-                if(old_handlers){
-                    transport.handlers = old_handlers;
-                }else{
-                    //add transport event handlers
-                    transport.onopen(function(evt){
-                        // if publicatorClient is being initialized return
-                        // putlicatorClient to callback
-                        if(publicatorClient.status ===
-                           publicatorClient.status_list.initializing){
-                            callback(publicatorClient);
-                        }
-                        call_fun_list(publicatorClient.handlers.onopen_handler_list, evt);});
-
-
-                    transport.onmessage(function(obj){
-                        switch(obj.type){
-                        case 'subscribed':
-                            publicatorClient.trigger_info(obj);
-                            break;
-                        case 'consumers':
-                            publicatorClient.trigger_info(obj);
-                            break;
-                        case 'add_subscribtion':
-                            publicatorClient.trigger_info(obj);
-                            break;
-                        case 'remove_subscribtion':
-                            publicatorClient.trigger_info(obj);
-                            break;
-                        case 'error':
-                            publicatorClient.trigger_error(obj);
-                            break;
-                        default:
-                            publicatorClient.trigger_message(obj);
-                            break;
-                        }});
-                }
-            };
-            publicator.init_transport();
+            publicatorClient.init_transport();
             
             return publicatorClient;
         }//get_client
@@ -321,7 +301,9 @@
                         transport.trigger_message(result);
                     };
                     http_send(url, obj, callback);
-                }
+                },
+                
+                close: function(){}
             };//transport
             make_transport(transport);
             var first_run = true;
@@ -331,7 +313,9 @@
                 }
                 first_run = false;
                 http_send(url, {type:'get_messages'},function(data){
-                    data.forEach(function(msg){transport.trigger_message(msg);});
+                    data.forEach(function(msg){
+                        console.log('new http message', msg);
+                        transport.trigger_message(msg);});
                     setTimeout(poll_messages, transport.hearthbeat);    
                 });
                 
@@ -349,7 +333,13 @@
             var transport = {
                 send: function(obj){
                     var json_string = JSON.stringify(obj);
-                    transport.websocket.send(json_string);
+                    this.websocket.send(json_string);
+                },
+                close: function(){
+                    if(this.websocket.readyState == this.websocket.OPEN){
+                        this.websocket.close();
+                    }
+                    
                 }
             };//transport
 
@@ -365,8 +355,7 @@
             websocket.onclose = transport.trigger_onclose;
     
             websocket.onerror = function(evt){
-                // transport.trigger_error(evt);
-                publicator.init_transport();
+                transport.trigger_error(evt);
             };
     
             websocket.onmessage = function(evt){
