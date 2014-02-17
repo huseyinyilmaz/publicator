@@ -7,7 +7,6 @@ APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xm
 
 build: clean compile
 	@$(REBAR) generate
-	cp -r www rel/publicator
 	cd rel; tar -czvf publicator.tar.gz publicator
 	rm -rf rel/publicator
 	mv rel/publicator.tar.gz .
