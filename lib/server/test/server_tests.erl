@@ -1,5 +1,8 @@
 -module(server_tests).
 -include_lib("eunit/include/eunit.hrl").
+
+-include("../include/server.hrl").
+
 -export([setup_server/0, cleanup_server/1]).
 
 -define(CONSUMER1, <<"consumercode1">>).
@@ -49,8 +52,6 @@ server_uninitialized_session_test_()->
 	     Consumer_code = ?CONSUMER1,
 	     Channel_code = ?CHANNEL1,
 	     %% test uninitialized sesssions
-             ?assertEqual({error, consumer_not_found},
-			  server:get_messages(Consumer_code, Channel_code)),
              ?assertEqual({error, consumer_not_found},
 			  server:get_messages(Consumer_code)),
              ?assertEqual({error, consumer_not_found},
@@ -150,32 +151,38 @@ server_message_test_() ->
 	     timer:sleep(?DELAY),
 	     %% test get_messages
 	     {ok, Messages} = server:get_messages(Consumer_code2),
-	     ?assertEqual({ok,[{message, ?MESSAGE1},
-			       {message,?MESSAGE2}]}, dict:find(Channel_code, Messages)),
+             Expected_messages = [#message{type=message,
+                                           data=?MESSAGE1,
+                                          channel_code=Channel_code},
+                                  #message{type=message,
+                                           data=?MESSAGE2,
+                                          channel_code=Channel_code}],
+	     ?assertEqual(Messages, Expected_messages),
 	     {ok, Messages2} = server:get_messages(Consumer_code1),
-	     ?assertEqual({ok,[{message, ?MESSAGE1},
-			       {message, ?MESSAGE2}]}, dict:find(Channel_code, Messages2)),
+	     ?assertEqual(Expected_messages, Messages2),
 	     
 	     %% make sure that Messages has been cleared
 	     {ok, Messages3} = server:get_messages(Consumer_code2),
-	     ?assertEqual(error, dict:find(Channel_code, Messages3)),
+	     ?assertEqual(Messages3, []),
 	     %% make usre that original sender did not get the messages
 	     {ok, Messages4} = server:get_messages(Consumer_code1),
-	     ?assertEqual(error, dict:find(Channel_code, Messages4)),
+	     ?assertEqual(Messages4,[]),
 	     %% make sure that channels are seperate
              ?assertEqual(ok, server:subscribe(Consumer_code2, Channel_code2, message_only, ?EXTRA_DATA)),
+	     timer:sleep(?DELAY),
              ok = server:publish(Consumer_code1, Channel_code, ?MESSAGE1, ?EXTRA_DATA),
              ok = server:publish(Consumer_code1, Channel_code2, ?MESSAGE2, ?EXTRA_DATA),
 	     timer:sleep(?DELAY),
+             {ok, Messages5} = server:get_messages(Consumer_code2),
+             Expected_messages5 = [#message{type=message,
+                                            data=?MESSAGE1,
+                                            channel_code=Channel_code},
+                                   #message{type=message,
+                                            data=?MESSAGE2,
+                                            channel_code=Channel_code2}],
+             
 	     %% test get_messages single channel
-	     ?assertEqual({ok,[{message, ?MESSAGE1}]},
-			  server:get_messages(Consumer_code2, Channel_code)),
-	     ?assertEqual({ok,[]},
-			  server:get_messages(Consumer_code2, Channel_code)),
-	     %% test get rest of the channels after getting one channnel
-	     {ok, Messages5} = server:get_messages(Consumer_code2),
-	     ?assertEqual({ok,[{message, ?MESSAGE2}]}, dict:find(Channel_code2, Messages5)),
-	     ?assertEqual(error, dict:find(Channel_code, Messages5)),
+             ?assertEqual(Messages5, Expected_messages5),
              %% tests unsubscribe
              ?assertEqual(ok, server:unsubscribe(Consumer_code1, Channel_code)),
              ?assertEqual(ok, server:unsubscribe(Consumer_code2, Channel_code))
@@ -218,12 +225,12 @@ server_handler_message_only_mode_test_() ->
 		 server:add_message_handler(Consumer_code2, Mock3_pid),
 		 server:add_message_handler(Consumer_code2, Mock4_pid),
 
-		 Expected_msg1 = {message,
-				  Channel_code,
-				  Message1},
-		 Expected_msg2 = {message,
-				  Channel_code2,
-				  Message2},
+		 Expected_msg1 = #message{type=message,
+                                          data=Message1,
+                                          channel_code=Channel_code},
+		 Expected_msg2 = #message{type=message,
+                                          data=Message2,
+                                          channel_code=Channel_code2},
 
 		 s_consumer:publish(Consumer_pid1, Channel_code, Message1, ?EXTRA_DATA),
 		 timer:sleep(?DELAY),
@@ -270,13 +277,13 @@ server_all_handler_mode_test_() ->
 		 ?assertEqual(ok,
 			      server:subscribe(Consumer_code2, Channel_code2, all, ?EXTRA_DATA)),
 		 %% Receive add_subscribtion messages.
-		 Expected_add_subscribtion_msg1 = {add_subscribtion,
-						   Channel_code,
-						   Consumer_code2},
-		 Expected_add_subscribtion_msg2 = {add_subscribtion,
-						   Channel_code2,
-						   Consumer_code2},
-		 
+		 Expected_add_subscribtion_msg1 = #message{type=add_subscribtion,
+                                                           data=Consumer_code2,
+                                                           channel_code=Channel_code},
+		 Expected_add_subscribtion_msg2 = #message{type=add_subscribtion,
+                                                           data=Consumer_code2,
+                                                           channel_code=Channel_code2},
+                 
 		 ?assertEqual(Expected_add_subscribtion_msg1,
 			      process_mock:receive_message(mock1)),
 		 
@@ -284,12 +291,12 @@ server_all_handler_mode_test_() ->
 			      process_mock:receive_message(mock1)),
 
 		 %% publish messages
-		 Expected_msg1 = {message,
-				  Channel_code,
-				  Message1},
-		 Expected_msg2 = {message,
-				  Channel_code2,
-				  Message2},
+		 Expected_msg1 = #message{type=message,
+                                          data=Message1,
+                                          channel_code=Channel_code},
+		 Expected_msg2 = #message{type=message,
+                                          data=Message2,
+                                          channel_code=Channel_code2},
 
 		 s_consumer:publish(Consumer_pid1, Channel_code, Message1, ?EXTRA_DATA),
 		 s_consumer:publish(Consumer_pid2, Channel_code2, Message2, ?EXTRA_DATA),
@@ -303,12 +310,12 @@ server_all_handler_mode_test_() ->
 
 
 		 %% Receive add_subscribtion messages.
-		 Expected_remove_subscribtion_msg1 = {remove_subscribtion,
-						   Channel_code,
-						   Consumer_code2},
-		 Expected_remove_subscribtion_msg2 = {remove_subscribtion,
-						   Channel_code2,
-						   Consumer_code2},
+		 Expected_remove_subscribtion_msg1 = #message{type=remove_subscribtion,
+                                                              data=Consumer_code2,
+                                                              channel_code=Channel_code},
+		 Expected_remove_subscribtion_msg2 = #message{type=remove_subscribtion,
+                                                              data=Consumer_code2,
+                                                              channel_code=Channel_code2},
 
 		 
 		 ?assertEqual(ok,

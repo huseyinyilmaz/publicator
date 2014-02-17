@@ -1,5 +1,8 @@
 -module(static_auth_backend_tests).
 -include_lib("eunit/include/eunit.hrl").
+
+-include("../include/server.hrl").
+
 -export([setup_server/0, cleanup_server/1]).
 -export([setup_server_open_all_permissions/0]).
 -export([setup_server_close_all_permissions/0]).
@@ -63,7 +66,9 @@ server_opened_auth_test_() ->
              ok = server:publish(Consumer_code1, ?CHANNEL1, ?MESSAGE1, ?EXTRA_DATA),
              timer:sleep(?DELAY),
 	     {ok, Messages} = server:get_messages(Consumer_code1),
-	     ?assertEqual({ok,[{message, ?MESSAGE1}]}, dict:find(?CHANNEL1, Messages))
+	     ?assertEqual([#message{type=message,
+                                    data=?MESSAGE1,
+                                    channel_code=?CHANNEL1}], Messages)
          end)
      }}.
 
