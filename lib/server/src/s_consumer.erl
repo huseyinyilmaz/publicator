@@ -282,7 +282,8 @@ handle_call({remove_message_handler, Handler_pid}, _From,
 %% Gets all messages for this user and returns them
 handle_call(get_messages, _From, #state{messages=Messages_queue}=State) ->
     Reply = {ok, queue:to_list(Messages_queue)},
-    {reply, Reply, State#state{messages=queue:new()}, ?TIMEOUT};
+    {reply, Reply, State#state{messages=queue:new(),
+                               current_message_count=0}, ?TIMEOUT};
 
 handle_call(get_subscribtions, _From, #state{channels=Channels_dict}=State)->
     Reply = {ok, dict:fetch_keys(Channels_dict)},
