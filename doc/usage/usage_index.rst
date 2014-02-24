@@ -4,7 +4,8 @@ Usage
 .. toctree::
    :maxdepth: 2
 
-   web_client
    running
+   web_interface
    javascript
-   rest
+   python
+   http

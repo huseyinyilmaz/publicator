@@ -1,14 +1,24 @@
-Using publicator from rest interface
+Using publicator from http interface
 ------------------------------------
 
+If You need to connect publicator from an interface that is not provided. You can roll your own with simple http interface of publicator.
 First thing you should do to use publictor is to get a session id from the system. You can get your session id from session/
 
 .. code-block:: bash
 
-   $ curl http://localhost:8766/session/
-   {"session":"session123"}
+   $ curl --request POST localhost:8766/session/ --include --data "{\"some_auth_data\": \"bla\"}"
+   HTTP/1.1 200 OK
+   connection: keep-alive
+   server: Cowboy
+   date: Mon, 24 Feb 2014 09:49:16 GMT
+   content-length: 42
+   content-type: application/json; charset=utf-8
 
-Here You get a session id "session123" from the system. With this session id You can use publicator. System will recognize You with this session id and associates your subscribed channels to You.
+   {"type":"session_created","data":"session123"}
+
+Here, We send a post request to server. Body of the post request is a json that will be send to authentication backend as a "auth_info".
+
+In result, You get a session id "session123" from the system. System will recognize You with this session id and associates your subscribed channels to You.
 
 To subscribe a channel:
 
