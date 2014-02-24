@@ -30,17 +30,17 @@ start(_Type, _Args) ->
     Key_file =  s_utils:get_env(http, keyfile, undefined),
     
     %% start either ssl or ss
-    if
+    {ok, _} = if
         Ssl_port /= undefined, Cert_file /= undefined, Key_file /= undefined ->    
-            {ok, _} = cowboy:start_https(https, Pool_count,
-                                         [{port, Ssl_port},
-                                          {certfile, Cert_file},
-                                          {keyfile, Key_file}],
-                                         [{env, [{dispatch, Dispatch}]}]);
+            cowboy:start_https(https, Pool_count,
+                               [{port, Ssl_port},
+                                {certfile, Cert_file},
+                                {keyfile, Key_file}],
+                               [{env, [{dispatch, Dispatch}]}]);
         true ->
-            {ok, _} = cowboy:start_http(http, Pool_count,
-                                        [{port, Http_port}],
-                                        [{env, [{dispatch, Dispatch}]}])
+            cowboy:start_http(http, Pool_count,
+                              [{port, Http_port}],
+                              [{env, [{dispatch, Dispatch}]}])
     end,
     
     http_sup:start_link().

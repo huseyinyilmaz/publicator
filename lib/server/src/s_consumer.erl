@@ -69,7 +69,9 @@ get(Code) ->
 -spec get_consumers(Pid::pid(),
                    Channel_code::pid(),
                    Extra_data::term())->
-                          list()|{error, permission_denied}.
+                           {ok, list()}
+                               | {error, permission_denied}
+                               | {error, invalid_channel_code}.
 get_consumers(Pid, Channel_code, Extra_data)->
     gen_server:call(Pid,{get_consumers, Channel_code, Extra_data}).
 
@@ -77,7 +79,7 @@ get_consumers(Pid, Channel_code, Extra_data)->
 get_code(Pid) ->
     gen_server:call(Pid, get_code).
 
--spec get_messages(pid()) -> {ok, dict()}.
+-spec get_messages(pid()) -> {ok, [tuple()]}.
 get_messages(Pid) ->
     gen_server:call(Pid, get_messages).
 
@@ -106,14 +108,17 @@ stop(Pid) ->
 get_count() ->
     {ok, ets:info(consumer, size)}.
 
--spec subscribe(pid(), binary(), channel_handler_type(), term()) -> ok.
+-spec subscribe(pid(), binary(), channel_handler_type(), term()) ->
+                       ok | {error, permission_denied}.
 subscribe(Pid, Channel_code, Handler_type, Extra_data)->
     gen_server:call(Pid, {subscribe, Channel_code, Handler_type, Extra_data}).
 
 unsubscribe(Pid, Channel_code)->
     gen_server:call(Pid, {unsubscribe, Channel_code}).
 
--spec publish(pid(), binary(), binary(), list()) -> ok.
+-spec publish(pid(), binary(), binary(), list()) -> ok
+                                                        | {error, consumer_not_found}
+                                                        | {error, permission_denied}.
 publish(Pid, Channel_code, Message, Extra_data)->
     gen_server:call(Pid, {publish, Channel_code, Message, Extra_data}).
 

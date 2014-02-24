@@ -57,7 +57,7 @@ get_channels() ->
 %% 
 %% @end
 %%--------------------------------------------------------------------
--spec get_messages(binary()) -> {ok, dict()} | {error, consumer_not_found}.
+-spec get_messages(binary()) -> {ok, [tuple()]} | {error, consumer_not_found}.
 get_messages(Consumer_code) ->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->
@@ -77,7 +77,7 @@ publish(Consumer_code, Channel_code, Message, Extra_data)->
     end.
 
 -spec subscribe(binary(), binary(), channel_handler_type(), term()) ->
-                       ok | {error, invalid_channel_code}
+                       ok  | {error, invalid_channel_code}
                            | {error, consumer_not_found}
                            | {error, permission_denied}.
 subscribe(Consumer_code, Channel_code, Handler_type, Extra_data) ->
@@ -128,7 +128,8 @@ remove_message_handler(Consumer_code, Handler_pid) ->
 
 
 -spec create_consumer(Auth_info::binary(),
-                      Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
+                      Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}
+                                                 | {error, permission_denied}.
 create_consumer(Auth_info, Extra_data) ->
     s_consumer_sup:start_child(Auth_info, Extra_data).
 
@@ -145,7 +146,11 @@ stop_consumer(Consumer_code) ->
 get_consumer(Consumer_code) ->
     s_consumer:get(Consumer_code).
 
--spec get_consumers(binary(), binary(), list()) -> {ok, [pid()]}.
+-spec get_consumers(binary(), binary(), list()) ->
+                           {ok, [pid()]}
+                               | {error, consumer_not_found}
+                               | {error, permission_denied}
+                               | {error, invalid_channel_code}.
 get_consumers(Consumer_code, Channel_code, Extra_data) ->
     case s_consumer:get(Consumer_code) of
 	{ok, Consumer_pid} ->

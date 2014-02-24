@@ -17,6 +17,7 @@
 -export([no_session_response/0]).
 -export([no_session_arg_response/0]).
 -export([permission_denied_response/0]).
+-export([invalid_channel_code_response/0]).
 -export([ok_response/0]).
 -export([wrap_with_callback_fun/2]).
 -include("../../server/include/server.hrl").
@@ -30,20 +31,20 @@
 %% @end
 %%--------------------------------------------------------------------
 
--spec make_response(Type::binary(), Data::term()) -> binary().
+-spec make_response(Type::binary(), Data::any()) -> binary().
 make_response(Type, Data) ->
     make_response(Type,Data,[]).
 
--spec make_response(Type::binary(), Data::term(), Extra_list::list()) -> binary().
+-spec make_response(Type::binary(), Data::any(), Extra_list::list()) -> binary().
 make_response(Type, Data, Extra_list) ->
     jiffy:encode({[{<<"type">>, Type},
 		   {<<"data">>, Data}| Extra_list]}).
 
--spec error_response(term()) -> binary().
+-spec error_response(any()) -> binary().
 error_response(Data) ->
     error_response(Data,[]).
 
--spec error_response(term(),list()) -> binary().
+-spec error_response(any(),list()) -> binary().
 error_response(Data,Extra_list)->
     make_response(<<"error">>,Data,Extra_list).
 
@@ -59,6 +60,10 @@ no_session_arg_response() -> h_utils:error_response(<<"There is no session provi
 -spec ok_response() -> binary().
 ok_response()->
     make_response(<<"response">>,true).
+
+-spec invalid_channel_code_response() ->binary().
+invalid_channel_code_response() ->
+    error_response(<<"invalid_channel_code">>).
 
 
 serialize_response(#message{type=message,
@@ -98,6 +103,7 @@ serialize_response(Msg)->
 message_response(Msg)->
     jiffy:encode(serialize_response(Msg)).
 
+-spec message_list_response(Msg_list::[tuple()])->binary().
 message_list_response(Msg_list)->
     jiffy:encode(lists:map(fun serialize_response/1,
                            Msg_list)).

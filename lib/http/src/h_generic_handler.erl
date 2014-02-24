@@ -39,7 +39,7 @@ handle_request(<<"subscribe">>, Session_id, Data, Extra_data)->
                    end,
     case server:subscribe(Session_id, Channel_code, Handler_type, Extra_data) of
         {error, invalid_channel_code} ->
-            h_utils:error_response(<<"error">>, <<"invalid_channel_code">>);
+            h_utils:error_response(<<"invalid_channel_code">>);
         {error, consumer_not_found} ->
             h_utils:no_session_response();
         {error, permission_denied} ->
@@ -65,12 +65,12 @@ handle_request(<<"get_consumers">>, Session_id, Data, Extra_data)->
     {Get_consumers_data} = proplists:get_value(<<"data">>, Data_plist),
     Channel_code = proplists:get_value(<<"channel_code">>, Get_consumers_data),
     case server:get_consumers(Session_id, Channel_code, Extra_data) of
-        {error, invalid_channel_code} ->
-            h_utils:error_response(<<"error">>, <<"invalid_channel_code">>);
         {error, consumer_not_found} ->
             h_utils:no_session_response();
         {error, permission_denied} ->
             h_utils:permission_denied_response();
+        {error, invalid_channel_code} ->
+            h_utils:invalid_channel_code_response();
         {ok, Consumer_list} when is_list(Consumer_list)->
             h_utils:make_response(<<"consumers">>, Consumer_list,
                                   [{<<"channel_code">>, Channel_code}])

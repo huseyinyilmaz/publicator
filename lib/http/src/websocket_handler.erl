@@ -65,7 +65,7 @@ websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},
                            consumer_pid=Consumer_pid,
                            consumer_monitor_ref=Ref}=State)->
     
-    debug:warning("Consumer process ~p died for reason ~p", [Session_id, Reason]),
+    lager:warning("Consumer process ~p died for reason ~p", [Session_id, Reason]),
     Result = h_utils:make_response(<<"error">>, <<"Consumer_handler is died unexpectedly">>,
 			   [{<<"reason_for_dead_process">>, Reason}]),
     {reply, {text, Result}, Req, State};

@@ -28,7 +28,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec start_child(Auth_info::binary(),
-                 Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}.
+                  Extra_data::term()) -> {ok, Code::binary(), Pid::pid()}
+                                             | {error, permission_denied}.
 start_child(Auth_info, Extra_data) ->
     {Auth_backend, Auth_state} = s_auth_backend:get_authentication_backend(),
     Code = s_utils:generate_code(),
