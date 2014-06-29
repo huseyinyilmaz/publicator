@@ -33,10 +33,10 @@
 -define(SERVER, ?MODULE). 
 -define(TIMEOUT, 1 * 60 * 1000).                % 1 minute
 
--record(state, {code :: binary(),            % consumer code
-		channels :: dict(),          % consumer's channel list
-		channels_cache ::dict(),     % channels cache that this consumer reached
-		messages :: queue(),          % messages dict (for rest interface)
+-record(state, {code :: binary(),                           % consumer code
+		channels :: dict:dict(binary(), pid()),          % consumer's channel list
+		channels_cache :: dict:dict(binary(), pid()),     % channels cache that this consumer reached
+		messages :: queue:queue(binary()),          % messages dict (for rest interface)
                 max_message_count :: number(),
                 current_message_count :: number(),
 		handlers :: [pid()],         % current listeners that will received messages
@@ -122,7 +122,7 @@ unsubscribe(Pid, Channel_code)->
 publish(Pid, Channel_code, Message, Extra_data)->
     gen_server:call(Pid, {publish, Channel_code, Message, Extra_data}).
 
--spec get_subscribtions(pid()) -> {ok, dict()}.
+-spec get_subscribtions(pid()) -> {ok, dict:dict(binary(), pid())}.
 get_subscribtions(Pid) ->
     gen_server:call(Pid, get_subscribtions).
 

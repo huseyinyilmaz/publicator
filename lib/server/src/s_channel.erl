@@ -28,7 +28,7 @@
 		consumer_table :: ets:tid(),
                 cache_size :: number(),
                 current_cache_size :: number(),
-                cache :: queue(),
+                cache :: queue:queue(binary()),
                 timeout :: number()|infinity}).
 
 -include("../include/server.hrl").

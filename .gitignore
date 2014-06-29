@@ -14,6 +14,7 @@ publicator.tar.gz
 /devutils/sync
 .DS_Store
 .eunit
+.rebar
 deps
 /test
 *.o
