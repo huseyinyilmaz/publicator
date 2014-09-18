@@ -20,7 +20,7 @@
 -export([invalid_channel_code_response/0]).
 -export([ok_response/0]).
 -export([wrap_with_callback_fun/2]).
--include("../../server/include/server.hrl").
+-include("../deps/publicator_core/include/publicator_core.hrl").
 
 %%%===================================================================
 %%% API
