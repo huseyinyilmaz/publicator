@@ -33,7 +33,7 @@ websocket_init(_TransportName, Req, _Opts) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
     case publicator_core:get_consumer(Session_id) of
 	{ok, Consumer_pid} ->
-            ok = server:add_message_handler(Session_id, self()),
+            ok = publicator_core:add_message_handler(Session_id, self()),
 	    Consumer_monitor_ref = monitor(process, Consumer_pid),
             State = #state{session_id=Session_id,
         		   consumer_pid=Consumer_pid,
@@ -90,7 +90,7 @@ handle_terminate(#state{session_id=no_session})-> ok;
 handle_terminate(#state{session_id=Session_id})->
     lager:debug("Terminate websocket handler for session ~p", [Session_id]),
     %% XXX do not stop consumer?
-    ok = server:stop_consumer(Session_id),
+    ok = publicator_core:stop_consumer(Session_id),
     ok.
 
 %%%===================================================================
