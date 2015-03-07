@@ -16,6 +16,7 @@ publicator.tar.gz
 .eunit
 /rebar
 /relx
+/.rebar
 /deps
 *.o
 *.beam

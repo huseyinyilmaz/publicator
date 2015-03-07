@@ -6,34 +6,44 @@ NODE_NAME = publicator@127.0.0.1
 
 APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xmerl inets
 
+.PHONY : all get-deps get-rebar configure compile clean test eunit ct build-erlang-plt build-plt dialyze docs start blackbox
+
 # compile
 all: compile
 
-get-rebar:
+$(REBAR):
 	rm -f rebar
 	wget https://github.com/rebar/rebar/wiki/rebar
 	chmod a+x rebar
 
-get-relx:
+get-rebar: $(REBAR)
+
+RELX_VERSION = 1.2.0
+$(RELX):
 	rm -f relx
-	wget https://drone.io/github.com/erlware/relx/files/relx
+	wget https://github.com/erlware/relx/archive/v$(RELX_VERSION).zip
+	unzip v$(RELX_VERSION).zip
+	cd relx-$(RELX_VERSION);make;mv ./relx ../
+	rm -rf relx-$(RELX_VERSION); rm v$(RELX_VERSION).zip
 	chmod a+x relx
 
+get-relx: $(RELX)
+
 # get dependencies
-get-deps:
+get-deps: $(REBAR)
 	@$(REBAR) get-deps
 
-configure: get-rebar get-relx get-deps
+configure: get-rebar get-deps
 
-compile:
+compile: $(REBAR)
 	@$(REBAR) compile
 
-clean:
+clean: $(REBAR)
 	@$(REBAR) clean
 	if [ -d "test" ]; then rm -f test/*.beam; fi
 	rm -f erl_crash.dump
 
-rel:
+rel: $(RELX)
 	rm -f publicator.tar.gz
 	@$(RELX)
 	cd _rel;tar -czvf publicator.tar.gz publicator;mv publicator.tar.gz ../
@@ -45,10 +55,10 @@ release: clean compile rel
 
 test: clean compile eunit
 
-eunit:
+eunit: $(REBAR)
 	@$(REBAR) eunit skip_deps=true
 
-ct:
+ct: $(REBAR)
 
 	@$(REBAR) ct skip_deps=true
 
@@ -68,7 +78,7 @@ dialyze:
 		-Wrace_conditions -Wunmatched_returns \
 		| grep -v -f ./.dialyzer-ignore-warnings
 # -Wunderspecs
-docs:
+docs: $(REBAR)
 	@$(REBAR) doc skip_deps=true
 
 # start for development
