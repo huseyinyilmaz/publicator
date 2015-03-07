@@ -9,9 +9,21 @@ APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xm
 # compile
 all: compile
 
+get-rebar:
+	rm -f rebar
+	wget https://github.com/rebar/rebar/wiki/rebar
+	chmod a+x rebar
+
+get-relx:
+	rm -f relx
+	wget https://drone.io/github.com/erlware/relx/files/relx
+	chmod a+x relx
+
 # get dependencies
-configure:
+get-deps:
 	@$(REBAR) get-deps
+
+configure: get-rebar get-relx get-deps
 
 compile:
 	@$(REBAR) compile
