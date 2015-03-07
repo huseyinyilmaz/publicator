@@ -1,5 +1,6 @@
 DIALYZER = dialyzer
 REBAR = ./rebar
+RELX = ./relx
 MNESIA_DIR = /tmp/mnesia
 NODE_NAME = publicator@127.0.0.1
 
@@ -19,6 +20,16 @@ clean:
 	@$(REBAR) clean
 	if [ -d "test" ]; then rm -f test/*.beam; fi
 	rm -f erl_crash.dump
+
+rel:
+	rm -f publicator.tar.gz
+	@$(RELX)
+	cd _rel;tar -czvf publicator.tar.gz publicator;mv publicator.tar.gz ../
+	rm -rf _rel
+	echo "release file is publicator.tar.gz"
+
+release: clean compile rel
+
 
 test: clean compile eunit
 
@@ -50,17 +61,17 @@ docs:
 
 # start for development
 start: compile
-	erl -pa lib/*/ebin deps/*/ebin \
-	    -i  lib/*/include deps/*/include \
-	    -config rel/files/sys.config \
+	erl -pa ebin deps/*/ebin \
+	    -i  include deps/*/include \
+	    -config sys.config \
 	    -sync log all \
 	    -lager handlers '[{lager_console_backend, debug}]' \
 	    -mnesia dir '"$(MNESIA_DIR)"' \
 	    -name $(NODE_NAME) \
 	    -eval "sync:go()." \
 	    -s lager \
-	    -s server \
-	    -s http\
+	    -s publicator_core \
+	    -s http
 
 
 blackbox:

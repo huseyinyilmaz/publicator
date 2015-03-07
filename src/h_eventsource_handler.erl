@@ -24,7 +24,7 @@ info({message, Msg}, Req, State) ->
 terminate(_Reason, _Req, #state{session_id=Session_id}) ->
     lager:debug("Terminate eventsource handler for session ~p", [Session_id]),
     %% XXX do not stop consumer?
-    ok = server:stop_consumer(Session_id),
+    ok = publicator_core:stop_consumer(Session_id),
     ok.
 
 id() ->

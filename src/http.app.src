@@ -8,7 +8,7 @@
                 lager,
                 jiffy,
 		cowboy,
-		server
+                publicator_core
 	]},
 	{mod, {http_app, []}},
 	{env, []}

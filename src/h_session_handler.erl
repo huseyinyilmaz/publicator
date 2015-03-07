@@ -34,7 +34,7 @@ handle(Req, State) ->
     Request_data = jiffy:decode(Raw_data),
     {Request_plist} = Request_data,
     Auth_info = proplists:get_value(<<"auth_info">>, Request_plist),
-    case server:create_consumer(Auth_info, Headers) of
+    case publicator_core:create_consumer(Auth_info, Headers) of
         {ok, Consumer_code, _Consumer_pid} ->
             lager:info("Create consumer"),
             Body = jiffy:encode({[{<<"type">>, <<"session_created">>},

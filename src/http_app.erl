@@ -16,18 +16,18 @@
 start(_Type, _Args) ->
     Dispatch = cowboy_router:compile(
 		 [
-		  {s_utils:get_env(http, host, '_'), % host match
+		  {pc_utils:get_env(http, host, '_'), % host match
 		    [{"/session/[...]" , h_session_handler, []},
                      {"/:session/http/", h_http_handler,[]},
 		     {"/:session/ws/", websocket_handler, []}
 		    ]}
                  ]),
 
-    Pool_count = s_utils:get_env(http, pool_count, 100),
-    Http_port = s_utils:get_env(http, port, 8766),
-    Ssl_port = s_utils:get_env(http, ssl_port, undefined),
-    Cert_file = s_utils:get_env(http, certfile, undefined),
-    Key_file =  s_utils:get_env(http, keyfile, undefined),
+    Pool_count = pc_utils:get_env(http, pool_count, 100),
+    Http_port = pc_utils:get_env(http, port, 8766),
+    Ssl_port = pc_utils:get_env(http, ssl_port, undefined),
+    Cert_file = pc_utils:get_env(http, certfile, undefined),
+    Key_file =  pc_utils:get_env(http, keyfile, undefined),
     
     %% start either ssl or ss
     {ok, _} = if

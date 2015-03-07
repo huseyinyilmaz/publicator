@@ -31,7 +31,7 @@ init({ssl, http}, _Req, _Opts) ->
 
 websocket_init(_TransportName, Req, _Opts) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    case server:get_consumer(Session_id) of
+    case publicator_core:get_consumer(Session_id) of
 	{ok, Consumer_pid} ->
             ok = server:add_message_handler(Session_id, self()),
 	    Consumer_monitor_ref = monitor(process, Consumer_pid),
