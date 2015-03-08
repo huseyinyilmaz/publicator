@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 15 Sep 2013 by Huseyin Yilmaz <huseyin@new-host.home>
 %%%-------------------------------------------------------------------
--module(websocket_handler).
+-module(p_websocket_handler).
 -behaviour(cowboy_websocket_handler).
 %% API
 -export([init/3]).
@@ -48,7 +48,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 
 
 websocket_handle({text, _Raw_data}, Req, #state{session_id=no_session}=State) ->
-    Result = h_utils:no_session_response(),
+    Result = p_utils:no_session_response(),
     {reply, {text, Result}, Req, State};
 
 websocket_handle({text, Raw_data}, Req, #state{session_id=Session_id}=State) ->
@@ -57,7 +57,7 @@ websocket_handle({text, Raw_data}, Req, #state{session_id=Session_id}=State) ->
     {Request_plist} = Request_data,
     Request_type = proplists:get_value(<<"type">>, Request_plist),
     {Headers, Req2} = cowboy_req:headers(Req1),
-    Body = h_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
+    Body = p_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
     {reply, {text, Body}, Req2, State}.
 
 websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},

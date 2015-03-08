@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
 %% @private
--module(http_app).
+-module(publicator_app).
 -behaviour(application).
 
 %% API.
@@ -16,18 +16,18 @@
 start(_Type, _Args) ->
     Dispatch = cowboy_router:compile(
 		 [
-		  {pc_utils:get_env(http, host, '_'), % host match
-		    [{"/session/[...]" , h_session_handler, []},
-                     {"/:session/http/", h_http_handler,[]},
-		     {"/:session/ws/", websocket_handler, []}
+		  {pc_utils:get_env(publicator, host, '_'), % host match
+		    [{"/session/[...]" , p_session_handler, []},
+                     {"/:session/http/", p_http_handler,[]},
+		     {"/:session/ws/", p_websocket_handler, []}
 		    ]}
                  ]),
 
-    Pool_count = pc_utils:get_env(http, pool_count, 100),
-    Http_port = pc_utils:get_env(http, port, 8766),
-    Ssl_port = pc_utils:get_env(http, ssl_port, undefined),
-    Cert_file = pc_utils:get_env(http, certfile, undefined),
-    Key_file =  pc_utils:get_env(http, keyfile, undefined),
+    Pool_count = pc_utils:get_env(publicator, pool_count, 100),
+    Http_port = pc_utils:get_env(publicator, port, 8766),
+    Ssl_port = pc_utils:get_env(publicator, ssl_port, undefined),
+    Cert_file = pc_utils:get_env(publicator, certfile, undefined),
+    Key_file =  pc_utils:get_env(publicator, keyfile, undefined),
     
     %% start either ssl or ss
     {ok, _} = if

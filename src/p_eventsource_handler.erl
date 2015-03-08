@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
 %% @doc EventSource emitter.
--module(h_eventsource_handler).
+-module(p_eventsource_handler).
 
 -export([init/3]).
 -export([info/3]).

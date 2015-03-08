@@ -1,6 +1,6 @@
-{application, http, [
-	{description, "Http interface implementation for publicator"},
-	{vsn, "1"},
+{application, publicator, [
+	{description, "pub-sub server for your browser"},
+	{vsn, "0.2.0"},
 	{registered, []},
 	{applications, [
 		kernel,
@@ -10,6 +10,6 @@
 		cowboy,
                 publicator_core
 	]},
-	{mod, {http_app, []}},
+	{mod, {publicator_app, []}},
 	{env, []}
 ]}.

@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  6 Jul 2013 by Huseyin Yilmaz <huseyin@Huseyins-MacBook-Air.local>
 %%%-------------------------------------------------------------------
--module(h_utils).
+-module(p_utils).
 
 %% API
 -export([make_response/2, make_response/3]).
@@ -55,7 +55,7 @@ no_session_response()-> error_response(<<"consumer_not_found">>).
 permission_denied_response()-> error_response(<<"permission_denied">>).
 
 -spec no_session_arg_response() -> binary().
-no_session_arg_response() -> h_utils:error_response(<<"There is no session provided">>).
+no_session_arg_response() -> error_response(<<"There is no session provided">>).
 
 -spec ok_response() -> binary().
 ok_response()->

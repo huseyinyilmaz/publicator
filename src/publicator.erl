@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 06 Jul 2013 by Huseyin Yilmaz <huseyin@huseyin-work>
 %%%-------------------------------------------------------------------
--module(http).
+-module(publicator).
 
 %% API
 -export([start/0, stop/0]).

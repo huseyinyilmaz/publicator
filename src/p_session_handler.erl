@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  1 Sep 2013 by Huseyin Yilmaz <huseyin@new-host.home>
 %%%-------------------------------------------------------------------
--module(h_session_handler).
+-module(p_session_handler).
 
 %% API
 -export([init/3, handle/2, terminate/3]).
@@ -45,7 +45,7 @@ handle(Req, State) ->
     {ok, Req4} = cowboy_req:reply(
                    200,
                    [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
-                   h_utils:wrap_with_callback_fun(Callback, Body),
+                   p_utils:wrap_with_callback_fun(Callback, Body),
                    Req3),
 
     {ok, Req4, State}.
