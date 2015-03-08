@@ -9,6 +9,8 @@
 -module(p_utils).
 
 %% API
+-export([ensure_started/1]).
+-export([get_env/2]).
 -export([make_response/2, make_response/3]).
 -export([message_response/1]).
 -export([message_list_response/1]).
@@ -30,6 +32,30 @@
 %% @doc
 %% @end
 %%--------------------------------------------------------------------
+
+
+-spec ensure_started(atom()) -> ok.
+ensure_started(App) ->
+    case application:start(App) of
+        ok ->
+            ok;
+        {error, {already_started, App}} ->
+            ok
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% gets configuration for given app from sys.config file.
+%% if configuration does not exists, it uses given default value.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_env(atom(), any()) -> any().
+get_env(Key, Default) ->
+    case application:get_env(publicator, Key) of
+	undefined -> Default;
+	{ok, Value} -> Value
+    end.
 
 -spec make_response(Type::binary(), Data::any()) -> binary().
 make_response(Type, Data) ->

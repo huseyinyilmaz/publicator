@@ -22,12 +22,12 @@
 %%--------------------------------------------------------------------
 -spec start() -> ok.
 start() ->
-    ok = pc_utils:ensure_started(crypto),
-    ok = pc_utils:ensure_started(ranch),
-    ok = pc_utils:ensure_started(cowlib),
-    ok = pc_utils:ensure_started(cowboy),
-    ok = pc_utils:ensure_started(jiffy),
-    ok = pc_utils:ensure_started(http).
+    ok = p_utils:ensure_started(crypto),
+    ok = p_utils:ensure_started(ranch),
+    ok = p_utils:ensure_started(cowlib),
+    ok = p_utils:ensure_started(cowboy),
+    ok = p_utils:ensure_started(jiffy),
+    ok = p_utils:ensure_started(http).
 
 %%--------------------------------------------------------------------
 %% @doc
