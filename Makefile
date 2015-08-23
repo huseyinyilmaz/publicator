@@ -93,7 +93,7 @@ start: compile
 	    -eval "sync:go()." \
 	    -s lager \
 	    -s publicator_core \
-	    -s http
+	    -s publicator
 
 
 blackbox:

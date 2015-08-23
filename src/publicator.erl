@@ -27,7 +27,7 @@ start() ->
     ok = p_utils:ensure_started(cowlib),
     ok = p_utils:ensure_started(cowboy),
     ok = p_utils:ensure_started(jiffy),
-    ok = p_utils:ensure_started(http).
+    ok = p_utils:ensure_started(publicator).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -36,7 +36,7 @@ start() ->
 %%--------------------------------------------------------------------
 -spec stop() -> ok.
 stop() ->
-    ok = application:stop(http),
+    ok = application:stop(publicator),
     ok = application:stop(cowboy),
     ok = application:stop(cowlib),
     ok = application:stop(ranch),

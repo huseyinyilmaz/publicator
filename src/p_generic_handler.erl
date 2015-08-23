@@ -81,9 +81,11 @@ handle_request(<<"publish">>, Session_id, Data, Extra_data)->
     {Subscribe_data} = proplists:get_value(<<"data">>, Data_plist),
     Channel_code = proplists:get_value(<<"channel_code">>, Subscribe_data),
     Message = proplists:get_value(<<"message">>, Subscribe_data),
+    {Meta} = proplists:get_value(<<"meta">>, Subscribe_data),
+
     lager:debug("Publishing a message \"~p\" on channel ~p by session ~p",
                [Message, Channel_code, Session_id]),
-    case publicator_core:publish(Session_id, Channel_code, Message, Extra_data) of
+    case publicator_core:publish(Session_id, Channel_code, Message, Meta, Extra_data) of
         ok -> p_utils:ok_response();
         {error, consumer_not_found} ->
             p_utils:no_session_response();

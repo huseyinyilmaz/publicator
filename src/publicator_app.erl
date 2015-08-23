@@ -43,7 +43,7 @@ start(_Type, _Args) ->
                               [{env, [{dispatch, Dispatch}]}])
     end,
     
-    http_sup:start_link().
+    publicator_sup:start_link().
 
 -spec stop(_State::any()) -> ok.
 stop(_State) ->
