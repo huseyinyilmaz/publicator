@@ -21,34 +21,25 @@ init(_Transport, Req, []) ->
         {ok, Req, undefined}.
 
 handle(Req, State) ->
-    {Callback, Req1} = cowboy_req:qs_val(<<"callback">>, Req),
-
-    case Callback of
-        undefined ->
-            {ok, Raw_data, Req2} = cowboy_req:body(Req1);
-        _ ->
-            {Raw_data, Req2} = cowboy_req:qs_val(<<"data">>, Req1)
-    end,
-    lager:debug("Session handler got request=~p", [Raw_data]),
-    {Headers, Req3} = cowboy_req:headers(Req2),
-    Request_data = jiffy:decode(Raw_data),
-    {Request_plist} = Request_data,
-    Auth_info = proplists:get_value(<<"auth_info">>, Request_plist),
-    case publicator_core:create_consumer(Auth_info, Headers) of
+    {Meta, Req_meta} = h_utils:get_meta(Req),
+    lager:debug("======================== Debug Start ============", []),
+    lager:debug("Get meta=~p~n", [Meta]),
+    case publicator_core:create_producer(Meta) of
         {ok, Consumer_code, _Consumer_pid} ->
             lager:info("Create consumer"),
-            Body = jiffy:encode({[{<<"type">>, <<"session_created">>},
-                                  {<<"data">>, Consumer_code}]});
+            Body = jiffy:encode(#{<<"type">> => <<"session_created">>,
+                                  <<"data">> => Consumer_code});
         {error, permission_denied} ->
-            Body = jiffy:encode({[{<<"error">>, <<"permission_denied">>}]})
+            Body = jiffy:encode(#{<<"error">> => <<"permission_denied">>})
     end,
-    {ok, Req4} = cowboy_req:reply(
+    lager:debug("Response_body=~p~n", [Body]),
+    Callback = maps:get(<<"callback">>, Meta, undefined),
+    {ok, Req_resp} = cowboy_req:reply(
                    200,
                    [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
                    h_utils:wrap_with_callback_fun(Callback, Body),
-                   Req3),
-
-    {ok, Req4, State}.
+                   Req_meta),
+    {ok, Req_resp, State}.
 
 terminate(_Reason, _Req, _State) ->
         ok.

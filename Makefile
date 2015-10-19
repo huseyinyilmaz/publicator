@@ -6,6 +6,8 @@ NODE_NAME = publicator@127.0.0.1
 
 APPS =   kernel stdlib crypto webtool mnesia eunit tools os_mon runtime_tools xmerl inets
 
+REBAR_URL = https://github.com/rebar/rebar/wiki/rebar
+
 .PHONY : all get-deps get-rebar configure compile clean test eunit ct build-erlang-plt build-plt dialyze docs start blackbox
 
 # compile
@@ -53,13 +55,12 @@ rel: $(RELX)
 release: clean compile rel
 
 
-test: clean compile eunit
+test: clean compile ct
 
 eunit: $(REBAR)
 	@$(REBAR) eunit skip_deps=true
 
 ct: $(REBAR)
-
 	@$(REBAR) ct skip_deps=true
 
 build-erlang-plt:

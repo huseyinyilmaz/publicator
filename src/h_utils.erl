@@ -20,6 +20,7 @@
 -export([invalid_channel_code_response/0]).
 -export([ok_response/0]).
 -export([wrap_with_callback_fun/2]).
+-export([get_meta/1]).
 -include("../deps/publicator_core/include/publicator_core.hrl").
 
 %%%===================================================================
@@ -28,9 +29,23 @@
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Returns maps of body of request or querystring of request.
 %% @end
 %%--------------------------------------------------------------------
 
+get_meta(Req) ->
+    case cowboy_req:has_body(Req) of
+        true ->
+            {ok, Raw_data, Req_read} = cowboy_req:body(Req),
+            Response = jiffy:decode(Raw_data, [return_maps]);
+        
+        false ->
+            {Qs, Req_read} = cowboy_req:qs_vals(Req),
+            Response = maps:from_list(Qs)
+    end,
+    {Response, Req_read}.
+    
+    
 -spec make_response(Type::binary(), Data::any()) -> binary().
 make_response(Type, Data) ->
     make_response(Type,Data,[]).

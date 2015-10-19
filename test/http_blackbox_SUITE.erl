@@ -31,9 +31,17 @@ suite() ->
 %% @end
 %%--------------------------------------------------------------------
 init_per_suite(Config) ->
+    % start test dependencies
     ibrowse:start(),
-    ibrowse:set_max_sessions("127.0.0.1", "8766", 1),
-    ibrowse:set_max_pipeline_size("127.0.0.1", "8766", 1),
+    %% ibrowse:set_max_sessions("127.0.0.1", "8766", 30),
+    %% ibrowse:set_max_pipeline_size("127.0.0.1", "8766", 30),
+    lager:start(),
+    pc_utils:set_env(publicator_core, permission_backend, ?PERMISSION_CONFIG),
+    pc_utils:set_env(publicator_core, persistence_backend, ?PERSISTENCE_CONFIG),
+    ok = publicator_core:start(),
+    Config.
+
+    
     %% ibrowse:set_max_sessions("www.talkybee.com", "8766", 30),
     %% ok = server:start(),
     %% ok = http:start(),
