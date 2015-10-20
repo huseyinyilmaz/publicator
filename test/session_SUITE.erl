@@ -122,12 +122,21 @@ end_per_testcase(_TestCase, _Config) ->
     ok.
 
 all() ->
-    [get_session_http].
+    [get_session_http_get,
+     get_session_http_post].
 
-get_session_http(_Config) ->
+get_session_http_get(_Config) ->
     Url = make_url("/session/http/"),
     {ok, "200" , _Headers, Body} =
         ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
+    #{<<"type">> := <<"session_created">>, <<"data">> := _Code}
+        = jiffy:decode(Body,[return_maps]),
+    ok.
+
+get_session_http_post(_Config) ->
+    Url = make_url("/session/http/"),
+    {ok, "200" , _Headers, Body} =
+        ibrowse:send_req(Url, [], post,[],?OPTS, ?TIMEOUT),
     #{<<"type">> := <<"session_created">>, <<"data">> := _Code}
         = jiffy:decode(Body,[return_maps]),
     ok.
