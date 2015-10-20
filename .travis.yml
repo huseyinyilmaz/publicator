@@ -1,4 +1,8 @@
 language: erlang
+
+sudo: false
+
 script: "make configure test"
+
 otp_release:
    - 18.0
