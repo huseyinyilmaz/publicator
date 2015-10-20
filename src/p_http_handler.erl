@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  3 Feb 2014 by Huseyin Yilmaz <huseyin@ytu-huseyin-yilmaz.local>
 %%%-------------------------------------------------------------------
--module(h_http_handler).
+-module(p_http_handler).
 
 -export([init/3]).
 -export([handle/2]).
@@ -33,11 +33,11 @@ handle(Req, State) ->
 
     {Headers, Req4} = cowboy_req:headers(Req3),
     lager:debug("Http interface got data ~p", [Request_data]),
-    Body = h_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
+    Body = p_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
     {ok, Req5} = cowboy_req:reply(
                    200,
                    [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
-                   h_utils:wrap_with_callback_fun(Callback, Body),
+                   p_utils:wrap_with_callback_fun(Callback, Body),
                    Req4),
     {ok, Req5, State}.
 

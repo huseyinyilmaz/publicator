@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
 %% @doc EventSource emitter.
--module(h_eventsource_handler).
+-module(p_eventsource_handler).
 
 -export([init/3]).
 -export([info/3]).
@@ -28,6 +28,6 @@ terminate(_Reason, _Req, #state{session_id=Session_id}) ->
     ok.
 
 id() ->
-        {Mega, Sec, Micro} = erlang:now(),
+        {Mega, Sec, Micro} = erlang:timestamp(),
         Id = (Mega * 1000000 + Sec) * 1000000 + Micro,
         integer_to_list(Id, 16).

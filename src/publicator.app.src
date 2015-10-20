@@ -1,0 +1,18 @@
+{application, publicator, [
+	{description, "Pubsub server for web clients."},
+	{vsn, "1"},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib,
+                crypto,
+                ranch,
+                lager,
+                jiffy,
+                cowlib,
+		cowboy,
+                publicator_core
+	]},
+	{mod, {publicator_app, []}},
+	{env, []}
+]}.

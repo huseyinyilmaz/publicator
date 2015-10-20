@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  1 Sep 2013 by Huseyin Yilmaz <huseyin@new-host.home>
 %%%-------------------------------------------------------------------
--module(h_session_handler).
+-module(p_session_handler).
 
 %% API
 -export([init/3, handle/2, terminate/3]).
@@ -21,7 +21,7 @@ init(_Transport, Req, []) ->
         {ok, Req, undefined}.
 
 handle(Req, State) ->
-    {Meta, Req_meta} = h_utils:get_meta(Req),
+    {Meta, Req_meta} = p_utils:get_meta(Req),
     lager:debug("======================== Debug Start ============", []),
     lager:debug("Get meta=~p~n", [Meta]),
     case publicator_core:create_producer(Meta) of
@@ -37,7 +37,7 @@ handle(Req, State) ->
     {ok, Req_resp} = cowboy_req:reply(
                    200,
                    [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
-                   h_utils:wrap_with_callback_fun(Callback, Body),
+                   p_utils:wrap_with_callback_fun(Callback, Body),
                    Req_meta),
     {ok, Req_resp, State}.
 

@@ -28,6 +28,15 @@
 -define(PERSISTENCE_CONFIG,
         {publicator_inmemmory_persistence_backend, []}).
 
+-define(HOST, "127.0.0.1:8766").
+%% -define(HOST, "http://www.talkybee.com:8766/").
+-define(OPTS, [%% {connect_timeout, 100000000}
+               %% {socket_options, [%{keepalive, true},
+               %%                   {active, false}]}
+
+              ]).
+-define(TIMEOUT, infinity).
+
 %%--------------------------------------------------------------------
 %% @spec suite() -> Info
 %% Info = [tuple()]
@@ -45,13 +54,12 @@ suite() ->
 %%--------------------------------------------------------------------
 init_per_suite(Config) ->
     % start test dependencies
-    ibrowse:start(),
+%    ibrowse:start(),
     %% ibrowse:set_max_sessions("127.0.0.1", "8766", 30),
     %% ibrowse:set_max_pipeline_size("127.0.0.1", "8766", 30),
-    lager:start(),
     pc_utils:set_env(publicator_core, permission_backend, ?PERMISSION_CONFIG),
     pc_utils:set_env(publicator_core, persistence_backend, ?PERSISTENCE_CONFIG),
-    ok = publicator_core:start(),
+    ok = publicator:start(),
     Config.
 
 
@@ -61,7 +69,10 @@ init_per_suite(Config) ->
 %% @end
 %%--------------------------------------------------------------------
 end_per_suite(_Config) ->
-    ibrowse:stop(),
+%    ibrowse:stop(),
+    publicator:stop(),
+    publicator_core:stop(),
+    lager:stop(),
     %% server:stop(),
     %% http:stop(),
     ok.
@@ -110,49 +121,17 @@ init_per_testcase(_TestCase, Config) ->
 end_per_testcase(_TestCase, _Config) ->
     ok.
 
-%%--------------------------------------------------------------------
-%% @spec groups() -> [Group]
-%% Group = {GroupName,Properties,GroupsAndTestCases}
-%% GroupName = atom()
-%% Properties = [parallel | sequence | Shuffle | {RepeatType,N}]
-%% GroupsAndTestCases = [Group | {group,GroupName} | TestCase]
-%% TestCase = atom()
-%% Shuffle = shuffle | {shuffle,{integer(),integer(),integer()}}
-%% RepeatType = repeat | repeat_until_all_ok | repeat_until_all_fail |
-%%              repeat_until_any_ok | repeat_until_any_fail
-%% N = integer() | forever
-%% @end
-%%--------------------------------------------------------------------
-groups() ->
-    [].
-
-%%--------------------------------------------------------------------
-%% @spec all() -> GroupsAndTestCases | {skip,Reason}
-%% GroupsAndTestCases = [{group,GroupName} | TestCase]
-%% GroupName = atom()
-%% TestCase = atom()
-%% Reason = term()
-%% @end
-%%--------------------------------------------------------------------
 all() ->
-    [my_test_case].
+    [get_session_http].
 
-%%--------------------------------------------------------------------
-%% @spec TestCase() -> Info
-%% Info = [tuple()]
-%% @end
-%%--------------------------------------------------------------------
-my_test_case() ->
-    [].
-
-%%--------------------------------------------------------------------
-%% @spec TestCase(Config0) ->
-%%               ok | exit() | {skip,Reason} | {comment,Comment} |
-%%               {save_config,Config1} | {skip_and_save,Reason,Config1}
-%% Config0 = Config1 = [tuple()]
-%% Reason = term()
-%% Comment = term()
-%% @end
-%%--------------------------------------------------------------------
-my_test_case(_Config) ->
+get_session_http(_Config) ->
+    Url = make_url("/session/http/"),
+    {ok, "200" , _Headers, Body} =
+        ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
+    #{<<"type">> := <<"session_created">>, <<"data">> := _Code}
+        = jiffy:decode(Body,[return_maps]),
     ok.
+
+
+make_url(Uri) ->
+    "http://" ++ ?HOST ++ Uri.

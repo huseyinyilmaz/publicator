@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
 %% @private
--module(http_sup).
+-module(publicator_sup).
 -behaviour(supervisor).
 
 %% API.
