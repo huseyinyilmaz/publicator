@@ -20,7 +20,9 @@
 -export([invalid_channel_code_response/0]).
 -export([ok_response/0]).
 -export([wrap_with_callback_fun/2]).
--export([get_meta/1]).
+-export([get_request_text/1]).
+-export([parse_request_text/1]).
+
 -include("../deps/publicator_core/include/publicator_core.hrl").
 
 %%%===================================================================
@@ -33,18 +35,18 @@
 %% @end
 %%--------------------------------------------------------------------
 
-get_meta(Req) ->
+get_request_text(Req) ->
     case cowboy_req:has_body(Req) of
         true ->
-            {ok, Raw_data, Req_read} = cowboy_req:body(Req),
-            Response = jiffy:decode(Raw_data, [return_maps]);
-        
+            {ok, Raw_data, Req_read} = cowboy_req:body(Req);
         false ->
-            {Qs, Req_read} = cowboy_req:qs_vals(Req),
-            Response = maps:from_list(Qs)
+            {Raw_data, Req_read} = cowboy_req:qs_val(<<"data">>, Req)
     end,
-    {Response, Req_read}.
-    
+    {Raw_data, Req_read}.
+
+parse_request_text(Text) ->    
+    Response = jiffy:decode(Text, [return_maps]),
+    Response.
     
 -spec make_response(Type::binary(), Data::any()) -> binary().
 make_response(Type, Data) ->
