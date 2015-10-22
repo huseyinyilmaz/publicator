@@ -17,28 +17,19 @@ init(_Transport, Req, []) ->
         {ok, Req, undefined}.
 
 handle(Req, State) ->
-    {Session_id, Req1} = cowboy_req:binding(session, Req),
-
-    {Callback, Req2} = cowboy_req:qs_val(<<"callback">>, Req1),
-    case Callback of
-        undefined ->
-            {ok, Raw_data, Req3} = cowboy_req:body(Req2);
-        _ ->
-            {Raw_data, Req3} = cowboy_req:qs_val(<<"data">>, Req2)
-    end,
-
-    Request_data = jiffy:decode(Raw_data),
-    {Request_plist} = Request_data,
-    Request_type = proplists:get_value(<<"type">>, Request_plist),
-
-    {Headers, Req4} = cowboy_req:headers(Req3),
-    lager:debug("Http interface got data ~p", [Request_data]),
-    Body = p_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
+    lager:debug("======================== Debug Start ============", []),
+    {Session_id, Req_session} = cowboy_req:binding(session, Req),
+    {Callback, Req_callback} = cowboy_req:qs_val(<<"callback">>, Req_session),
+    {Text, Req_text} = p_utils:get_request_text(Req_callback),
+    lager:debug("RequestText=~p~n", [Text]),
+    Msg = p_utils:parse_request_text(Text, Session_id),
+    lager:debug("Message=~p~n", [Msg]),
+    Body = p_generic_handler:handle_request(Msg),
     {ok, Req5} = cowboy_req:reply(
                    200,
                    [{<<"content-type">>, <<"application/json; charset=utf-8">>}],
                    p_utils:wrap_with_callback_fun(Callback, Body),
-                   Req4),
+                   Req_text),
     {ok, Req5, State}.
 
 terminate(_Reason, _Req, _State) ->

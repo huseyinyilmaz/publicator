@@ -9,7 +9,9 @@
 -module(p_generic_handler).
 
 %% API
--export([handle_request/4]).
+-export([handle_request/1]).
+
+-include("../deps/publicator_core/include/publicator_core.hrl").
 
 %%%===================================================================
 %%% API
@@ -21,32 +23,31 @@
 %% @end
 %%--------------------------------------------------------------------
 
-handle_request(<<"get_messages">>, Session_id, _Data, _Extra_data)->
-    case publicator_core:get_messages(Session_id) of
+handle_request(#message{type= <<"get_messages">>,
+                        producer_code=Producer_code})->
+    case publicator_core:get_messages(Producer_code) of
         {ok, Messages_list} ->
             p_utils:message_list_response(Messages_list);
-        {error, consumer_not_found} ->
+        {error, producer_not_found} ->
             p_utils:no_session_response()
     end;
 
-handle_request(<<"subscribe">>, Session_id, Data, Extra_data)->
-    {Data_plist} = Data,
-    {Subscribe_data} = proplists:get_value(<<"data">>, Data_plist),
-    Channel_code = proplists:get_value(<<"channel_code">>, Subscribe_data),
-    Handler_type = case proplists:get_value(<<"type">>, Subscribe_data) of
-                       <<"message_only">> -> message_only;
-                       <<"all">> -> all
-                   end,
-    case publicator_core:subscribe(Session_id, Channel_code, Handler_type, Extra_data) of
+handle_request(#message{type= <<"subscribe">>,
+                        producer_code=Producer_code,
+                        channel_code=Channel_code,
+                        meta=Meta})->
+    lager:info("subscribe producer_code=~p, channel_code=~p, meta=~p~n ",
+               [Producer_code, Channel_code, Meta]),
+    case publicator_core:subscribe(Producer_code, Channel_code, Meta) of
         {error, invalid_channel_code} ->
             p_utils:error_response(<<"invalid_channel_code">>);
-        {error, consumer_not_found} ->
+        {error, producer_not_found} ->
             p_utils:no_session_response();
         {error, permission_denied} ->
             p_utils:permission_denied_response();
         ok->
             p_utils:make_response(<<"subscribed">>, Channel_code)
-    end;
+    end.
 
 handle_request(<<"unsubscribe">>, Session_id, Data, _Extra_data)->
     ok = publicator_core:unsubscribe(Session_id, Data),
@@ -56,7 +57,7 @@ handle_request(<<"unsubscribe">>, Session_id, Data, _Extra_data)->
 handle_request(<<"get_subscribtions">>, Session_id, _Data, _Extra_data)->
     case publicator_core:get_subscribtions(Session_id) of
         {ok, Subscribtion_data} -> p_utils:make_response(<<"subscribtions">>, Subscribtion_data);
-        {error, consumer_not_found} -> p_utils:no_session_response()
+        {error, producer_not_found} -> p_utils:no_session_response()
     end;
 
 
@@ -65,7 +66,7 @@ handle_request(<<"get_consumers">>, Session_id, Data, Extra_data)->
     {Get_consumers_data} = proplists:get_value(<<"data">>, Data_plist),
     Channel_code = proplists:get_value(<<"channel_code">>, Get_consumers_data),
     case publicator_core:get_consumers(Session_id, Channel_code, Extra_data) of
-        {error, consumer_not_found} ->
+        {error, producer_not_found} ->
             p_utils:no_session_response();
         {error, permission_denied} ->
             p_utils:permission_denied_response();
@@ -85,7 +86,7 @@ handle_request(<<"publish">>, Session_id, Data, Extra_data)->
                [Message, Channel_code, Session_id]),
     case publicator_core:publish(Session_id, Channel_code, Message, Extra_data) of
         ok -> p_utils:ok_response();
-        {error, consumer_not_found} ->
+        {error, producer_not_found} ->
             p_utils:no_session_response();
         {error, permission_denied} ->
             p_utils:permission_denied_response()

@@ -22,6 +22,7 @@
 -export([wrap_with_callback_fun/2]).
 -export([get_request_text/1]).
 -export([parse_request_text/1]).
+-export([parse_request_text/2]).
 
 -include("../deps/publicator_core/include/publicator_core.hrl").
 
@@ -40,13 +41,26 @@ get_request_text(Req) ->
         true ->
             {ok, Raw_data, Req_read} = cowboy_req:body(Req);
         false ->
-            {Raw_data, Req_read} = cowboy_req:qs_val(<<"data">>, Req)
+            Default_value = <<"{\"meta\":{}, \"data\":\"\"}">>,
+            % get content from qs
+            {Raw_data, Req_read} = cowboy_req:qs_val(<<"c">>, Req, Default_value)
     end,
     {Raw_data, Req_read}.
 
-parse_request_text(Text) ->    
-    Response = jiffy:decode(Text, [return_maps]),
-    Response.
+parse_request_text(Text) -> parse_request_text(Text, undefined).
+     
+parse_request_text(Text, Producer_code) ->    
+    Defaults = #{<<"type">> => undefined,
+                 <<"data">> => undefined,
+                 <<"meta">> => undefined,
+                 <<"channel_code">> => undefined},
+    #{<<"type">> := Type,
+      <<"data">> := Data,
+      <<"meta">> := Meta,
+      <<"channel_code">> := Channel_code} = maps:merge(Defaults,
+                                                       jiffy:decode(Text, [return_maps])),
+    #message{type=Type, data=Data, meta=Meta,
+             producer_code=Producer_code, channel_code=Channel_code}.
     
 -spec make_response(Type::binary(), Data::any()) -> binary().
 make_response(Type, Data) ->
@@ -66,7 +80,7 @@ error_response(Data,Extra_list)->
     make_response(<<"error">>,Data,Extra_list).
 
 -spec no_session_response() -> binary().
-no_session_response()-> error_response(<<"consumer_not_found">>).
+no_session_response()-> error_response(<<"producer_not_found">>).
 
 -spec permission_denied_response() -> binary().
 permission_denied_response()-> error_response(<<"permission_denied">>).
