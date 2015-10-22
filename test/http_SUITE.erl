@@ -76,7 +76,8 @@ end_per_suite(_Config) ->
 %% @end
 %%--------------------------------------------------------------------
 all() ->
-    [subscribe_get_test].
+    [subscribe_get_test,
+     subscribe_post_test].
 
 subscribe_get_test(_Config) ->
     Url = make_url("/" ++ binary:bin_to_list(get_session()) ++ "/http/" ++
@@ -86,6 +87,16 @@ subscribe_get_test(_Config) ->
     true = ctcheck:equal(
       #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_get_test">>},
       jiffy:decode(Body,[return_maps])),
+    ok.
+
+subscribe_post_test(_Config) ->
+    Url = make_url("/" ++ binary:bin_to_list(get_session()) ++ "/http/"),
+    Request_body = "{\"type\":\"subscribe\",\"channel_code\":\"subscribe_post_test\"}",
+    {ok, "200" , _Headers, Body} =
+        ibrowse:send_req(Url, [], post, Request_body, ?OPTS, ?TIMEOUT),
+    true = ctcheck:equal(
+             jiffy:decode(Body,[return_maps]),
+             #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_post_test">>}),
     ok.
 
 get_session() ->
