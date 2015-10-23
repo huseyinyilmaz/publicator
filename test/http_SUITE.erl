@@ -83,7 +83,9 @@ all() ->
      publish_get_test,
      publish_post_test,
      get_messages_get_test,
-     get_messages_post_test].
+     get_messages_post_test,
+     get_subscribtions_get_test,
+     get_subscribtions_post_test].
 
 subscribe_get_test(_Config) ->
     Msg = jiffy:encode(#{<<"type">> => <<"subscribe">>,
@@ -204,6 +206,31 @@ get_messages_post_test(_Config) ->
                 <<"type">> => <<"message">>}],
              send_post_message(Session, Msg)),
     true = ctcheck:equal([], send_post_message(Session, Msg)),
+    ok.
+
+
+get_subscribtions_get_test(_Config) ->
+    Session = get_session(),
+    ok = subscribe(Session, <<"get_subscriptions_get_test_1">>),
+    ok = subscribe(Session, <<"get_subscriptions_get_test_2">>),
+    Msg = jiffy:encode(#{<<"type">> => <<"get_subscribtions">>}),
+    true = ctcheck:equal(
+             #{<<"type">> => <<"subscribtions">>,
+               <<"data">> => [<<"get_subscriptions_get_test_2">>,
+                              <<"get_subscriptions_get_test_1">>]},
+      send_get_message(Session, Msg)),
+    ok.
+
+get_subscribtions_post_test(_Config) ->
+    Session = get_session(),
+    ok = subscribe(Session, <<"get_subscriptions_post_test_1">>),
+    ok = subscribe(Session, <<"get_subscriptions_post_test_2">>),
+    Msg = jiffy:encode(#{<<"type">> => <<"get_subscribtions">>}),
+    true = ctcheck:equal(
+             #{<<"type">> => <<"subscribtions">>,
+               <<"data">> => [<<"get_subscriptions_post_test_2">>,
+                              <<"get_subscriptions_post_test_1">>]},
+      send_post_message(Session, Msg)),
     ok.
 
 

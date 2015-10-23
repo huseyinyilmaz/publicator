@@ -14,7 +14,7 @@
 -export([websocket_handle/3]).
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
--record(state,{session_id, consumer_pid, consumer_monitor_ref}).
+-record(state,{session_id, producer_pid, producer_monitor_ref}).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -31,17 +31,17 @@ init({ssl, http}, _Req, _Opts) ->
 
 websocket_init(_TransportName, Req, _Opts) ->
     {Session_id, Req1} = cowboy_req:binding(session, Req),
-    case publicator_core:get_consumer(Session_id) of
-	{ok, Consumer_pid} ->
+    case publicator_core:get_producer(Session_id) of
+	{ok, Producer_pid} ->
             ok = publicator_core:add_message_handler(Session_id, self()),
-	    Consumer_monitor_ref = monitor(process, Consumer_pid),
+	    Producer_monitor_ref = monitor(process, Producer_pid),
             State = #state{session_id=Session_id,
-        		   consumer_pid=Consumer_pid,
-			   consumer_monitor_ref=Consumer_monitor_ref},
+        		   producer_pid=Producer_pid,
+			   producer_monitor_ref=Producer_monitor_ref},
             lager:debug("Initializing websocket handler ~p", [Session_id]);
 	{error, not_found}->
-	    State = #state{session_id=no_session, consumer_pid=undefined,
-			   consumer_monitor_ref=undefined},
+	    State = #state{session_id=no_session, producer_pid=undefined,
+			   producer_monitor_ref=undefined},
 	    lager:info("Given session id ~p does not exist",[Session_id])
     end,
     {ok, Req1, State}.
@@ -51,22 +51,21 @@ websocket_handle({text, _Raw_data}, Req, #state{session_id=no_session}=State) ->
     Result = p_utils:no_session_response(),
     {reply, {text, Result}, Req, State};
 
-websocket_handle({text, Raw_data}, Req, #state{session_id=Session_id}=State) ->
-    {Session_id, Req1} = cowboy_req:binding(session, Req), % assert Session_id
-    Request_data = jiffy:decode(Raw_data),
-    {Request_plist} = Request_data,
-    Request_type = proplists:get_value(<<"type">>, Request_plist),
-    {Headers, Req2} = cowboy_req:headers(Req1),
-    Body = p_generic_handler:handle_request(Request_type, Session_id, Request_data, Headers),
-    {reply, {text, Body}, Req2, State}.
+websocket_handle({text, Text}, Req, #state{session_id=Session_id}=State) ->
+    lager:debug("======================== Websocket Debug Start ============", []),
+    lager:debug("Text=~p~n",[Text]),
+    {Session_id, Req_session} = cowboy_req:binding(session, Req), % assert Session_id
+    Msg = p_utils:parse_request_text(Text, Session_id),
+    Body = p_generic_handler:handle_request(Msg),
+    {reply, {text, Body}, Req_session, State}.
 
-websocket_info({'DOWN', Ref, process, Consumer_pid, Reason},
+websocket_info({'DOWN', Ref, process, Producer_pid, Reason},
                Req, #state{session_id=Session_id,
-                           consumer_pid=Consumer_pid,
-                           consumer_monitor_ref=Ref}=State)->
+                           producer_pid=Producer_pid,
+                           producer_monitor_ref=Ref}=State)->
     
-    lager:warning("Consumer process ~p died for reason ~p", [Session_id, Reason]),
-    Result = p_utils:make_response(<<"error">>, <<"Consumer_handler is died unexpectedly">>,
+    lager:warning("Producer process ~p died for reason ~p", [Session_id, Reason]),
+    Result = p_utils:make_response(<<"error">>, <<"Producer_handler is died unexpectedly">>,
 			   [{<<"reason_for_dead_process">>, Reason}]),
     {reply, {text, Result}, Req, State};
     
@@ -89,8 +88,8 @@ handle_info(Message, Req,State)->
 handle_terminate(#state{session_id=no_session})-> ok;
 handle_terminate(#state{session_id=Session_id})->
     lager:debug("Terminate websocket handler for session ~p", [Session_id]),
-    %% XXX do not stop consumer?
-    ok = publicator_core:stop_consumer(Session_id),
+    %% XXX do not stop producer?
+    ok = publicator_core:stop_producer(Session_id),
     ok.
 
 %%%===================================================================
