@@ -80,8 +80,10 @@ all() ->
      subscribe_post_test].
 
 subscribe_get_test(_Config) ->
+    Msg = jiffy:encode(#{<<"type">> => <<"subscribe">>,
+                         <<"channel_code">> => <<"subscribe_get_test">>}),
     Url = make_url("/" ++ binary:bin_to_list(get_session()) ++ "/http/" ++
-                  "?c={\"type\":\"subscribe\",\"channel_code\":\"subscribe_get_test\"}"),
+                   "?c=" ++ binary:bin_to_list(Msg)),
     {ok, "200" , _Headers, Body} =
         ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
     true = ctcheck:equal(
@@ -90,14 +92,41 @@ subscribe_get_test(_Config) ->
     ok.
 
 subscribe_post_test(_Config) ->
+    Request_body = jiffy:encode(#{<<"type">> => <<"subscribe">>,
+                         <<"channel_code">> => <<"subscribe_post_test">>}),
     Url = make_url("/" ++ binary:bin_to_list(get_session()) ++ "/http/"),
-    Request_body = "{\"type\":\"subscribe\",\"channel_code\":\"subscribe_post_test\"}",
     {ok, "200" , _Headers, Body} =
         ibrowse:send_req(Url, [], post, Request_body, ?OPTS, ?TIMEOUT),
     true = ctcheck:equal(
              jiffy:decode(Body,[return_maps]),
              #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_post_test">>}),
     ok.
+
+publish_test_get(_Config) ->
+    Session = get_session(),
+    ok = subscribe(Session, <<"publish_test_get">>),
+    Url = make_url("/" ++ binary:bin_to_list(Session) ++ "/http/" ++
+                   "?c={\"type\":\"publish\",\"channel_code\":\"publish_get_test\", \"data\":\"test_data\"}"),
+    {ok, "200" , _Headers, Body} =
+        ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
+    true = ctcheck:equal(
+      #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_get_test">>},
+      jiffy:decode(Body,[return_maps])),
+    ok.
+
+
+subscribe(Session, Channel) ->
+    Url = make_url("/" ++ binary:bin_to_list(Session) ++ "/http/"),
+    Request_body =  jiffy:encode(#{<<"type">> => <<"subscribe">>,
+                                   <<"channel_code">> => Channel}),
+    {ok, "200" , _Headers, Body} =
+        ibrowse:send_req(Url, [], post, Request_body, ?OPTS, ?TIMEOUT),
+
+    true = ctcheck:equal(
+             jiffy:decode(Body,[return_maps]),
+             #{<<"type">> => <<"subscribed">>, <<"data">> => Channel}),
+    ok.
+
 
 get_session() ->
     Url = make_url("/session/"),

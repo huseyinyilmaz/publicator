@@ -47,12 +47,14 @@ handle_request(#message{type= <<"subscribe">>,
             p_utils:permission_denied_response();
         ok->
             p_utils:make_response(<<"subscribed">>, Channel_code)
-    end.
+    end;
 
-handle_request(<<"unsubscribe">>, Session_id, Data, _Extra_data)->
-    ok = publicator_core:unsubscribe(Session_id, Data),
-    ok = publicator_core:remove_message_handler(Session_id, self()),
-    p_utils:make_response(<<"unsubscribed">>, Data);
+handle_request(#message{type= <<"unsubscribe">>,
+                        producer_code=Producer_code,
+                        channel_code=Channel_code})->
+    ok = publicator_core:unsubscribe(Producer_code, Channel_code),
+    ok = publicator_core:remove_message_handler(Producer_code, self()),
+    p_utils:make_response(<<"unsubscribed">>, Channel_code).
 
 handle_request(<<"get_subscribtions">>, Session_id, _Data, _Extra_data)->
     case publicator_core:get_subscribtions(Session_id) of
