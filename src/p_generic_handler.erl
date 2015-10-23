@@ -27,7 +27,6 @@ handle_request(#message{type= <<"get_messages">>,
                         producer_code=Producer_code})->
     case publicator_core:get_messages(Producer_code) of
         {ok, Messages_list} ->
-            lager:info("-------------------------------!!!~p~n", [Messages_list]),
             p_utils:message_list_response(Messages_list);
         {error, producer_not_found} ->
             p_utils:no_session_response()
@@ -37,7 +36,7 @@ handle_request(#message{type= <<"subscribe">>,
                         producer_code=Producer_code,
                         channel_code=Channel_code,
                         meta=Meta})->
-    lager:info("subscribe producer_code=~p, channel_code=~p, meta=~p~n ",
+    lager:info("Subscribe producer_code=~p, channel_code=~p, meta=~p~n ",
                [Producer_code, Channel_code, Meta]),
     case publicator_core:subscribe(Producer_code, Channel_code, Meta) of
         {error, invalid_channel_code} ->
