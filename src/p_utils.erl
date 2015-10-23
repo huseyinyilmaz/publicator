@@ -99,11 +99,13 @@ invalid_channel_code_response() ->
 
 serialize_response(#message{type= message,
                             channel_code=Channel_code,
-                            data=Message})->
+                            data=Message,
+                            meta=Meta})->
     lager:info("-------------------------------!!"),
     #{<<"type">> => <<"message">>,
       <<"data">> => Message,
-      <<"channel_code">> => Channel_code};
+      <<"channel_code">> => Channel_code,
+      <<"meta">> => Meta};
 
 serialize_response(#message{type=add_subscribtion,
                             channel_code=Channel_code,
@@ -114,9 +116,9 @@ serialize_response(#message{type=add_subscribtion,
 
 serialize_response(#message{type=remove_subscribtion,
                             channel_code=Channel_code,
-                            data=Consumer_code})->
+                            producer_code=Producer_code})->
     {[{<<"type">>, <<"remove_subscribtion">>},
-      {<<"data">>, Consumer_code},
+      {<<"data">>, Producer_code},
       {<<"channel_code">>, Channel_code}]};
 
 serialize_response(Msg)->
