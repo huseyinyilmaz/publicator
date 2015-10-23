@@ -77,18 +77,21 @@ end_per_suite(_Config) ->
 %%--------------------------------------------------------------------
 all() ->
     [subscribe_get_test,
-     subscribe_post_test].
+     subscribe_post_test,
+     unsubscribe_get_test,
+     unsubscribe_get_test,
+     publish_get_test,
+     publish_post_test,
+     get_messages_get_test,
+     get_messages_post_test].
 
 subscribe_get_test(_Config) ->
     Msg = jiffy:encode(#{<<"type">> => <<"subscribe">>,
                          <<"channel_code">> => <<"subscribe_get_test">>}),
-    Url = make_url("/" ++ binary:bin_to_list(get_session()) ++ "/http/" ++
-                   "?c=" ++ binary:bin_to_list(Msg)),
-    {ok, "200" , _Headers, Body} =
-        ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
+    Session = get_session(),
     true = ctcheck:equal(
       #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_get_test">>},
-      jiffy:decode(Body,[return_maps])),
+      send_get_message(Session,Msg)),
     ok.
 
 subscribe_post_test(_Config) ->
@@ -102,31 +105,128 @@ subscribe_post_test(_Config) ->
              #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_post_test">>}),
     ok.
 
-publish_test_get(_Config) ->
+unsubscribe_get_test(_Config) ->
     Session = get_session(),
-    ok = subscribe(Session, <<"publish_test_get">>),
+    ok = subscribe(Session, <<"unsubscribe_get_test">>),
+
+    Msg = jiffy:encode(#{<<"type">> => <<"unsubscribe">>,
+                         <<"channel_code">> => <<"unsubscribe_get_test">>}),
+    true = ctcheck:equal(
+      #{<<"type">> => <<"unsubscribed">>, <<"data">> => <<"unsubscribe_get_test">>},
+      send_get_message(Session, Msg)),
+    ok.
+
+unsubscribe_post_test(_Config) ->
+    Session = get_session(),
+    ok = subscribe(Session, <<"unsubscribe_post_test">>),
+
+    Msg = jiffy:encode(#{<<"type">> => <<"unsubscribe">>,
+                         <<"channel_code">> => <<"unsubscribe_post_test">>}),
+    true = ctcheck:equal(
+      #{<<"type">> => <<"unsubscribed">>, <<"data">> => <<"unsubscribe_post_test">>},
+      send_post_message(Session, Msg)),
+    ok.
+
+publish_get_test(_Config) ->
+    Session = get_session(),
+    Channel_code = <<"publish_get_test">>,
+    ok = subscribe(Session, Channel_code),
+    Msg = jiffy:encode(#{<<"type">> => <<"publish">>,
+                          <<"channel_code">> => Channel_code,
+                          <<"data">> => <<"msg1">>}),
+    true = ctcheck:equal(
+             #{<<"data">> => true,<<"type">> => <<"response">>},
+             send_get_message(Session, Msg)),
+    ok.
+
+publish_post_test(_Config) ->
+    Session = get_session(),
+    Channel_code = <<"publish_post_test">>,
+    ok = subscribe(Session, Channel_code),
+    Msg = jiffy:encode(#{<<"type">> => <<"publish">>,
+                          <<"channel_code">> => Channel_code,
+                          <<"data">> => <<"msg1">>}),
+    true = ctcheck:equal(
+             #{<<"data">> => true,<<"type">> => <<"response">>},
+             send_get_message(Session, Msg)),
+    ok.
+
+
+
+
+get_messages_get_test(_Config) ->
+    Session = get_session(),
+    Channel_code = <<"get_messages_get_test">>,
+    ok = subscribe(Session, Channel_code),
+    send_get_message(Session, jiffy:encode(
+                                #{<<"type">> => <<"publish">>,
+                                  <<"channel_code">> => Channel_code,
+                                  <<"data">> => <<"msg1">>})),
+    send_get_message(Session, jiffy:encode(
+                                #{<<"type">> => <<"publish">>,
+                                  <<"channel_code">> => Channel_code,
+                                  <<"data">> => <<"msg2">>})),
+    Msg = jiffy:encode(#{<<"type">> => <<"get_messages">>}),
+
+
+    true = ctcheck:equal(
+             [#{<<"channel_code">> => <<"get_messages_get_test">>,
+                <<"data">> => <<"msg1">>,
+                <<"type">> => <<"message">>},
+              #{<<"channel_code">> => <<"get_messages_get_test">>,
+                <<"data">> => <<"msg2">>,
+                <<"type">> => <<"message">>}],
+             send_get_message(Session, Msg)),
+    true = ctcheck:equal([], send_get_message(Session, Msg)),
+    ok.
+
+get_messages_post_test(_Config) ->
+    Session = get_session(),
+    Channel_code = <<"get_messages_post_test">>,
+    ok = subscribe(Session, Channel_code),
+    send_get_message(Session, jiffy:encode(
+                                #{<<"type">> => <<"publish">>,
+                                  <<"channel_code">> => Channel_code,
+                                  <<"data">> => <<"msg1">>})),
+    send_get_message(Session, jiffy:encode(
+                                #{<<"type">> => <<"publish">>,
+                                  <<"channel_code">> => Channel_code,
+                                  <<"data">> => <<"msg2">>})),
+    Msg = jiffy:encode(#{<<"type">> => <<"get_messages">>}),
+
+
+    true = ctcheck:equal(
+             [#{<<"channel_code">> => Channel_code,
+                <<"data">> => <<"msg1">>,
+                <<"type">> => <<"message">>},
+              #{<<"channel_code">> => Channel_code,
+                <<"data">> => <<"msg2">>,
+                <<"type">> => <<"message">>}],
+             send_post_message(Session, Msg)),
+    true = ctcheck:equal([], send_post_message(Session, Msg)),
+    ok.
+
+
+send_get_message(Session, Msg) ->
     Url = make_url("/" ++ binary:bin_to_list(Session) ++ "/http/" ++
-                   "?c={\"type\":\"publish\",\"channel_code\":\"publish_get_test\", \"data\":\"test_data\"}"),
+                   "?c=" ++ binary:bin_to_list(Msg)),
     {ok, "200" , _Headers, Body} =
         ibrowse:send_req(Url, [], get,[],?OPTS, ?TIMEOUT),
-    true = ctcheck:equal(
-      #{<<"type">> => <<"subscribed">>, <<"data">> => <<"subscribe_get_test">>},
-      jiffy:decode(Body,[return_maps])),
-    ok.
+    jiffy:decode(Body,[return_maps]).
 
+send_post_message(Session, Msg) ->
+    Url = make_url("/" ++ binary:bin_to_list(Session) ++ "/http/"),
+    {ok, "200" , _Headers, Body} =
+        ibrowse:send_req(Url, [], post, Msg, ?OPTS, ?TIMEOUT),
+    jiffy:decode(Body,[return_maps]).
 
 subscribe(Session, Channel) ->
-    Url = make_url("/" ++ binary:bin_to_list(Session) ++ "/http/"),
-    Request_body =  jiffy:encode(#{<<"type">> => <<"subscribe">>,
-                                   <<"channel_code">> => Channel}),
-    {ok, "200" , _Headers, Body} =
-        ibrowse:send_req(Url, [], post, Request_body, ?OPTS, ?TIMEOUT),
-
+    Msg =  jiffy:encode(#{<<"type">> => <<"subscribe">>,
+                          <<"channel_code">> => Channel}),
     true = ctcheck:equal(
-             jiffy:decode(Body,[return_maps]),
+             send_get_message(Session, Msg),
              #{<<"type">> => <<"subscribed">>, <<"data">> => Channel}),
     ok.
-
 
 get_session() ->
     Url = make_url("/session/"),

@@ -97,19 +97,13 @@ invalid_channel_code_response() ->
     error_response(<<"invalid_channel_code">>).
 
 
-serialize_response(#message{type=message,
+serialize_response(#message{type= message,
                             channel_code=Channel_code,
                             data=Message})->
-    {[{<<"type">>, <<"message">>},
-      {<<"data">>, Message},
-      {<<"channel_code">>, Channel_code}]};
-
-serialize_response(#message{type=cached_message,
-                            channel_code=Channel_code,
-                            data=Message})->
-    {[{<<"type">>, <<"cached_message">>},
-      {<<"data">>, Message},
-      {<<"channel_code">>, Channel_code}]};
+    lager:info("-------------------------------!!"),
+    #{<<"type">> => <<"message">>,
+      <<"data">> => Message,
+      <<"channel_code">> => Channel_code};
 
 serialize_response(#message{type=add_subscribtion,
                             channel_code=Channel_code,
