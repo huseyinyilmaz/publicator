@@ -174,9 +174,11 @@ get_messages_get_test(_Config) ->
     true = ctcheck:equal(
              [#{<<"channel_code">> => <<"get_messages_get_test">>,
                 <<"data">> => <<"msg1">>,
+                <<"meta">> => <<"undefined">>,
                 <<"type">> => <<"message">>},
               #{<<"channel_code">> => <<"get_messages_get_test">>,
                 <<"data">> => <<"msg2">>,
+                <<"meta">> => <<"undefined">>,
                 <<"type">> => <<"message">>}],
              send_get_message(Session, Msg)),
     true = ctcheck:equal([], send_get_message(Session, Msg)),
@@ -200,9 +202,11 @@ get_messages_post_test(_Config) ->
     true = ctcheck:equal(
              [#{<<"channel_code">> => Channel_code,
                 <<"data">> => <<"msg1">>,
+                <<"meta">> => <<"undefined">>,
                 <<"type">> => <<"message">>},
               #{<<"channel_code">> => Channel_code,
                 <<"data">> => <<"msg2">>,
+                <<"meta">> => <<"undefined">>,
                 <<"type">> => <<"message">>}],
              send_post_message(Session, Msg)),
     true = ctcheck:equal([], send_post_message(Session, Msg)),

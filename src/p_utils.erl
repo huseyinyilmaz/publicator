@@ -109,9 +109,9 @@ serialize_response(#message{type= message,
 
 serialize_response(#message{type=add_subscribtion,
                             channel_code=Channel_code,
-                            data=Consumer_code})->
+                            producer_code=Producer_code})->
     {[{<<"type">>, <<"add_subscribtion">>},
-      {<<"data">>, Consumer_code},
+      {<<"data">>, Producer_code},
       {<<"channel_code">>, Channel_code}]};
 
 serialize_response(#message{type=remove_subscribtion,
