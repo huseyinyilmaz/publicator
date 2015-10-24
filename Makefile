@@ -20,12 +20,12 @@ $(REBAR):
 
 get-rebar: $(REBAR)
 
-RELX_VERSION = 1.2.0
+RELX_VERSION = 3.7.1
 $(RELX):
 	rm -f relx
 	wget https://github.com/erlware/relx/archive/v$(RELX_VERSION).zip
 	unzip v$(RELX_VERSION).zip
-	cd relx-$(RELX_VERSION);make;mv ./relx ../
+	cd relx-$(RELX_VERSION);./rebar3 update; ./rebar3 escriptize ;mv ./_build/default/bin/relx ../
 	rm -rf relx-$(RELX_VERSION); rm v$(RELX_VERSION).zip
 	chmod a+x relx
 
@@ -35,7 +35,7 @@ get-relx: $(RELX)
 get-deps: $(REBAR)
 	@$(REBAR) get-deps
 
-configure: get-rebar get-deps
+configure: get-rebar get-relx get-deps
 
 compile: $(REBAR)
 	@$(REBAR) compile
